@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcane Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-root">
+    <section class="auth-screen" id="authScreen">
+      <div class="auth-card">
+        <div class="auth-copy">
+          <p class="eyebrow">Arcane Vault Online Vorbereitung</p>
+          <h1>Dein Kartenkonto wartet schon.</h1>
+          <p>
+            Diese Version speichert alles lokal, ist aber bereits so aufgebaut, dass sie später auf einen Server
+            umgestellt werden kann. Erstelle jetzt ein Konto und starte mit fünf kostenlosen Starter-Boostern.
+          </p>
+          <ul class="auth-points">
+            <li>Mehr als 200 Karten inklusive Trainerkarten</li>
+            <li>Mehrere Booster-Stufen mit unterschiedlichen Chancen</li>
+            <li>Gespeicherte Decks mit Verfügbarkeitsprüfung</li>
+          </ul>
+        </div>
+
+        <div class="auth-panel">
+          <div class="auth-tab-row">
+            <button class="auth-tab active" data-auth-mode="login">Anmelden</button>
+            <button class="auth-tab" data-auth-mode="register">Konto erstellen</button>
+          </div>
+
+          <form id="loginForm" class="auth-form">
+            <label>
+              <span>Spielername</span>
+              <input type="text" name="username" autocomplete="username" required>
+            </label>
+            <label>
+              <span>Passwort</span>
+              <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <button class="primary-button" type="submit">Anmelden</button>
+          </form>
+
+          <form id="registerForm" class="auth-form hidden">
+            <label>
+              <span>Spielername</span>
+              <input type="text" name="username" autocomplete="username" minlength="3" maxlength="18" required>
+            </label>
+            <label>
+              <span>Passwort</span>
+              <input type="password" name="password" autocomplete="new-password" minlength="4" required>
+            </label>
+            <button class="primary-button" type="submit">Konto anlegen</button>
+          </form>
+
+          <p class="auth-note" id="authMessage">Speicherort: lokal im Browser. Später kann das auf Server-Login umgestellt werden.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="game-shell hidden" id="gameShell">
+      <aside class="sidebar">
+        <div class="brand-card">
+          <p class="eyebrow">Strategie-Sammelkartenspiel</p>
+          <h2>Arcane Vault</h2>
+          <p class="brand-text">
+            Öffne Booster, sammle Karten, baue mehrere Decks und teste sie in rundenbasierten Duellen.
+          </p>
+        </div>
+
+        <nav class="nav-list" aria-label="Spielbereiche">
+          <button class="nav-button active" data-section="shop">Shop</button>
+          <button class="nav-button" data-section="marketplace">Marktplatz</button>
+          <button class="nav-button" data-section="booster">Booster öffnen</button>
+          <button class="nav-button" data-section="collection">Sammlung</button>
+          <button class="nav-button" data-section="decks">Decks</button>
+          <button class="nav-button hidden" data-section="admin" data-admin-only="true">Admin</button>
+          <button class="nav-button" data-section="arena">Arena</button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <p class="sidebar-label">Aktiver Speicher-Modus</p>
+          <strong>Lokal vorbereitet für späteren Serverbetrieb</strong>
+        </div>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div class="player-panel">
+            <p class="eyebrow">Spielerkonto</p>
+            <h2 id="playerName">-</h2>
+          </div>
+
+          <div class="resource-bar" id="resourceBar"></div>
+
+          <div class="topbar-actions">
+            <button class="secondary-button" id="resetLocalDataButton">Nur dieses Konto zurücksetzen</button>
+            <button class="secondary-button" id="logoutButton">Abmelden</button>
+          </div>
+        </header>
+
+        <main class="content-shell">
+          <section class="section-panel active" id="shopSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Shop</p>
+                <h2>Booster kaufen und Inhalte vorbereiten</h2>
+              </div>
+              <p class="section-note">Alle käuflichen Inhalte liegen schon im Shop. Weitere Bereiche können hier später ergänzt werden.</p>
+            </div>
+
+            <div class="shop-layout">
+              <div>
+                <h3 class="subheading">Booster-Angebote</h3>
+                <div class="pack-grid" id="shopPackGrid"></div>
+              </div>
+
+              <div>
+                <h3 class="subheading">Demnächst im Shop</h3>
+                <div class="future-grid" id="futureShopGrid"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="marketplaceSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Marktplatz</p>
+                <h2>Stündliche Preisbewegungen durch Angebot und Nachfrage</h2>
+              </div>
+              <p class="section-note">Die Marktpreise aktualisieren sich jede echte Stunde. Der Marktplatzwert kann über oder unter dem normalen Händlerwert liegen.</p>
+            </div>
+
+            <div class="market-layout">
+              <div class="market-overview" id="marketOverview"></div>
+
+              <div class="info-panel">
+                <div class="market-headline">
+                  <h3 class="subheading">Top-Bewegungen</h3>
+                  <p class="mini-note">Die stärksten Gewinner und Verlierer der letzten Marktrunde.</p>
+                </div>
+                <div class="market-movers" id="marketMovers"></div>
+              </div>
+
+              <div class="info-panel">
+                <div class="market-toolbar">
+                  <label>
+                    <span>Suche</span>
+                    <input type="search" id="marketSearchInput" placeholder="Karte am Marktplatz suchen">
+                  </label>
+
+                  <label>
+                    <span>Seltenheit</span>
+                    <select id="marketRarityFilter"></select>
+                  </label>
+
+                  <label>
+                    <span>Sortierung</span>
+                    <select id="marketSortSelect">
+                      <option value="hot">Stärkster Anstieg</option>
+                      <option value="cold">Stärkster Fall</option>
+                      <option value="value-desc">Höchster Marktwert</option>
+                      <option value="value-asc">Niedrigster Marktwert</option>
+                      <option value="name">Name</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="card-grid" id="marketGrid"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="boosterSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Booster-Labor</p>
+                <h2>Booster auswählen und öffnen</h2>
+              </div>
+              <button class="primary-button" id="openSelectedPackButton">Ausgewähltes Booster öffnen</button>
+            </div>
+
+            <div class="booster-layout">
+              <div class="inventory-panel">
+                <h3 class="subheading">Deine Booster</h3>
+                <div class="pack-grid" id="ownedPackGrid"></div>
+              </div>
+
+              <div class="opening-panel">
+                <div class="opening-header" id="selectedPackPreview"></div>
+                <div class="opened-grid" id="openedCardsGrid"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="collectionSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Sammlung</p>
+                <h2>Alle Karten und Verkaufsoptionen</h2>
+              </div>
+              <p class="section-note">Karten sind anklickbar. Im Detailfenster kannst du sie prüfen und verkaufen.</p>
+            </div>
+
+            <div class="filter-toolbar">
+              <label class="wide-field">
+                <span>Suche</span>
+                <input type="search" id="searchInput" placeholder="Kartennamen suchen">
+              </label>
+
+              <label>
+                <span>Sortierung</span>
+                <select id="sortFilter"></select>
+              </label>
+
+              <label>
+                <span>Seltenheit</span>
+                <select id="rarityFilter"></select>
+              </label>
+
+              <label>
+                <span>Typ</span>
+                <select id="typeFilter"></select>
+              </label>
+
+              <label>
+                <span>Fraktion</span>
+                <select id="factionFilter"></select>
+              </label>
+
+              <label>
+                <span>Mana</span>
+                <select id="costFilter"></select>
+              </label>
+
+              <label class="checkbox-line">
+                <input type="checkbox" id="ownedOnlyToggle" checked>
+                <span>Nur besessene Karten</span>
+              </label>
+
+              <label class="checkbox-line">
+                <input type="checkbox" id="duplicatesOnlyToggle">
+                <span>Nur Duplikate</span>
+              </label>
+            </div>
+
+            <div class="card-grid" id="collectionGrid"></div>
+          </section>
+
+          <section class="section-panel" id="decksSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Deckmanager</p>
+                <h2>Mehrere Decks speichern und prüfen</h2>
+              </div>
+              <p class="section-note">Wenn eine Karte verkauft wurde, bleibt das Deck gespeichert, wird aber als nicht spielbar markiert.</p>
+            </div>
+
+            <div class="deck-toolbar">
+              <label>
+                <span>Aktiver Deckname</span>
+                <input type="text" id="deckNameInput" maxlength="24" placeholder="Deckname">
+              </label>
+
+              <div class="deck-toolbar-buttons">
+                <button class="secondary-button" id="renameDeckButton">Deckname speichern</button>
+                <button class="secondary-button" id="newDeckButton">Neues Deck</button>
+                <button class="secondary-button" id="duplicateDeckButton">Deck duplizieren</button>
+                <button class="secondary-button" id="deleteDeckButton">Aktives Deck löschen</button>
+              </div>
+            </div>
+
+            <div class="deck-layout">
+              <div class="deck-column">
+                <div class="info-panel">
+                  <h3 class="subheading">Aktives Deck</h3>
+                  <div class="deck-meta" id="activeDeckMeta"></div>
+                  <div class="warning-list" id="activeDeckWarnings"></div>
+                  <div class="deck-list" id="activeDeckList"></div>
+                </div>
+
+                <div class="info-panel">
+                  <h3 class="subheading">Gespeicherte Decks</h3>
+                  <div class="saved-decks" id="savedDecksList"></div>
+                </div>
+              </div>
+
+              <div class="deck-column">
+                <div class="info-panel">
+                  <h3 class="subheading">Karten zum Hinzufügen</h3>
+                  <p class="mini-note">Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.</p>
+                  <div class="card-grid compact-grid" id="deckCollectionGrid"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel hidden" id="adminSection" data-admin-only="true">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Admin-Bereich</p>
+                <h2>Konten verwalten und Spielstände direkt anpassen</h2>
+              </div>
+              <p class="section-note">Nur für das Administratorkonto sichtbar. Änderungen greifen sofort in die lokalen Spielstände.</p>
+            </div>
+
+            <div class="admin-layout">
+              <div class="info-panel">
+                <h3 class="subheading">Alle Konten</h3>
+                <div class="admin-account-list" id="adminAccountList"></div>
+              </div>
+
+              <div class="info-panel">
+                <h3 class="subheading">Ausgewähltes Konto</h3>
+                <div class="admin-summary" id="adminSelectedSummary"></div>
+
+                <div class="admin-tools">
+                  <label>
+                    <span>Gold hinzufügen</span>
+                    <input type="number" id="adminGoldAmount" min="1" value="250">
+                  </label>
+                  <button class="primary-button" id="grantGoldButton">Gold gutschreiben</button>
+
+                  <label>
+                    <span>Booster-Art</span>
+                    <select id="adminPackSelect"></select>
+                  </label>
+                  <label>
+                    <span>Booster-Anzahl</span>
+                    <input type="number" id="adminPackAmount" min="1" value="3">
+                  </label>
+                  <button class="primary-button" id="grantPackButton">Booster geben</button>
+
+                  <label class="wide-field">
+                    <span>Karte</span>
+                    <select id="adminCardSelect"></select>
+                  </label>
+                  <label>
+                    <span>Karten-Anzahl</span>
+                    <input type="number" id="adminCardAmount" min="1" value="1">
+                  </label>
+                  <button class="primary-button" id="grantCardButton">Karten geben</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="arenaSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Arena</p>
+                <h2>Rundenbasiertes Testduell</h2>
+              </div>
+              <div class="arena-head-actions">
+                <button class="secondary-button" id="resetMatchButton">Match verlassen</button>
+                <button class="primary-button" id="startMatchButton">Neues Match starten</button>
+              </div>
+            </div>
+
+            <div class="arena-shell">
+              <div class="arena-status" id="arenaStatus"></div>
+
+              <div class="battle-header" id="battleHeader"></div>
+
+              <div class="battle-stage">
+                <div class="battle-lane">
+                  <div class="hero-card enemy" id="enemyHeroPanel"></div>
+                  <div class="board-row" id="enemyBoard"></div>
+                </div>
+
+                <div class="battle-log" id="battleLog"></div>
+
+                <div class="battle-lane">
+                  <div class="hero-card player" id="playerHeroPanel"></div>
+                  <div class="board-row" id="playerBoard"></div>
+                </div>
+              </div>
+
+              <div class="hand-panel">
+                <div class="hand-head">
+                  <h3 class="subheading">Deine Hand</h3>
+                  <button class="primary-button" id="endTurnButton">Zug beenden</button>
+                </div>
+                <div class="card-grid compact-grid" id="playerHand"></div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop hidden" id="cardModal">
+    <div class="modal-card-shell">
+      <button class="modal-close" id="closeCardModalButton" aria-label="Detailfenster schließen">×</button>
+      <div class="modal-content" id="cardModalContent"></div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <template id="cardTemplate">
+    <article class="game-card">
+      <div class="card-topline">
+        <span class="card-type-badge"></span>
+        <span class="card-owned"></span>
+      </div>
+      <h3 class="card-name"></h3>
+      <p class="card-faction"></p>
+      <p class="card-rarity"></p>
+      <p class="card-description"></p>
+      <div class="card-stats">
+        <span class="card-cost"></span>
+        <span class="card-attack"></span>
+        <span class="card-health"></span>
+      </div>
+      <div class="card-actions"></div>
+    </article>
+  </template>
+
+  <template id="packTemplate">
+    <article class="pack-card">
+      <p class="pack-kicker"></p>
+      <h3 class="pack-name"></h3>
+      <p class="pack-price"></p>
+      <p class="pack-copy"></p>
+      <div class="pack-odds"></div>
+      <div class="pack-actions"></div>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
