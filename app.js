@@ -3467,6 +3467,7 @@ function overrideArcaneVaultSystems() {
     Object.keys(SETTINGS_INPUT_MAP).forEach((elementKey) => {
       elements[elementKey].addEventListener("change", handleSettingsToggle);
     });
+    elements.settingsLanguageSelect.addEventListener("change", handleLanguageChange);
     elements.resetSettingsButton.addEventListener("click", resetCurrentSettings);
 
     elements.startMatchButton.addEventListener("click", startMatch);
