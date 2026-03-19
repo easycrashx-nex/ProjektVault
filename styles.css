@@ -2448,8 +2448,15 @@ body[data-scene="settings"] .scene-core {
   margin-top: auto;
 }
 
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
 .card-stats span {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
   padding: 11px;
   text-align: center;
   border-radius: 16px;
@@ -2999,6 +3006,8 @@ body[data-scene="settings"] .scene-core {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .detail-stat strong {
