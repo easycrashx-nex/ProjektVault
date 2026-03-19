@@ -10,6 +10,12 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <div class="app-ambient" aria-hidden="true">
+    <span class="ambient-orb ambient-orb-a"></span>
+    <span class="ambient-orb ambient-orb-b"></span>
+    <span class="ambient-orb ambient-orb-c"></span>
+    <span class="ambient-grid"></span>
+  </div>
   <div class="app-root">
     <section class="auth-screen" id="authScreen">
       <div class="auth-card">
@@ -98,10 +104,49 @@
           <div class="resource-bar" id="resourceBar"></div>
 
           <div class="topbar-actions">
-            <button class="secondary-button" id="resetLocalDataButton">Nur dieses Konto zurücksetzen</button>
-            <button class="secondary-button" id="logoutButton">Abmelden</button>
+            <div class="topbar-icon-nav" aria-label="Schnellzugriffe">
+              <button class="nav-button topbar-icon-button" data-section="profile" type="button" aria-label="Profil" title="Profil">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                  <path d="M5 19a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                </svg>
+                <span class="topbar-icon-text">Profil</span>
+              </button>
+              <button class="nav-button topbar-icon-button" data-section="friends" type="button" aria-label="Freunde" title="Freunde">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8.5 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                  <path d="M16 10a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 16 10Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                  <path d="M3.5 18a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                  <path d="M13 17.5a4 4 0 0 1 7 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                </svg>
+                <span class="topbar-icon-text">Freunde</span>
+              </button>
+              <button class="nav-button topbar-icon-button" data-section="settings" type="button" aria-label="Einstellungen" title="Einstellungen">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 15.2a3.2 3.2 0 1 0-3.2-3.2A3.2 3.2 0 0 0 12 15.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                  <path d="M19.4 15a1.3 1.3 0 0 0 .26 1.44l.05.05a1.6 1.6 0 0 1-2.26 2.26l-.05-.05A1.3 1.3 0 0 0 16 18.44a1.3 1.3 0 0 0-.78 1.19V20a1.6 1.6 0 1 1-3.2 0v-.08A1.3 1.3 0 0 0 10.74 18.7a1.3 1.3 0 0 0-1.44.26l-.05.05a1.6 1.6 0 1 1-2.26-2.26l.05-.05A1.3 1.3 0 0 0 7.3 15.3a1.3 1.3 0 0 0-1.19-.78H6a1.6 1.6 0 1 1 0-3.2h.08A1.3 1.3 0 0 0 7.3 10.06 1.3 1.3 0 0 0 7.04 8.62l-.05-.05A1.6 1.6 0 1 1 9.25 6.3l.05.05A1.3 1.3 0 0 0 10.74 6.6a1.3 1.3 0 0 0 .78-1.19V5.3a1.6 1.6 0 1 1 3.2 0v.08A1.3 1.3 0 0 0 16 6.6a1.3 1.3 0 0 0 1.44-.26l.05-.05a1.6 1.6 0 1 1 2.26 2.26l-.05.05A1.3 1.3 0 0 0 19.4 10a1.3 1.3 0 0 0 1.19.78h.08a1.6 1.6 0 1 1 0 3.2h-.08A1.3 1.3 0 0 0 19.4 15Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/>
+                </svg>
+                <span class="topbar-icon-text">Einstellungen</span>
+              </button>
+            </div>
           </div>
         </header>
+
+        <section class="scene-banner" id="sceneBanner">
+          <div class="scene-banner-copy">
+            <p class="eyebrow" id="sceneBannerEyebrow">Arcane Vault</p>
+            <h1 id="sceneBannerTitle">Die Gewölbe öffnen sich</h1>
+            <p class="scene-banner-text" id="sceneBannerText">Sammle Karten, beobachte Marktbewegungen und baue aus deinem Pool immer stärkere Strategien.</p>
+          </div>
+          <div class="scene-banner-visual" aria-hidden="true">
+            <span class="scene-ring scene-ring-a"></span>
+            <span class="scene-ring scene-ring-b"></span>
+            <span class="scene-core"></span>
+            <span class="scene-spark scene-spark-a"></span>
+            <span class="scene-spark scene-spark-b"></span>
+            <span class="scene-spark scene-spark-c"></span>
+          </div>
+        </section>
 
         <main class="content-shell">
           <section class="section-panel active" id="shopSection">
@@ -192,7 +237,10 @@
 
               <div class="opening-panel">
                 <div class="opening-header" id="selectedPackPreview"></div>
-                <div class="opened-grid" id="openedCardsGrid"></div>
+                <div class="opening-stage" id="openingStage">
+                  <div class="opening-burst hidden" id="openingBurst" aria-hidden="true"></div>
+                  <div class="opened-grid" id="openedCardsGrid"></div>
+                </div>
               </div>
             </div>
           </section>
@@ -299,6 +347,171 @@
             </div>
           </section>
 
+          <section class="section-panel" id="profileSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Profil</p>
+                <h2>Kontodaten pflegen und Sicherheit verwalten</h2>
+              </div>
+              <p class="section-note">Spielername und Passwort werden lokal angepasst, bleiben aber so vorbereitet, dass sie später ins Serverkonto wandern können.</p>
+            </div>
+
+            <div class="profile-layout">
+              <div class="profile-column">
+                <div class="info-panel profile-summary-panel" id="profileSummary"></div>
+
+                <div class="info-panel">
+                  <h3 class="subheading">Spielernamen ändern</h3>
+                  <p class="mini-note">Der neue Name muss 3 bis 18 Zeichen lang sein und darf nicht bereits vergeben sein.</p>
+                  <form class="profile-form" id="profileRenameForm">
+                    <label>
+                      <span>Neuer Spielername</span>
+                      <input type="text" id="profileNameInput" name="username" maxlength="18" placeholder="Neuer Name" autocomplete="username">
+                    </label>
+
+                    <label>
+                      <span>Aktuelles Passwort</span>
+                      <input type="password" id="profileRenamePasswordInput" name="currentPassword" minlength="4" placeholder="Passwort bestätigen" autocomplete="current-password">
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="primary-button" type="submit">Spielernamen speichern</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <div class="profile-column">
+                <div class="info-panel">
+                  <h3 class="subheading">Passwort ändern</h3>
+                  <p class="mini-note">Für lokale Tests wird das Passwort sofort aktualisiert. Beim späteren Serverbetrieb gehört diese Prüfung ins Backend.</p>
+                  <form class="profile-form" id="profilePasswordForm">
+                    <label>
+                      <span>Aktuelles Passwort</span>
+                      <input type="password" id="profileCurrentPasswordInput" name="currentPassword" minlength="4" placeholder="Aktuelles Passwort" autocomplete="current-password">
+                    </label>
+
+                    <label>
+                      <span>Neues Passwort</span>
+                      <input type="password" id="profileNewPasswordInput" name="newPassword" minlength="4" placeholder="Neues Passwort" autocomplete="new-password">
+                    </label>
+
+                    <label>
+                      <span>Neues Passwort wiederholen</span>
+                      <input type="password" id="profileConfirmPasswordInput" name="confirmPassword" minlength="4" placeholder="Passwort wiederholen" autocomplete="new-password">
+                    </label>
+
+                    <div class="form-actions">
+                      <button class="primary-button" type="submit">Passwort aktualisieren</button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="info-panel profile-security-panel">
+                  <h3 class="subheading">Server-Vorbereitung</h3>
+                  <div class="profile-bullet-list">
+                    <p>Profilfelder und Einstellungen liegen schon getrennt vom eigentlichen Match-System.</p>
+                    <p>Freunde, Handel und echte Sitzungen können später an API-Endpunkte gebunden werden, ohne die Oberfläche neu zu bauen.</p>
+                    <p>Das lokale Konto bleibt ein Teststand. Für echten Online-Betrieb müssen Name, Passwort und Rechte serverseitig validiert werden.</p>
+                  </div>
+                  <div class="danger-note profile-danger-note">Konto zurücksetzen entfernt nur in diesem Konto Gold, Karten, Booster und Decks. Der Login selbst bleibt erhalten.</div>
+                  <div class="form-actions">
+                    <button class="secondary-button danger-button danger-button-strong" type="button" id="resetLocalDataButton">Konto zurücksetzen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="friendsSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Freunde</p>
+                <h2>Soziale Funktionen für Handel und Freundschaften vorbereiten</h2>
+              </div>
+              <p class="section-note">Dieser Bereich ist bewusst schon angelegt, damit Freundeslisten, Anfragen und Handel später modular ergänzt werden können.</p>
+            </div>
+
+            <div class="friends-layout">
+              <div class="info-panel friends-summary-panel" id="friendsSummary"></div>
+
+              <div class="friends-grid">
+                <div class="info-panel" id="friendsListPanel"></div>
+                <div class="info-panel" id="friendsPendingPanel"></div>
+                <div class="info-panel" id="friendsTradePanel"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="settingsSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Einstellungen</p>
+                <h2>Spielgefühl, Effekte und Bestätigungen anpassen</h2>
+              </div>
+              <p class="section-note">Die Einstellungen werden pro Konto gespeichert und sind als sauberes eigenes Modul angelegt.</p>
+            </div>
+
+            <div class="settings-layout">
+              <div class="info-panel settings-summary-panel" id="settingsSummary"></div>
+
+              <div class="profile-column">
+                <div class="info-panel">
+                  <h3 class="subheading">Anzeige und Komfort</h3>
+                  <label class="settings-language-field">
+                    <span>Sprache</span>
+                    <select id="settingsLanguageSelect"></select>
+                  </label>
+                  <div class="settings-grid">
+                    <label class="settings-option">
+                      <input type="checkbox" id="settingsClickEffects">
+                      <div>
+                        <strong>Klickeffekte aktivieren</strong>
+                        <span>Ripples und kleine Reaktionen auf Buttons und Karten.</span>
+                      </div>
+                    </label>
+
+                    <label class="settings-option">
+                      <input type="checkbox" id="settingsPackEffects">
+                      <div>
+                        <strong>Booster-Inszenierung aktivieren</strong>
+                        <span>Öffnungs-Burst, Reveal-Effekte und stärkere Pack-Präsentation.</span>
+                      </div>
+                    </label>
+
+                    <label class="settings-option">
+                      <input type="checkbox" id="settingsReducedMotion">
+                      <div>
+                        <strong>Reduzierte Bewegung</strong>
+                        <span>Fährt zusätzliche Animationen und visuelle Bewegungen deutlich zurück.</span>
+                      </div>
+                    </label>
+
+                    <label class="settings-option">
+                      <input type="checkbox" id="settingsConfirmActions">
+                      <div>
+                        <strong>Bestätigungen anzeigen</strong>
+                        <span>Fragt vor Lösch- und Reset-Aktionen nach, bevor Daten geändert werden.</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="secondary-button" type="button" id="resetSettingsButton">Einstellungen zurücksetzen</button>
+                  </div>
+                </div>
+
+                <div class="info-panel settings-session-panel">
+                  <h3 class="subheading">Sitzung</h3>
+                  <p class="mini-note">Melde dich von diesem lokalen Konto ab. Später kann diese Aktion durch echtes Server-Logout ersetzt werden.</p>
+                  <div class="form-actions">
+                    <button class="secondary-button" type="button" id="logoutButton">Abmelden</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section class="section-panel hidden" id="adminSection" data-admin-only="true">
             <div class="section-head">
               <div>
@@ -319,31 +532,65 @@
                 <div class="admin-summary" id="adminSelectedSummary"></div>
 
                 <div class="admin-tools">
-                  <label>
-                    <span>Gold hinzufügen</span>
-                    <input type="number" id="adminGoldAmount" min="1" value="250">
-                  </label>
-                  <button class="primary-button" id="grantGoldButton">Gold gutschreiben</button>
+                  <details class="admin-tool-group" open>
+                    <summary>Wirtschaft</summary>
+                    <div class="admin-tool-grid">
+                      <label>
+                        <span>Goldmenge</span>
+                        <input type="number" id="adminGoldAmount" min="1" value="250">
+                      </label>
+                      <div class="admin-tool-actions">
+                        <button class="primary-button" id="grantGoldButton">Gold gutschreiben</button>
+                        <button class="secondary-button danger-button" id="removeGoldButton">Gold abziehen</button>
+                      </div>
+                    </div>
+                  </details>
 
-                  <label>
-                    <span>Booster-Art</span>
-                    <select id="adminPackSelect"></select>
-                  </label>
-                  <label>
-                    <span>Booster-Anzahl</span>
-                    <input type="number" id="adminPackAmount" min="1" value="3">
-                  </label>
-                  <button class="primary-button" id="grantPackButton">Booster geben</button>
+                  <details class="admin-tool-group">
+                    <summary>Boosterbestand</summary>
+                    <div class="admin-tool-grid">
+                      <label>
+                        <span>Booster-Art</span>
+                        <select id="adminPackSelect"></select>
+                      </label>
+                      <label>
+                        <span>Booster-Anzahl</span>
+                        <input type="number" id="adminPackAmount" min="1" value="3">
+                      </label>
+                      <div class="admin-tool-actions wide-row">
+                        <button class="primary-button" id="grantPackButton">Booster geben</button>
+                        <button class="secondary-button danger-button" id="removePackButton">Booster abziehen</button>
+                      </div>
+                    </div>
+                  </details>
 
-                  <label class="wide-field">
-                    <span>Karte</span>
-                    <select id="adminCardSelect"></select>
-                  </label>
-                  <label>
-                    <span>Karten-Anzahl</span>
-                    <input type="number" id="adminCardAmount" min="1" value="1">
-                  </label>
-                  <button class="primary-button" id="grantCardButton">Karten geben</button>
+                  <details class="admin-tool-group">
+                    <summary>Kartensammlung</summary>
+                    <div class="admin-tool-grid">
+                      <label class="wide-field">
+                        <span>Karte</span>
+                        <select id="adminCardSelect"></select>
+                      </label>
+                      <label>
+                        <span>Karten-Anzahl</span>
+                        <input type="number" id="adminCardAmount" min="1" value="1">
+                      </label>
+                      <div class="admin-tool-actions">
+                        <button class="primary-button" id="grantCardButton">Karten geben</button>
+                        <button class="secondary-button danger-button" id="removeCardButton">Karten abziehen</button>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details class="admin-tool-group">
+                    <summary>Kontoaktionen</summary>
+                    <div class="admin-tool-grid">
+                      <p class="danger-note">Spielkonten können vollständig gelöscht werden. Das Administratorkonto bleibt geschützt.</p>
+                      <div class="admin-tool-actions wide-row">
+                        <button class="secondary-button danger-button" id="deleteAccountButton">Ausgewähltes Konto löschen</button>
+                      </div>
+                    </div>
+                  </details>
                 </div>
               </div>
             </div>
@@ -402,6 +649,7 @@
   </div>
 
   <div class="toast hidden" id="toast"></div>
+  <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
 
   <template id="cardTemplate">
     <article class="game-card">
@@ -409,24 +657,45 @@
         <span class="card-type-badge"></span>
         <span class="card-owned"></span>
       </div>
-      <h3 class="card-name"></h3>
-      <p class="card-faction"></p>
-      <p class="card-rarity"></p>
-      <p class="card-description"></p>
-      <div class="card-stats">
-        <span class="card-cost"></span>
-        <span class="card-attack"></span>
-        <span class="card-health"></span>
+      <div class="card-portrait">
+        <span class="card-portrait-glow"></span>
+        <div class="card-portrait-head">
+          <p class="card-rarity"></p>
+          <span class="card-faction-pill"></span>
+        </div>
+        <div class="card-portrait-center">
+          <span class="card-glyph"></span>
+        </div>
       </div>
-      <div class="card-actions"></div>
+      <div class="card-copy">
+        <h3 class="card-name"></h3>
+        <p class="card-faction"></p>
+        <div class="card-keywords hidden"></div>
+        <p class="card-description"></p>
+      </div>
+      <div class="card-bottom">
+        <div class="card-stats">
+          <span class="card-cost"></span>
+          <span class="card-attack"></span>
+          <span class="card-health"></span>
+        </div>
+        <div class="card-actions"></div>
+      </div>
     </article>
   </template>
 
   <template id="packTemplate">
     <article class="pack-card">
-      <p class="pack-kicker"></p>
+      <div class="pack-halo"></div>
+      <div class="pack-head">
+        <p class="pack-kicker"></p>
+        <p class="pack-price"></p>
+      </div>
+      <div class="pack-crest" aria-hidden="true">
+        <span class="pack-crest-core"></span>
+        <span class="pack-crest-ring"></span>
+      </div>
       <h3 class="pack-name"></h3>
-      <p class="pack-price"></p>
       <p class="pack-copy"></p>
       <div class="pack-odds"></div>
       <div class="pack-actions"></div>
