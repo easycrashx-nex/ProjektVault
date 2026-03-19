@@ -1105,7 +1105,6 @@ function buildCardSummaryMarkup(card, limit = 3) {
   const summaryEntries = [
     ...primaryEntries,
     ...supportEntries.filter((entry) => !entry.key.startsWith("keyword:")),
-    ...supportEntries.filter((entry) => entry.key.startsWith("keyword:")),
   ];
 
   if (!summaryEntries.length) {
@@ -8631,6 +8630,7 @@ function renderHeroPanel(container, label, sideState, active) {
 function renderCardModal() {
   if (!uiState.modalCardId) {
     elements.cardModal.classList.add("hidden");
+    document.body.classList.remove("modal-open");
     elements.cardModalContent.innerHTML = "";
     return;
   }
@@ -8663,6 +8663,7 @@ function renderCardModal() {
   ];
 
   elements.cardModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
   elements.cardModalContent.innerHTML = "";
 
   const preview = renderCard(card, { context: "modal" });
@@ -9460,13 +9461,6 @@ function renderCard(card, options = {}) {
   const faction = getFaction(card.faction);
   const factionVisual = getFactionVisual(card.faction);
   const typeVisual = getTypeVisual(card.type);
-  const primaryEntries = buildCardPrimaryEntries(card);
-  const supportEntries = buildCardSupportEntries(card, false);
-  const effectStripEntries = [
-    ...primaryEntries.filter((entry) => entry.key !== `solid:${card.id}`),
-    ...supportEntries.filter((entry) => entry.key.startsWith("keyword:")).slice(0, 2),
-    ...supportEntries.filter((entry) => !entry.key.startsWith("keyword:")).slice(0, 2),
-  ];
 
   element.classList.add(`card-${card.rarity}`, `faction-${card.faction}`, "clickable-card");
   element.dataset.context = context;
@@ -9485,9 +9479,6 @@ function renderCard(card, options = {}) {
   const keywordRow = element.querySelector(".card-keywords");
   keywordRow.classList.toggle("hidden", !keywords.length);
   keywordRow.innerHTML = keywords.length ? buildKeywordMarkup(keywords) : "";
-  const effectIconRow = element.querySelector(".card-effect-icons");
-  effectIconRow.classList.toggle("hidden", !effectStripEntries.length);
-  effectIconRow.innerHTML = effectStripEntries.length ? buildEffectChipMarkup(effectStripEntries, { limit: 4 }) : "";
   element.querySelector(".card-summary-list").innerHTML = buildCardSummaryMarkup(card, context === "modal" ? 4 : 3);
   const footerNote = element.querySelector(".card-footer-note");
   footerNote.classList.toggle("hidden", !footer);

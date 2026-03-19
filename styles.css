@@ -83,6 +83,10 @@ body {
     linear-gradient(180deg, #070b12 0%, #09101b 48%, #05070d 100%);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 body[data-scene="shop"] {
   background:
     radial-gradient(circle at 10% 16%, rgba(255, 166, 89, 0.24), transparent 26%),
@@ -2870,7 +2874,9 @@ body[data-scene="settings"] .scene-core {
   inset: 0;
   z-index: 36;
   display: grid;
-  place-items: center;
+  justify-items: center;
+  align-items: start;
+  overflow-y: auto;
   padding: var(--space-lg);
   background: rgba(3, 6, 12, 0.72);
   backdrop-filter: blur(18px);
@@ -2878,7 +2884,10 @@ body[data-scene="settings"] .scene-core {
 
 .modal-card-shell {
   width: min(1040px, 100%);
+  max-height: calc(100vh - 40px);
   padding: 78px 26px 26px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .modal-close {
