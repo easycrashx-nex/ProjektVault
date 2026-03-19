@@ -200,7 +200,15 @@
                 <div class="market-movers" id="marketMovers"></div>
               </div>
 
-              <div class="info-panel">
+              <div class="info-panel market-main-panel">
+                <div class="market-discovery-head">
+                  <div>
+                    <p class="eyebrow" id="marketBrowseEyebrow">Handelsfilter</p>
+                    <h3 class="subheading" id="marketBrowseHeading">Angebote durchsuchen</h3>
+                  </div>
+                  <div class="market-results-meta" id="marketResultsMeta"></div>
+                </div>
+
                 <div class="market-toolbar">
                   <label>
                     <span>Suche</span>
@@ -222,9 +230,10 @@
                       <option value="name">Name</option>
                     </select>
                   </label>
+                  <button class="secondary-button market-reset-button" id="marketResetFiltersButton">Filter zurÃ¼cksetzen</button>
                 </div>
 
-                <div class="card-grid" id="marketGrid"></div>
+                <div class="card-grid market-card-grid" id="marketGrid"></div>
               </div>
             </div>
           </section>
@@ -676,15 +685,20 @@
           <p class="card-rarity"></p>
           <span class="card-faction-pill"></span>
         </div>
-        <div class="card-portrait-center">
-          <span class="card-glyph"></span>
-        </div>
       </div>
       <div class="card-copy">
         <h3 class="card-name"></h3>
-        <p class="card-faction"></p>
+        <div class="card-affinity-row">
+          <span class="card-faction-line">
+            <span class="card-faction-icon" aria-hidden="true"></span>
+            <span class="card-faction"></span>
+          </span>
+          <span class="card-type-inline"></span>
+        </div>
         <div class="card-keywords hidden"></div>
-        <p class="card-description"></p>
+        <div class="card-effect-icons hidden"></div>
+        <ul class="card-summary-list"></ul>
+        <p class="card-footer-note hidden"></p>
       </div>
       <div class="card-bottom">
         <div class="card-stats">
@@ -703,10 +717,6 @@
       <div class="pack-head">
         <p class="pack-kicker"></p>
         <p class="pack-price"></p>
-      </div>
-      <div class="pack-crest" aria-hidden="true">
-        <span class="pack-crest-core"></span>
-        <span class="pack-crest-ring"></span>
       </div>
       <h3 class="pack-name"></h3>
       <p class="pack-copy"></p>

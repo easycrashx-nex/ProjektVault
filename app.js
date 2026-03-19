@@ -301,7 +301,7 @@ const PACK_TRANSLATIONS = Object.freeze({
   de: {
     starter: {
       label: "Starter-Booster",
-      tier: "Kostenloser Einstieg",
+      tier: "Einsteiger",
       description: "Der günstige Einstieg mit schwächeren Chancen auf hohe Seltenheiten.",
     },
     market: {
@@ -486,10 +486,14 @@ const UI_TEXT = Object.freeze({
       ],
     },
     market: {
+      browseEyebrow: "Handelsfilter",
+      browseTitle: "Angebote durchsuchen",
       search: "Suche",
       searchPlaceholder: "Karte am Marktplatz suchen",
       rarity: "Seltenheit",
       sort: "Sortierung",
+      resetFilters: "Filter zurücksetzen",
+      resultsMeta: "{count} Angebote · {sort}",
       nextHour: "Nächste Marktstunde",
       nextHourText: "Bis zur nächsten automatischen Preisrunde.",
       hottest: "Heißeste Karte",
@@ -507,6 +511,12 @@ const UI_TEXT = Object.freeze({
       noOffersText: "Passe Suche oder Seltenheit an, um mehr Karten anzuzeigen.",
       buyButton: "Kaufen {price}G",
       sellNetButton: "Verkaufen netto {price}G",
+      ownedShort: "Besitz",
+      buyShort: "Ankauf",
+      grossShort: "Brutto",
+      netShort: "Netto",
+      feeShort: "Gebühr",
+      deltaShort: "Trend",
       footer: "Markt brutto {gross} Gold · Gebühr {fee} Gold · Auszahlung {net} Gold · Ankauf {buy} Gold · {delta}",
       buyerMarket: "Käufermarkt",
       sellerPressure: "Verkäuferdruck",
@@ -767,6 +777,15 @@ function interpolateText(template, values = {}) {
   return String(template).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? `{${key}}`);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getCurrentLanguage() {
   const language = currentAccount?.save?.settings?.language || uiState?.previewLanguage || "de";
   return SUPPORTED_LANGUAGES.includes(language) ? language : "de";
@@ -867,6 +886,270 @@ function getStatusLabel(kind) {
 
 function getStatusText(kind) {
   return STATUS_TRANSLATIONS[getCurrentLanguage()]?.[kind]?.text || STATUS_TRANSLATIONS.de[kind]?.text || STATUS_META[kind]?.text || kind;
+}
+
+function getTypeVisual(type) {
+  return TYPE_VISUALS[type] || TYPE_VISUALS.unit;
+}
+
+function getFactionVisual(factionId) {
+  return FACTION_VISUALS[factionId] || { symbol: "✦", tone: "neutral" };
+}
+
+function getKeywordVisual(keyword) {
+  return KEYWORD_VISUALS[keyword] || { symbol: "◆", tone: "neutral" };
+}
+
+function getEffectVisual(kind) {
+  return EFFECT_VISUALS[kind] || EFFECT_VISUALS.neutral;
+}
+
+function getDeathEffectTitle() {
+  return getUiText("card.deathEffectTitle");
+}
+
+function getLocalizedEffectBadgeLabel(kind) {
+  switch (kind) {
+    case "damageHero":
+      return getCurrentLanguage() === "fr" ? "Dégâts directs" : getCurrentLanguage() === "en" ? "Direct damage" : "Direktschaden";
+    case "healHero":
+      return getCurrentLanguage() === "fr" ? "Soin du héros" : getCurrentLanguage() === "en" ? "Hero heal" : "Heldenheilung";
+    case "draw":
+      return getCurrentLanguage() === "fr" ? "Pioche" : getCurrentLanguage() === "en" ? "Draw" : "Kartenziehen";
+    case "gainMana":
+      return getCurrentLanguage() === "fr" ? "Mana" : getCurrentLanguage() === "en" ? "Mana" : "Mana";
+    case "gainMaxMana":
+      return getCurrentLanguage() === "fr" ? "Mana max." : getCurrentLanguage() === "en" ? "Max mana" : "Max. Mana";
+    case "buffBoard":
+      return getCurrentLanguage() === "fr" ? "Buff du plateau" : getCurrentLanguage() === "en" ? "Board buff" : "Feldbuff";
+    case "fortifyBoard":
+      return getCurrentLanguage() === "fr" ? "Festigung" : getCurrentLanguage() === "en" ? "Fortify" : "Festigung";
+    case "healBoard":
+      return getCurrentLanguage() === "fr" ? "Soin de zone" : getCurrentLanguage() === "en" ? "Board heal" : "Feldheilung";
+    case "strikeWeakest":
+      return getCurrentLanguage() === "fr" ? "Präziser Schlag" : getCurrentLanguage() === "en" ? "Precision hit" : "Präzisionsschlag";
+    case "damageAllEnemies":
+      return getCurrentLanguage() === "fr" ? "Flächenschaden" : getCurrentLanguage() === "en" ? "Area damage" : "Flächenschaden";
+    case "burnWeakest":
+      return getCurrentLanguage() === "fr" ? "Feuer" : getCurrentLanguage() === "en" ? "Fire" : "Feuer";
+    case "freezeWeakest":
+      return getCurrentLanguage() === "fr" ? "Frost" : getCurrentLanguage() === "en" ? "Frost" : "Frost";
+    case "poisonWeakest":
+      return getCurrentLanguage() === "fr" ? "Gift" : getCurrentLanguage() === "en" ? "Poison" : "Gift";
+    case "barrierStrongest":
+    case "barrierHero":
+      return getCurrentLanguage() === "fr" ? "Barrière" : getCurrentLanguage() === "en" ? "Barrier" : "Barriere";
+    case "summonTokens":
+      return getCurrentLanguage() === "fr" ? "Beschwörung" : getCurrentLanguage() === "en" ? "Summon" : "Beschwörung";
+    case "weakenEnemies":
+      return getCurrentLanguage() === "fr" ? "Schwächung" : getCurrentLanguage() === "en" ? "Weaken" : "Schwächung";
+    case "drainHero":
+      return getCurrentLanguage() === "fr" ? "Lebensentzug" : getCurrentLanguage() === "en" ? "Drain" : "Lebensentzug";
+    case "readyStrongest":
+      return getCurrentLanguage() === "fr" ? "Tempo" : getCurrentLanguage() === "en" ? "Tempo" : "Tempo";
+    case "empowerUnit":
+      return getCurrentLanguage() === "fr" ? "Verstärkung" : getCurrentLanguage() === "en" ? "Empower" : "Verstärkung";
+    default:
+      return getUiText("card.effect");
+  }
+}
+
+function getLocalizedCompactEffect(effect) {
+  switch (effect?.kind) {
+    case "damageHero":
+      return getCurrentLanguage() === "fr" ? `${effect.value} dégâts au héros` : getCurrentLanguage() === "en" ? `${effect.value} damage to hero` : `${effect.value} Schaden am Helden`;
+    case "healHero":
+      return getCurrentLanguage() === "fr" ? `Soigne ${effect.value}` : getCurrentLanguage() === "en" ? `Heal ${effect.value}` : `Heilt ${effect.value}`;
+    case "draw":
+      return getCurrentLanguage() === "fr" ? `Pioche ${effect.value}` : getCurrentLanguage() === "en" ? `Draw ${effect.value}` : `Zieht ${effect.value}`;
+    case "gainMana":
+      return getCurrentLanguage() === "fr" ? `+${effect.value} mana immédiat` : getCurrentLanguage() === "en" ? `+${effect.value} mana now` : `+${effect.value} Mana sofort`;
+    case "gainMaxMana":
+      return getCurrentLanguage() === "fr" ? `+${effect.value} mana max.` : getCurrentLanguage() === "en" ? `+${effect.value} max mana` : `+${effect.value} Max. Mana`;
+    case "buffBoard":
+      return getCurrentLanguage() === "fr" ? `Plateau +${effect.attack}/+${effect.health}` : getCurrentLanguage() === "en" ? `Board +${effect.attack}/+${effect.health}` : `Feld +${effect.attack}/+${effect.health}`;
+    case "fortifyBoard":
+      return getCurrentLanguage() === "fr" ? `Héros et plateau +${effect.value}` : getCurrentLanguage() === "en" ? `Hero and board +${effect.value}` : `Held und Feld +${effect.value}`;
+    case "healBoard":
+      return getCurrentLanguage() === "fr" ? `Soin de zone ${effect.value}` : getCurrentLanguage() === "en" ? `Board heal ${effect.value}` : `Feldheilung ${effect.value}`;
+    case "strikeWeakest":
+      return getCurrentLanguage() === "fr" ? `Cible la plus faible ${effect.value}` : getCurrentLanguage() === "en" ? `Weakest target ${effect.value}` : `Schwächstes Ziel ${effect.value}`;
+    case "damageAllEnemies":
+      return getCurrentLanguage() === "fr" ? `Tous les ennemis ${effect.value}` : getCurrentLanguage() === "en" ? `All enemies ${effect.value}` : `Alle Gegner ${effect.value}`;
+    case "burnWeakest":
+      return getCurrentLanguage() === "fr" ? `Brûlure ${effect.value}/${effect.turns}` : getCurrentLanguage() === "en" ? `Burn ${effect.value}/${effect.turns}` : `Brand ${effect.value}/${effect.turns}`;
+    case "freezeWeakest":
+      return getCurrentLanguage() === "fr" ? `Gel ${effect.turns} tour` : getCurrentLanguage() === "en" ? `Freeze ${effect.turns} turn` : `Frost ${effect.turns} Runde`;
+    case "poisonWeakest":
+      return getCurrentLanguage() === "fr" ? `Poison ${effect.value}/${effect.turns}` : getCurrentLanguage() === "en" ? `Poison ${effect.value}/${effect.turns}` : `Gift ${effect.value}/${effect.turns}`;
+    case "barrierStrongest":
+      return getCurrentLanguage() === "fr" ? `Barrière à l'unité forte` : getCurrentLanguage() === "en" ? `Barrier on strongest unit` : `Barriere für stärkste Einheit`;
+    case "barrierHero":
+      return getCurrentLanguage() === "fr" ? `Bouclier héros ${effect.value}` : getCurrentLanguage() === "en" ? `Hero barrier ${effect.value}` : `Heldenschild ${effect.value}`;
+    case "summonTokens":
+      return getCurrentLanguage() === "fr" ? `Invoque ${effect.amount}` : getCurrentLanguage() === "en" ? `Summon ${effect.amount}` : `Beschwört ${effect.amount}`;
+    case "weakenEnemies":
+      return getCurrentLanguage() === "fr" ? `Adversaires -${effect.value} attaque` : getCurrentLanguage() === "en" ? `Enemies -${effect.value} attack` : `Gegner -${effect.value} Angriff`;
+    case "drainHero":
+      return getCurrentLanguage() === "fr" ? `Drain ${effect.damage}/${effect.heal}` : getCurrentLanguage() === "en" ? `Drain ${effect.damage}/${effect.heal}` : `Entzug ${effect.damage}/${effect.heal}`;
+    case "readyStrongest":
+      return getCurrentLanguage() === "fr" ? "Stärkste Einheit sofort bereit" : getCurrentLanguage() === "en" ? "Strongest unit ready now" : "Stärkste Einheit sofort bereit";
+    case "empowerUnit":
+      return getCurrentLanguage() === "fr" ? `Dernière unité +${effect.attack}/+${effect.health}` : getCurrentLanguage() === "en" ? `Last unit +${effect.attack}/+${effect.health}` : `Letzte Einheit +${effect.attack}/+${effect.health}`;
+    default:
+      return getUiText("card.unknownEffect");
+  }
+}
+
+function stripEffectLead(text) {
+  return String(text)
+    .replace(`${getUiText("card.onPlay")}: `, "")
+    .replace(`${getUiText("card.effect")}: `, "");
+}
+
+function buildCardPrimaryEntries(card) {
+  const effects = normalizeEffectList(card.effect);
+
+  if (!effects.length) {
+    return [{
+      key: `solid:${card.id}`,
+      icon: getEffectVisual("neutral").symbol,
+      tone: "neutral",
+      label: getUiText("card.noCoreEffects"),
+      short: card.isToken ? getUiText("card.tokenUnit") : getUiText("card.solid"),
+      copy: card.isToken ? getUiText("card.tokenUnit") : getUiText("card.solid"),
+    }];
+  }
+
+  return effects.map((effect, index) => {
+    const visual = getEffectVisual(effect.kind);
+    return {
+      key: `effect:${effect.kind}:${index}`,
+      icon: visual.symbol,
+      tone: visual.tone,
+      label: getLocalizedEffectBadgeLabel(effect.kind),
+      short: getLocalizedCompactEffect(effect),
+      copy: describeLocalizedEffect(card.type, effect, index),
+    };
+  });
+}
+
+function buildCardSupportEntries(card, synergyReady = false) {
+  const entries = [];
+
+  (card.keywords || []).forEach((keyword) => {
+    const visual = getKeywordVisual(keyword);
+    entries.push({
+      key: `keyword:${keyword}`,
+      icon: visual.symbol,
+      tone: visual.tone,
+      label: getKeywordLabel(keyword),
+      short: getKeywordText(keyword),
+      copy: getKeywordText(keyword),
+    });
+  });
+
+  if (card.synergy) {
+    entries.push({
+      key: `synergy:${card.id}`,
+      icon: getEffectVisual("synergy").symbol,
+      tone: getEffectVisual("synergy").tone,
+      label: getUiText("card.synergy"),
+      short: describeSynergyCondition(card.synergy.condition),
+      copy: `${describeSynergyCondition(card.synergy.condition)}. ${synergyReady ? getUiText("card.synergyReady") : getUiText("card.synergyMissing")}`,
+    });
+  }
+
+  if (card.timing) {
+    entries.push({
+      key: `timing:${card.id}`,
+      icon: getEffectVisual("timing").symbol,
+      tone: getEffectVisual("timing").tone,
+      label: getUiText("card.timing"),
+      short: describeTiming(card.timing),
+      copy: describeTiming(card.timing),
+    });
+  }
+
+  if (card.deathEffect) {
+    entries.push({
+      key: `death:${card.id}`,
+      icon: getEffectVisual("death").symbol,
+      tone: getEffectVisual("death").tone,
+      label: getDeathEffectTitle(),
+      short: stripEffectLead(describeLocalizedEffect(card.type, card.deathEffect, 0)),
+      copy: stripEffectLead(describeLocalizedEffect(card.type, card.deathEffect, 0)),
+    });
+  }
+
+  return entries;
+}
+
+function buildEffectChipMarkup(entries, options = {}) {
+  const {
+    limit = entries.length,
+    className = "effect-chip",
+  } = options;
+
+  return entries.slice(0, limit).map((entry) => `
+    <span class="${className} tone-${entry.tone}" title="${escapeHtml(entry.copy || entry.short || entry.label)}">
+      <span class="${className}-icon">${escapeHtml(entry.icon)}</span>
+      <span class="${className}-label">${escapeHtml(entry.label)}</span>
+    </span>
+  `).join("");
+}
+
+function buildCardSummaryMarkup(card, limit = 3) {
+  const primaryEntries = buildCardPrimaryEntries(card).filter((entry) => entry.key !== `solid:${card.id}`);
+  const supportEntries = buildCardSupportEntries(card, false);
+  const summaryEntries = [
+    ...primaryEntries,
+    ...supportEntries.filter((entry) => !entry.key.startsWith("keyword:")),
+    ...supportEntries.filter((entry) => entry.key.startsWith("keyword:")),
+  ];
+
+  if (!summaryEntries.length) {
+    const fallbackText = card.isToken ? getUiText("card.tokenUnit") : getUiText("card.solid");
+    return `
+      <li class="card-summary-item tone-neutral">
+        <span class="card-summary-icon tone-neutral">•</span>
+        <span class="card-summary-copy">
+          <strong>${escapeHtml(getUiText("card.noCoreEffects"))}</strong>
+          <small>${escapeHtml(fallbackText)}</small>
+        </span>
+      </li>
+    `;
+  }
+
+  return summaryEntries.slice(0, limit).map((entry) => `
+    <li class="card-summary-item tone-${entry.tone}">
+      <span class="card-summary-icon tone-${entry.tone}">${escapeHtml(entry.icon)}</span>
+      <span class="card-summary-copy">
+        <strong>${escapeHtml(entry.label)}</strong>
+        <small>${escapeHtml(entry.short)}</small>
+      </span>
+    </li>
+  `).join("");
+}
+
+function buildCardDetailList(entries, emptyText) {
+  if (!entries.length) {
+    return `<p class="mini-note">${escapeHtml(emptyText)}</p>`;
+  }
+
+  return `
+    <div class="detail-list">
+      ${entries.map((entry) => `
+        <div class="detail-list-item tone-${entry.tone}">
+          <span class="detail-icon tone-${entry.tone}">${escapeHtml(entry.icon)}</span>
+          <div class="detail-copy">
+            <strong>${escapeHtml(entry.label)}</strong>
+            <span>${escapeHtml(entry.copy || entry.short || entry.label)}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function getPackLabel(packId) {
@@ -1360,10 +1643,14 @@ Object.assign(UI_TEXT.en, {
     ],
   },
   market: {
+    browseEyebrow: "Trade filters",
+    browseTitle: "Browse listings",
     search: "Search",
     searchPlaceholder: "Search a marketplace card",
     rarity: "Rarity",
     sort: "Sorting",
+    resetFilters: "Reset filters",
+    resultsMeta: "{count} listings · {sort}",
     nextHour: "Next market hour",
     nextHourText: "Until the next automatic price round.",
     hottest: "Hottest card",
@@ -1381,6 +1668,12 @@ Object.assign(UI_TEXT.en, {
     noOffersText: "Adjust search or rarity to show more cards.",
     buyButton: "Buy {price}G",
     sellNetButton: "Sell net {price}G",
+    ownedShort: "Owned",
+    buyShort: "Buy",
+    grossShort: "Gross",
+    netShort: "Net",
+    feeShort: "Fee",
+    deltaShort: "Trend",
     footer: "Market gross {gross} Gold · Fee {fee} Gold · Payout {net} Gold · Buy price {buy} Gold · {delta}",
     buyerMarket: "Buyer market",
     sellerPressure: "Seller pressure",
@@ -1738,10 +2031,14 @@ Object.assign(UI_TEXT.fr, {
     ],
   },
   market: {
+    browseEyebrow: "Filtres du marché",
+    browseTitle: "Parcourir les offres",
     search: "Recherche",
     searchPlaceholder: "Chercher une carte au marché",
     rarity: "Rareté",
     sort: "Tri",
+    resetFilters: "Réinitialiser les filtres",
+    resultsMeta: "{count} offres · {sort}",
     nextHour: "Prochaine heure du marché",
     nextHourText: "Jusqu'au prochain cycle automatique des prix.",
     hottest: "Carte la plus chaude",
@@ -1759,6 +2056,12 @@ Object.assign(UI_TEXT.fr, {
     noOffersText: "Ajuste la recherche ou la rareté pour afficher plus de cartes.",
     buyButton: "Acheter {price}G",
     sellNetButton: "Vendre net {price}G",
+    ownedShort: "Possédé",
+    buyShort: "Achat",
+    grossShort: "Brut",
+    netShort: "Net",
+    feeShort: "Frais",
+    deltaShort: "Tendance",
     footer: "Marché brut {gross} Or · Frais {fee} Or · Paiement {net} Or · Achat {buy} Or · {delta}",
     buyerMarket: "Marché acheteur",
     sellerPressure: "Pression vendeuse",
@@ -2417,10 +2720,55 @@ Object.assign(UI_TEXT.fr, {
   },
 });
 
-const CARD_TYPE_GLYPHS = {
-  unit: "UN",
-  spell: "ZA",
-  trainer: "TR",
+Object.assign(UI_TEXT.de.card, {
+  quickOverview: "Schnellüberblick",
+  coreEffects: "Haupteffekte",
+  combatProfile: "Synergie, Timing und Zustände",
+  ownershipMarket: "Besitz und Markt",
+  effectBadges: "Effekt-Symbole",
+  effectIconsHelp: "Symbole zeigen sofort, welche Mechaniken diese Karte mitbringt.",
+  keywordsTitle: "Schlüsselwörter",
+  factionLabel: "Fraktion",
+  typeLabel: "Typ",
+  statsTitle: "Kampfwerte",
+  noCoreEffects: "Keine Zusatzeffekte",
+  deathEffectTitle: "Todeseffekt",
+});
+
+Object.assign(UI_TEXT.en.card, {
+  quickOverview: "Quick overview",
+  coreEffects: "Core effects",
+  combatProfile: "Synergy, timing and states",
+  ownershipMarket: "Ownership and market",
+  effectBadges: "Effect symbols",
+  effectIconsHelp: "Symbols show at a glance which mechanics this card brings.",
+  keywordsTitle: "Keywords",
+  factionLabel: "Faction",
+  typeLabel: "Type",
+  statsTitle: "Combat values",
+  noCoreEffects: "No extra effects",
+  deathEffectTitle: "Death effect",
+});
+
+Object.assign(UI_TEXT.fr.card, {
+  quickOverview: "Vue rapide",
+  coreEffects: "Effets principaux",
+  combatProfile: "Synergie, timing et états",
+  ownershipMarket: "Possession et marché",
+  effectBadges: "Symboles d'effet",
+  effectIconsHelp: "Les symboles montrent immédiatement les mécaniques de cette carte.",
+  keywordsTitle: "Mots-clés",
+  factionLabel: "Faction",
+  typeLabel: "Type",
+  statsTitle: "Valeurs de combat",
+  noCoreEffects: "Aucun effet supplémentaire",
+  deathEffectTitle: "Effet de mort",
+});
+
+const TYPE_VISUALS = {
+  unit: { symbol: "⚔", tone: "unit" },
+  spell: { symbol: "✦", tone: "spell" },
+  trainer: { symbol: "⟡", tone: "trainer" },
 };
 
 const TYPE_LABELS = {
@@ -2441,6 +2789,40 @@ const STATUS_META = {
   freeze: { label: "Frost", text: "Kann vorübergehend nicht angreifen." },
   poison: { label: "Gift", text: "Erleidet am Ende des eigenen Zuges Schaden." },
   barrier: { label: "Barriere", text: "Der nächste erlittene Schaden wird verhindert." },
+};
+
+const KEYWORD_VISUALS = {
+  charge: { symbol: "↯", tone: "tempo" },
+  guard: { symbol: "⛨", tone: "barrier" },
+  regen: { symbol: "✚", tone: "heal" },
+  lifesteal: { symbol: "✢", tone: "drain" },
+};
+
+const EFFECT_VISUALS = {
+  damageHero: { symbol: "⚔", tone: "damage" },
+  healHero: { symbol: "✚", tone: "heal" },
+  draw: { symbol: "✦", tone: "draw" },
+  gainMana: { symbol: "⚡", tone: "mana" },
+  gainMaxMana: { symbol: "⬆", tone: "mana" },
+  buffBoard: { symbol: "✶", tone: "buff" },
+  fortifyBoard: { symbol: "⛨", tone: "fortify" },
+  healBoard: { symbol: "✚", tone: "heal" },
+  strikeWeakest: { symbol: "⌖", tone: "damage" },
+  damageAllEnemies: { symbol: "✹", tone: "damage" },
+  burnWeakest: { symbol: "✹", tone: "burn" },
+  freezeWeakest: { symbol: "❄", tone: "freeze" },
+  poisonWeakest: { symbol: "☠", tone: "poison" },
+  barrierStrongest: { symbol: "⛨", tone: "barrier" },
+  barrierHero: { symbol: "⛨", tone: "barrier" },
+  summonTokens: { symbol: "✦", tone: "summon" },
+  weakenEnemies: { symbol: "⬇", tone: "weaken" },
+  drainHero: { symbol: "✢", tone: "drain" },
+  readyStrongest: { symbol: "↯", tone: "tempo" },
+  empowerUnit: { symbol: "✶", tone: "buff" },
+  death: { symbol: "✝", tone: "death" },
+  synergy: { symbol: "⟡", tone: "synergy" },
+  timing: { symbol: "⏳", tone: "timing" },
+  neutral: { symbol: "•", tone: "neutral" },
 };
 
 const FACTION_PARTNERS = {
@@ -2527,6 +2909,17 @@ const FACTIONS = [
   { id: "sternenhof", name: "Sternenhof", prefix: "Sternen" },
   { id: "knochenbund", name: "Knochenbund", prefix: "Knochen" },
 ];
+
+const FACTION_VISUALS = {
+  glutorden: { symbol: "✹", tone: "ember" },
+  nebelchor: { symbol: "☁", tone: "mist" },
+  wurzelpakt: { symbol: "❦", tone: "grove" },
+  schattenzirkel: { symbol: "◐", tone: "shadow" },
+  sturmwacht: { symbol: "⚡", tone: "storm" },
+  runenschmiede: { symbol: "⛭", tone: "rune" },
+  sternenhof: { symbol: "✧", tone: "star" },
+  knochenbund: { symbol: "☠", tone: "bone" },
+};
 
 const UNIT_TITLES = [
   "Vorhut",
@@ -2640,7 +3033,7 @@ const PACK_DEFINITIONS = {
   starter: {
     id: "starter",
     label: "Starter-Booster",
-    tier: "Kostenloser Einstieg",
+    tier: "Einsteiger",
     price: 65,
     description: "Der günstige Einstieg mit schwächeren Chancen auf hohe Seltenheiten.",
     guaranteed: "common",
@@ -3885,9 +4278,13 @@ const elements = {
   marketOverview: document.getElementById("marketOverview"),
   marketMovers: document.getElementById("marketMovers"),
   marketGrid: document.getElementById("marketGrid"),
+  marketBrowseEyebrow: document.getElementById("marketBrowseEyebrow"),
+  marketBrowseHeading: document.getElementById("marketBrowseHeading"),
+  marketResultsMeta: document.getElementById("marketResultsMeta"),
   marketSearchInput: document.getElementById("marketSearchInput"),
   marketRarityFilter: document.getElementById("marketRarityFilter"),
   marketSortSelect: document.getElementById("marketSortSelect"),
+  marketResetFiltersButton: document.getElementById("marketResetFiltersButton"),
   ownedPackGrid: document.getElementById("ownedPackGrid"),
   selectedPackPreview: document.getElementById("selectedPackPreview"),
   openSelectedPackButton: document.getElementById("openSelectedPackButton"),
@@ -4064,10 +4461,13 @@ function applyStaticTranslations() {
   setStaticText("#marketplaceSection .section-note", getUiText("sections.marketNote"));
   setStaticText("#marketplaceSection .market-headline .subheading", getUiText("sections.marketMovers"));
   setStaticText("#marketplaceSection .market-headline .mini-note", getUiText("sections.marketMoversNote"));
+  setStaticText("#marketBrowseEyebrow", getUiText("market.browseEyebrow"));
+  setStaticText("#marketBrowseHeading", getUiText("market.browseTitle"));
   setStaticText("#marketplaceSection .market-toolbar label:nth-of-type(1) span", getUiText("market.search"));
   setStaticText("#marketplaceSection .market-toolbar label:nth-of-type(2) span", getUiText("market.rarity"));
   setStaticText("#marketplaceSection .market-toolbar label:nth-of-type(3) span", getUiText("market.sort"));
   setStaticAttribute("#marketSearchInput", "placeholder", getUiText("market.searchPlaceholder"));
+  setStaticText("#marketResetFiltersButton", getUiText("market.resetFilters"));
 
   setStaticText("#boosterSection .section-head .eyebrow", getUiText("nav.booster"));
   setStaticText("#boosterSection .section-head h2", getUiText("sections.boosterTitle"));
@@ -4322,6 +4722,8 @@ function overrideArcaneVaultSystems() {
       uiState.marketFilters.sort = event.target.value;
       renderMarketplace();
     });
+
+    elements.marketResetFiltersButton.addEventListener("click", resetMarketFilters);
 
     elements.sortFilter.addEventListener("change", (event) => updateFilter("sort", event.target.value));
     elements.rarityFilter.addEventListener("change", (event) => updateFilter("rarity", event.target.value));
@@ -4932,6 +5334,8 @@ function bindStaticEvents() {
     uiState.marketFilters.sort = event.target.value;
     renderMarketplace();
   });
+
+  elements.marketResetFiltersButton.addEventListener("click", resetMarketFilters);
 
   elements.sortFilter.addEventListener("change", (event) => updateFilter("sort", event.target.value));
   elements.rarityFilter.addEventListener("change", (event) => updateFilter("rarity", event.target.value));
@@ -7312,6 +7716,7 @@ function renderMarketplace() {
   elements.marketOverview.innerHTML = "";
   elements.marketMovers.innerHTML = "";
   elements.marketGrid.innerHTML = "";
+  elements.marketResultsMeta.innerHTML = "";
 
   [
     {
@@ -7354,30 +7759,10 @@ function renderMarketplace() {
     .filter(({ card }) => card.name.toLowerCase().includes(filters.search.toLowerCase().trim()))
     .sort((left, right) => sortMarketCards(left, right, filters.sort));
 
+  renderMarketResultsMeta(localizedVisibleCards.length, filters);
+
   localizedVisibleCards.forEach(({ card, entry }) => {
-    const saleQuote = getMarketSaleQuote(card.id);
-    elements.marketGrid.append(renderCard(card, {
-      context: "marketplace",
-      buttons: [
-        {
-          label: getUiText("market.buyButton", { price: entry.buyPrice }),
-          disabled: getSave().gold < entry.buyPrice,
-          handler: () => buyCardOnMarket(card.id),
-        },
-        {
-          label: getUiText("market.sellNetButton", { price: saleQuote.net }),
-          disabled: getOwnedCopies(card.id) < 1,
-          handler: () => sellCardOnMarket(card.id, 1),
-        },
-      ],
-      footer: getUiText("market.footer", {
-        gross: saleQuote.gross,
-        fee: saleQuote.fee,
-        net: saleQuote.net,
-        buy: entry.buyPrice,
-        delta: formatDelta(entry.lastDeltaPct),
-      }),
-    }));
+    elements.marketGrid.append(renderMarketListingCard(card, entry));
   });
 
   if (!localizedVisibleCards.length) {
@@ -7485,6 +7870,100 @@ function createMoverCard(title, payload, tone) {
     <span>Marktwert ${payload.entry.price} Gold · ${formatDelta(payload.entry.lastDeltaPct)}</span>
   `;
   elements.marketMovers.append(card);
+}
+
+function renderMarketResultsMeta(count, filters) {
+  elements.marketResultsMeta.innerHTML = "";
+
+  const chips = [
+    getUiText("market.resultsMeta", { count, sort: getMarketSortLabel(filters.sort) }),
+  ];
+
+  if (filters.rarity !== "all") {
+    chips.push(getRarityLabel(filters.rarity));
+  }
+
+  if (filters.search.trim()) {
+    chips.push(filters.search.trim().slice(0, 24));
+  }
+
+  chips.forEach((label) => {
+    const chip = document.createElement("span");
+    chip.className = "meta-chip";
+    chip.textContent = label;
+    elements.marketResultsMeta.append(chip);
+  });
+}
+
+function renderMarketListingCard(card, entry) {
+  const saleQuote = getMarketSaleQuote(card.id);
+  const element = renderCard(card, {
+    context: "marketplace",
+    buttons: [
+      {
+        label: getUiText("market.buyButton", { price: entry.buyPrice }),
+        disabled: getSave().gold < entry.buyPrice,
+        handler: () => buyCardOnMarket(card.id),
+      },
+      {
+        label: getUiText("market.sellNetButton", { price: saleQuote.net }),
+        disabled: getOwnedCopies(card.id) < 1,
+        handler: () => sellCardOnMarket(card.id, 1),
+      },
+    ],
+  });
+
+  element.classList.add("market-listing-card");
+  element.querySelector(".card-owned").textContent = `${getUiText("market.ownedShort")} ${getOwnedCopies(card.id)}×`;
+
+  const priceBoard = document.createElement("div");
+  priceBoard.className = "market-price-board";
+  priceBoard.innerHTML = `
+    <div class="market-price-row">
+      <div class="market-price-pill">
+        <span>${getUiText("market.buyShort")}</span>
+        <strong>${formatCurrency(entry.buyPrice)}</strong>
+      </div>
+      <div class="market-price-pill success">
+        <span>${getUiText("market.netShort")}</span>
+        <strong>${formatCurrency(saleQuote.net)}</strong>
+      </div>
+    </div>
+    <div class="market-price-inline">
+      <span>${getUiText("market.grossShort")} ${saleQuote.gross}G</span>
+      <span>${getUiText("market.feeShort")} ${saleQuote.fee}G</span>
+      <span>${getUiText("market.deltaShort")} ${formatDelta(entry.lastDeltaPct)}</span>
+    </div>
+  `;
+
+  element.querySelector(".card-bottom").prepend(priceBoard);
+  return element;
+}
+
+function getMarketSortLabel(mode) {
+  switch (mode) {
+    case "cold":
+      return getCurrentLanguage() === "fr" ? "plus forte baisse" : getCurrentLanguage() === "en" ? "biggest drop" : "stärkster Rückgang";
+    case "value-desc":
+      return getCurrentLanguage() === "fr" ? "valeur la plus haute" : getCurrentLanguage() === "en" ? "highest value" : "höchster Wert";
+    case "value-asc":
+      return getCurrentLanguage() === "fr" ? "valeur la plus basse" : getCurrentLanguage() === "en" ? "lowest value" : "niedrigster Wert";
+    case "name":
+      return getCurrentLanguage() === "fr" ? "nom" : getCurrentLanguage() === "en" ? "name" : "Name";
+    case "hot":
+    default:
+      return getCurrentLanguage() === "fr" ? "plus forte hausse" : getCurrentLanguage() === "en" ? "top rise" : "stärkster Anstieg";
+  }
+}
+
+function resetMarketFilters() {
+  uiState.marketFilters.search = "";
+  uiState.marketFilters.rarity = "all";
+  uiState.marketFilters.sort = "hot";
+  elements.marketSearchInput.value = "";
+  elements.marketRarityFilter.value = "all";
+  elements.marketSortSelect.value = "hot";
+  renderMarketplace();
 }
 
 function sortMarketCards(left, right, mode) {
@@ -7607,7 +8086,7 @@ function renderBoosterLab() {
 
   if (!save.lastOpened.cards.length) {
     elements.openedCardsGrid.innerHTML = `
-      <div class="info-panel">
+      <div class="info-panel empty-state-card booster-empty-state">
         <h3 class="subheading">${getUiText("booster.noneOpenedTitle")}</h3>
         <p class="mini-note">${getUiText("booster.noneOpenedText")}</p>
       </div>
@@ -7739,7 +8218,7 @@ function renderDeckManager() {
 
   if (!activeDeck.cards.length) {
     elements.activeDeckList.innerHTML = `
-      <div class="info-panel">
+      <div class="info-panel empty-state-card deck-empty-state">
         <h3 class="subheading">${getUiText("decks.emptyDeckTitle")}</h3>
         <p class="mini-note">${getUiText("decks.emptyDeckText")}</p>
       </div>
@@ -8165,6 +8644,23 @@ function renderCardModal() {
   const activeDeckProfile = activeDeck ? analyzeDeck(activeDeck.cards) : null;
   const synergyReady = card.synergy && activeDeckProfile ? matchesSynergyCondition(activeDeckProfile, card.synergy.condition) : false;
   const managementLocked = isMatchSessionLocked();
+  const faction = getFaction(card.faction);
+  const factionVisual = getFactionVisual(card.faction);
+  const typeVisual = getTypeVisual(card.type);
+  const primaryEntries = buildCardPrimaryEntries(card);
+  const supportEntries = buildCardSupportEntries(card, synergyReady);
+  const overviewEntries = [
+    {
+      key: `faction:${card.faction}`,
+      icon: factionVisual.symbol,
+      tone: factionVisual.tone,
+      label: faction.name,
+      short: faction.name,
+      copy: faction.name,
+    },
+    ...primaryEntries.filter((entry) => entry.key !== `solid:${card.id}`),
+    ...supportEntries,
+  ];
 
   elements.cardModal.classList.remove("hidden");
   elements.cardModalContent.innerHTML = "";
@@ -8173,46 +8669,92 @@ function renderCardModal() {
   const details = document.createElement("div");
   details.className = "modal-details";
   details.innerHTML = `
-    <div class="detail-block">
-      <p class="eyebrow">${getUiText("card.cardInfo")}</p>
+    <div class="detail-block span-all detail-block-hero">
+      <p class="eyebrow">${getUiText("card.quickOverview")}</p>
       <h3>${card.name}</h3>
       <div class="deck-meta">
         <span class="meta-chip">${RarityLabel(card.rarity)}</span>
         <span class="meta-chip">${getTypeLabel(card.type)}</span>
-        <span class="meta-chip">${getFaction(card.faction).name}</span>
+        <span class="meta-chip">${faction.name}</span>
       </div>
-      ${card.keywords?.length ? `<div class="card-keywords">${buildKeywordMarkup(card.keywords)}</div>` : ""}
-      ${card.keywords?.length ? `<p class="mini-note">${buildKeywordDetailText(card.keywords)}</p>` : ""}
-      ${card.synergy ? `<p class="mini-note"><strong>${getUiText("card.synergy")}:</strong> ${describeSynergyCondition(card.synergy.condition)}. ${synergyReady ? getUiText("card.synergyReady") : getUiText("card.synergyMissing")}</p>` : ""}
-      ${card.timing ? `<p class="mini-note"><strong>${getUiText("card.timing")}:</strong> ${describeTiming(card.timing)}.</p>` : ""}
-      <p class="mini-note">${getLocalizedCardDescription(card)}</p>
+      <div class="detail-overview-grid">
+        <div class="detail-overview-card">
+          <span class="detail-label">${getUiText("card.factionLabel")}</span>
+          <div class="detail-overview-value">
+            <span class="card-faction-icon tone-${factionVisual.tone}">${factionVisual.symbol}</span>
+            <strong>${faction.name}</strong>
+          </div>
+        </div>
+        <div class="detail-overview-card">
+          <span class="detail-label">${getUiText("card.typeLabel")}</span>
+          <div class="detail-overview-value">
+            <span class="card-type-inline tone-${typeVisual.tone}">${typeVisual.symbol} ${getTypeLabel(card.type)}</span>
+          </div>
+        </div>
+        <div class="detail-overview-card">
+          <span class="detail-label">${getUiText("card.statsTitle")}</span>
+          <div class="detail-stat-grid">
+            <div class="detail-stat">
+              <span>${getCurrentLanguage() === "fr" ? "Coût" : getCurrentLanguage() === "en" ? "Cost" : "Kosten"}</span>
+              <strong>${card.cost}</strong>
+            </div>
+            <div class="detail-stat">
+              <span>${getCurrentLanguage() === "fr" ? "Attaque" : getCurrentLanguage() === "en" ? "Attack" : "Angriff"}</span>
+              <strong>${card.attack ?? "-"}</strong>
+            </div>
+            <div class="detail-stat">
+              <span>${getCurrentLanguage() === "fr" ? "Vie" : getCurrentLanguage() === "en" ? "Health" : "Leben"}</span>
+              <strong>${card.health ?? "-"}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="detail-overview-card overview-wide">
+          <span class="detail-label">${getUiText("card.effectBadges")}</span>
+          <div class="card-effect-icons detail-effect-icons ${overviewEntries.length ? "" : "hidden"}">${buildEffectChipMarkup(overviewEntries, { limit: 8 })}</div>
+          <p class="mini-note">${getUiText("card.effectIconsHelp")}</p>
+        </div>
+      </div>
     </div>
     <div class="detail-block">
-      <h4>${getUiText("card.ownership")}</h4>
-      <p>${getUiText("card.owned")}: <strong>${owned}</strong></p>
-      <p>${getUiText("card.inActiveDeck")}: <strong>${inActiveDeck}</strong></p>
-      <div class="price-stack">
-        <div class="price-line">
+      <h4>${getUiText("card.coreEffects")}</h4>
+      ${buildCardDetailList(primaryEntries.filter((entry) => entry.key !== `solid:${card.id}`), getUiText("card.noCoreEffects"))}
+    </div>
+    <div class="detail-block">
+      <h4>${getUiText("card.combatProfile")}</h4>
+      ${buildCardDetailList(supportEntries, getUiText("card.noCoreEffects"))}
+    </div>
+    <div class="detail-block">
+      <h4>${getUiText("card.ownershipMarket")}</h4>
+      <div class="detail-stat-grid detail-stat-grid-wide">
+        <div class="detail-stat">
+          <span>${getUiText("card.owned")}</span>
+          <strong>${owned}</strong>
+        </div>
+        <div class="detail-stat">
+          <span>${getUiText("card.inActiveDeck")}</span>
+          <strong>${inActiveDeck}</strong>
+        </div>
+        <div class="detail-stat">
           <span>${getUiText("card.vendorSell")}</span>
-          <strong>${RARITY_META[card.rarity].sellValue} ${getCurrentLanguage() === "fr" ? "Or" : "Gold"}</strong>
+          <strong>${formatCurrency(RARITY_META[card.rarity].sellValue)}</strong>
         </div>
-        <div class="price-line">
+        <div class="detail-stat">
           <span>${getUiText("card.marketGross")}</span>
-          <strong>${marketSaleQuote.gross} ${getCurrentLanguage() === "fr" ? "Or" : "Gold"}</strong>
+          <strong>${formatCurrency(marketSaleQuote.gross)}</strong>
         </div>
-        <div class="price-line accent">
-          <span>${getUiText("card.marketFee")}</span>
-          <strong>${marketSaleQuote.fee} ${getCurrentLanguage() === "fr" ? "Or" : "Gold"}</strong>
-        </div>
-        <div class="price-line success">
+        <div class="detail-stat highlight">
           <span>${getUiText("card.marketPayout")}</span>
-          <strong>${marketSaleQuote.net} ${getCurrentLanguage() === "fr" ? "Or" : "Gold"}</strong>
+          <strong>${formatCurrency(marketSaleQuote.net)}</strong>
         </div>
-        <div class="price-line">
+        <div class="detail-stat">
           <span>${getUiText("card.marketBuy")}</span>
-          <strong>${marketEntry.buyPrice} ${getCurrentLanguage() === "fr" ? "Or" : "Gold"}</strong>
+          <strong>${formatCurrency(marketEntry.buyPrice)}</strong>
         </div>
-        <div class="price-line">
+        <div class="detail-stat">
+          <span>${getUiText("card.marketFee")}</span>
+          <strong>${formatCurrency(marketSaleQuote.fee)}</strong>
+        </div>
+        <div class="detail-stat">
           <span>${getUiText("card.hourlyMove")}</span>
           <strong>${formatDelta(marketEntry.lastDeltaPct)}</strong>
         </div>
@@ -8221,16 +8763,16 @@ function renderCardModal() {
     <div class="detail-block">
       <h4>${getUiText("card.actions")}</h4>
       ${managementLocked ? `<p class="mini-note arena-lock-note">${getUiText("card.matchLockNote")}</p>` : ""}
+      <div class="detail-action-shell" data-card-actions></div>
     </div>
-    <div class="detail-block">
+    <div class="detail-block span-all">
       <h4>${getUiText("card.note")}</h4>
       <p>${getUiText("card.deckNote")}</p>
     </div>
   `;
 
-  const localizedActionBlock = details.querySelectorAll(".detail-block")[2];
-  const localizedActionRow = document.createElement("div");
-  localizedActionRow.className = "card-actions";
+  const localizedActionRow = details.querySelector("[data-card-actions]");
+  localizedActionRow.className = "card-actions detail-action-shell";
   localizedActionRow.append(
     createActionButton(getUiText("card.sellOne"), () => sellCard(card.id, 1), managementLocked || owned < 1),
     createActionButton(getUiText("card.sellDupes"), () => sellCard(card.id, Math.max(0, owned - 1)), managementLocked || owned <= 1),
@@ -8239,7 +8781,6 @@ function renderCardModal() {
     createActionButton(getUiText("card.sellAll"), () => sellCard(card.id, owned), managementLocked || owned < 1),
     createActionButton(getUiText("card.toDeck"), () => addCardToActiveDeck(card.id), managementLocked || !canAddCardToActiveDeck(card.id)),
   );
-  localizedActionBlock.append(localizedActionRow);
 
   elements.cardModalContent.append(preview, details);
   return;
@@ -8646,7 +9187,6 @@ function createPackCard(packId, context) {
   element.querySelector(".pack-price").textContent = context === "shop"
     ? formatCurrency(pack.price)
     : getUiText("booster.ownedCount", { count: packEntryPrice });
-  element.querySelector(".pack-crest-core").textContent = getPackLabel(pack.id).slice(0, 2).toUpperCase();
   element.querySelector(".pack-copy").textContent = getPackDescription(pack.id);
   element.querySelector(".pack-name").textContent = getPackLabel(pack.id);
   element.querySelector(".pack-odds").innerHTML = odds;
@@ -8705,7 +9245,6 @@ function createShopBundleCard(bundleId) {
   element.dataset.bundleId = bundle.id;
   element.querySelector(".pack-kicker").textContent = faction.name;
   element.querySelector(".pack-price").textContent = formatCurrency(bundle.price);
-  element.querySelector(".pack-crest-core").textContent = faction.prefix.slice(0, 2).toUpperCase();
   element.querySelector(".pack-copy").textContent = getShopBundleDescription(bundle);
   element.querySelector(".pack-name").textContent = getShopBundleLabel(bundle);
   element.querySelector(".pack-odds").innerHTML = `
@@ -8919,23 +9458,40 @@ function renderCard(card, options = {}) {
   const stats = stateOverride || card;
   const keywords = [...(stats.keywords || card.keywords || [])];
   const faction = getFaction(card.faction);
-  const description = footer || getLocalizedCardDescription(card);
+  const factionVisual = getFactionVisual(card.faction);
+  const typeVisual = getTypeVisual(card.type);
+  const primaryEntries = buildCardPrimaryEntries(card);
+  const supportEntries = buildCardSupportEntries(card, false);
+  const effectStripEntries = [
+    ...primaryEntries.filter((entry) => entry.key !== `solid:${card.id}`),
+    ...supportEntries.filter((entry) => entry.key.startsWith("keyword:")).slice(0, 2),
+    ...supportEntries.filter((entry) => !entry.key.startsWith("keyword:")).slice(0, 2),
+  ];
 
   element.classList.add(`card-${card.rarity}`, `faction-${card.faction}`, "clickable-card");
   element.dataset.context = context;
   element.addEventListener("click", () => openCardModal(card.id));
-  element.querySelector(".card-type-badge").textContent = getTypeLabel(card.type);
+  element.querySelector(".card-type-badge").textContent = `${typeVisual.symbol} ${getTypeLabel(card.type)}`;
   element.querySelector(".card-owned").textContent = card.isToken ? (getCurrentLanguage() === "fr" ? "Jeton" : "Token") : `${getOwnedCopies(card.id)}×`;
   element.querySelector(".card-name").textContent = card.name;
   element.querySelector(".card-faction").textContent = faction.name;
+  element.querySelector(".card-faction-icon").textContent = factionVisual.symbol;
+  element.querySelector(".card-faction-icon").className = `card-faction-icon tone-${factionVisual.tone}`;
   element.querySelector(".card-faction-pill").textContent = faction.name;
-  element.querySelector(".card-glyph").textContent = CARD_TYPE_GLYPHS[card.type] || getTypeLabel(card.type).slice(0, 2).toUpperCase();
+  element.querySelector(".card-type-inline").textContent = `${typeVisual.symbol} ${getTypeLabel(card.type)}`;
+  element.querySelector(".card-type-inline").className = `card-type-inline tone-${typeVisual.tone}`;
   element.querySelector(".card-rarity").textContent = RarityLabel(card.rarity);
   element.querySelector(".card-rarity").classList.add(`rarity-${card.rarity}`);
   const keywordRow = element.querySelector(".card-keywords");
   keywordRow.classList.toggle("hidden", !keywords.length);
   keywordRow.innerHTML = keywords.length ? buildKeywordMarkup(keywords) : "";
-  element.querySelector(".card-description").textContent = description;
+  const effectIconRow = element.querySelector(".card-effect-icons");
+  effectIconRow.classList.toggle("hidden", !effectStripEntries.length);
+  effectIconRow.innerHTML = effectStripEntries.length ? buildEffectChipMarkup(effectStripEntries, { limit: 4 }) : "";
+  element.querySelector(".card-summary-list").innerHTML = buildCardSummaryMarkup(card, context === "modal" ? 4 : 3);
+  const footerNote = element.querySelector(".card-footer-note");
+  footerNote.classList.toggle("hidden", !footer);
+  footerNote.textContent = footer;
   element.querySelector(".card-cost").textContent = getUiText("card.cost", { value: card.cost });
   element.querySelector(".card-attack").textContent = getUiText("card.attack", { value: stats.attack ?? "-" });
   element.querySelector(".card-health").textContent = getUiText("card.health", { value: stats.health ?? "-" });
@@ -8953,7 +9509,15 @@ function renderCard(card, options = {}) {
 }
 
 function buildKeywordMarkup(keywords) {
-  return keywords.map((keyword) => `<span class="keyword-chip">${getKeywordLabel(keyword)}</span>`).join("");
+  return keywords.map((keyword) => {
+    const visual = getKeywordVisual(keyword);
+    return `
+      <span class="keyword-chip tone-${visual.tone}" title="${escapeHtml(getKeywordText(keyword))}">
+        <span class="chip-icon">${escapeHtml(visual.symbol)}</span>
+        <span class="chip-label">${escapeHtml(getKeywordLabel(keyword))}</span>
+      </span>
+    `;
+  }).join("");
 }
 
 function buildKeywordDetailText(keywords) {
