@@ -8,21 +8,6 @@ const {
 } = require("../lib/security");
 const { updateDatabase, sanitizeAccountForClient } = require("../lib/store");
 
-async function resolveSessionAccount(token) {
-  let sessionAccount = null;
-
-  await updateDatabase((database) => {
-    const session = database.sessions[token];
-    if (!session) {
-      return database;
-    }
-    sessionAccount = Object.values(database.accounts).find((account) => canonicalizeUsername(account.username) === canonicalizeUsername(session.username)) || null;
-    return database;
-  });
-
-  return sessionAccount;
-}
-
 function registerProfileRoutes(router) {
   router.get("/api/profile/me", async (req, res) => {
     const token = getBearerToken(req);
@@ -31,13 +16,21 @@ function registerProfileRoutes(router) {
       return;
     }
 
-    const account = await resolveSessionAccount(token);
+    let account = null;
+    await updateDatabase((database) => {
+      const session = database.sessions[token];
+      if (!session) {
+        return database;
+      }
+      account = Object.values(database.accounts).find((entry) => canonicalizeUsername(entry.username) === canonicalizeUsername(session.username)) || null;
+      return database;
+    });
     if (!account) {
       sendJson(res, 401, { ok: false, error: "invalid_session", message: "Sitzung nicht gefunden." });
       return;
     }
 
-    sendJson(res, 200, { ok: true, account: sanitizeAccountForClient(account) });
+    sendJson(res, 200, { ok: true, account: sanitizeAccountForClient(account, { includeSave: true }) });
   });
 
   router.patch("/api/profile/me", async (req, res) => {
@@ -93,7 +86,7 @@ function registerProfileRoutes(router) {
       return;
     }
 
-    sendJson(res, 200, { ok: true, account: sanitizeAccountForClient(responseAccount) });
+    sendJson(res, 200, { ok: true, account: sanitizeAccountForClient(responseAccount, { includeSave: true }) });
   });
 
   router.patch("/api/profile/password", async (req, res) => {

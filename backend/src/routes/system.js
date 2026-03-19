@@ -4,7 +4,7 @@ function registerSystemRoutes(router) {
   router.get("/api/health", async (_req, res) => {
     sendJson(res, 200, {
       ok: true,
-      mode: "server-ready-local",
+      mode: "server-backed",
       timestamp: new Date().toISOString(),
     });
   });

@@ -20,11 +20,10 @@
     <section class="auth-screen" id="authScreen">
       <div class="auth-card">
         <div class="auth-copy">
-          <p class="eyebrow">Arcane Vault Online Vorbereitung</p>
+          <p class="eyebrow">Arcane Vault Online</p>
           <h1>Dein Kartenkonto wartet schon.</h1>
           <p>
-            Diese Version speichert alles lokal, ist aber bereits so aufgebaut, dass sie später auf einen Server
-            umgestellt werden kann. Erstelle jetzt ein Konto und starte mit fünf kostenlosen Starter-Boostern.
+            Erstelle dein Konto, starte mit fünf kostenlosen Starter-Boostern und baue dir direkt deine erste Sammlung auf.
           </p>
           <ul class="auth-points">
             <li>Mehr als 200 Karten inklusive Trainerkarten</li>
@@ -63,7 +62,7 @@
             <button class="primary-button" type="submit">Konto anlegen</button>
           </form>
 
-          <p class="auth-note" id="authMessage">Speicherort: lokal im Browser. Später kann das auf Server-Login umgestellt werden.</p>
+          <p class="auth-note" id="authMessage">Melde dich an oder erstelle ein neues Konto, um direkt ins Gewölbe einzutreten.</p>
         </div>
       </div>
     </section>
@@ -90,7 +89,7 @@
 
         <div class="sidebar-foot">
           <p class="sidebar-label">Aktiver Speicher-Modus</p>
-          <strong>Lokal vorbereitet für späteren Serverbetrieb</strong>
+          <strong>Server-Speicher aktiv</strong>
         </div>
       </aside>
 
@@ -153,9 +152,9 @@
             <div class="section-head">
               <div>
                 <p class="eyebrow">Shop</p>
-                <h2>Booster kaufen und Inhalte vorbereiten</h2>
+                <h2>Booster, Packs und Shop-Angebote</h2>
               </div>
-              <p class="section-note">Alle käuflichen Inhalte liegen schon im Shop. Weitere Bereiche können hier später ergänzt werden.</p>
+              <p class="section-note">Stelle dir Booster, Themen-Packs und starke Kartenzugänge direkt aus dem Shop zusammen.</p>
             </div>
 
             <div class="shop-layout">
@@ -174,7 +173,7 @@
               <div class="shop-side-column">
                 <div class="info-panel shop-summary-panel" id="shopSummaryPanel"></div>
                 <div>
-                <h3 class="subheading" id="shopFutureHeading">Demnächst im Shop</h3>
+                <h3 class="subheading" id="shopFutureHeading">Sonderangebote</h3>
                 <div class="future-grid" id="futureShopGrid"></div>
                 </div>
               </div>
@@ -361,9 +360,9 @@
             <div class="section-head">
               <div>
                 <p class="eyebrow">Profil</p>
-                <h2>Kontodaten pflegen und Sicherheit verwalten</h2>
+                <h2>Kontodaten, Sicherheit und Reset</h2>
               </div>
-              <p class="section-note">Spielername und Passwort werden lokal angepasst, bleiben aber so vorbereitet, dass sie später ins Serverkonto wandern können.</p>
+              <p class="section-note">Verwalte deinen Namen, dein Passwort und deinen Kontostand zentral über dein Spielkonto.</p>
             </div>
 
             <div class="profile-layout">
@@ -394,7 +393,7 @@
               <div class="profile-column">
                 <div class="info-panel">
                   <h3 class="subheading">Passwort ändern</h3>
-                  <p class="mini-note">Für lokale Tests wird das Passwort sofort aktualisiert. Beim späteren Serverbetrieb gehört diese Prüfung ins Backend.</p>
+                  <p class="mini-note">Das aktuelle Passwort wird geprüft, bevor dein neues Passwort übernommen wird.</p>
                   <form class="profile-form" id="profilePasswordForm">
                     <label>
                       <span>Aktuelles Passwort</span>
@@ -418,11 +417,11 @@
                 </div>
 
                 <div class="info-panel profile-security-panel">
-                  <h3 class="subheading">Server-Vorbereitung</h3>
+                  <h3 class="subheading">Kontostatus</h3>
                   <div class="profile-bullet-list">
-                    <p>Profilfelder und Einstellungen liegen schon getrennt vom eigentlichen Match-System.</p>
-                    <p>Freunde, Handel und echte Sitzungen können später an API-Endpunkte gebunden werden, ohne die Oberfläche neu zu bauen.</p>
-                    <p>Das lokale Konto bleibt ein Teststand. Für echten Online-Betrieb müssen Name, Passwort und Rechte serverseitig validiert werden.</p>
+                    <p>Dein Konto verwaltet Sammlung, Decks, Booster und Einstellungen aus einem zentralen Spielstand.</p>
+                    <p>Änderungen am Profil greifen direkt in die laufende Sitzung und bleiben serverseitig erhalten.</p>
+                    <p>Auch Reset und Verwaltung bleiben klar vom eigentlichen Match-System getrennt.</p>
                   </div>
                   <div class="danger-note profile-danger-note">Konto zurücksetzen entfernt nur in diesem Konto Gold, Karten, Booster und Decks. Der Login selbst bleibt erhalten.</div>
                   <div class="form-actions">
@@ -437,9 +436,9 @@
             <div class="section-head">
               <div>
                 <p class="eyebrow">Freunde</p>
-                <h2>Soziale Funktionen für Handel und Freundschaften vorbereiten</h2>
+                <h2>Freundesnetz und Handelshub</h2>
               </div>
-              <p class="section-note">Dieser Bereich ist bewusst schon angelegt, damit Freundeslisten, Anfragen und Handel später modular ergänzt werden können.</p>
+              <p class="section-note">Behalte deinen Freundescode, Kontakte und den späteren Handelsbereich an einer Stelle im Blick.</p>
             </div>
 
             <div class="friends-layout">
@@ -513,7 +512,7 @@
 
                 <div class="info-panel settings-session-panel">
                   <h3 class="subheading">Sitzung</h3>
-                  <p class="mini-note">Melde dich von diesem lokalen Konto ab. Später kann diese Aktion durch echtes Server-Logout ersetzt werden.</p>
+                  <p class="mini-note">Melde dich sauber von deinem aktuellen Konto ab.</p>
                   <div class="form-actions">
                     <button class="secondary-button" type="button" id="logoutButton">Abmelden</button>
                   </div>
@@ -528,7 +527,7 @@
                 <p class="eyebrow">Admin-Bereich</p>
                 <h2>Konten verwalten und Spielstände direkt anpassen</h2>
               </div>
-              <p class="section-note">Nur für das Administratorkonto sichtbar. Änderungen greifen sofort in die lokalen Spielstände.</p>
+              <p class="section-note">Nur für das Administratorkonto sichtbar. Änderungen greifen direkt in die serverseitigen Spielstände.</p>
             </div>
 
             <div class="admin-layout">

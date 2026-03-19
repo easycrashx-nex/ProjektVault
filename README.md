@@ -1,38 +1,35 @@
 # Arcane Vault
 
-Arcane Vault läuft jetzt in zwei Modi:
+Arcane Vault kann weiter direkt lokal aus den Root-Dateien gestartet werden, hat aber jetzt auch einen serverfähigen Pfad mit Backend, persistentem Spielstand und Deploy-Setup für Hetzner/Coolify.
 
-- direkt lokal im Browser über die Root-Dateien `index.html`, `styles.css`, `app.js`
-- serverbereit über `backend/` plus `frontend/public/`
-
-Damit kannst du lokal weiter wie bisher testen, hast aber parallel schon eine Struktur, die später sauber auf einen Server geschoben werden kann.
-
-## Projektstruktur
+## Struktur
 
 - `index.html`, `styles.css`, `app.js`
-  Der aktuelle lokale Prototyp. Direkt im Browser nutzbar.
+  Aktuelles Spiel-Frontend.
 - `frontend/public/`
-  Server-Ausgabe des Frontends. Wird aus den Root-Dateien synchronisiert.
+  Server-Ausgabe des Frontends. Wird aus den Root-Dateien gespiegelt.
 - `backend/src/`
-  Server-Grundgerüst mit API-Routen, statischem Datei-Server, JSON-Datenspeicher und Auth-Basis.
+  API-Server für Auth, Profil, Spielstand, Markt, Freunde, Admin und Match-Snapshots.
 - `backend/data/`
-  Laufzeitdaten für den lokalen Serverbetrieb.
+  Laufzeitdaten für den JSON-Store.
 - `scripts/sync-frontend.mjs`
-  Kopiert die Root-Dateien nach `frontend/public/`.
+  Spiegelt die Root-Dateien nach `frontend/public/`.
+- `Dockerfile`
+  Deploy-Pfad für Coolify oder andere Docker-Setups.
 
-## Lokal testen
+## Lokal starten
 
-### Direkt wie bisher
+### Direkt im Browser
 
-`index.html` direkt im Browser öffnen.
+`index.html` öffnen.
 
-### Über den neuen Server
+### Über den Server
 
 ```powershell
 npm run dev
 ```
 
-Danach im Browser öffnen:
+Danach im Browser:
 
 `http://localhost:3000`
 
@@ -45,9 +42,7 @@ npm run start
 npm run check
 ```
 
-## API-Startpunkt
-
-Der Server stellt bereits vorbereitete Routen bereit:
+## API-Routen
 
 - `GET /api/health`
 - `GET /api/meta`
@@ -56,38 +51,40 @@ Der Server stellt bereits vorbereitete Routen bereit:
 - `POST /api/auth/logout`
 - `GET /api/profile/me`
 - `PATCH /api/profile/me`
+- `PATCH /api/profile/password`
+- `GET /api/game/state`
+- `PATCH /api/game/state`
 - `GET /api/shop/catalog`
 - `GET /api/market/overview`
+- `GET /api/market/state`
+- `PATCH /api/market/state`
 - `GET /api/friends/overview`
+- `PATCH /api/friends/overview`
 - `GET /api/admin/accounts`
+- `POST /api/admin/action`
 - `GET /api/matches/active`
+- `PATCH /api/matches/active`
 
-Wichtig: Das Frontend nutzt aktuell weiterhin seine lokale Spiel- und Speicherlogik. Das Backend ist als sauberer nächster Schritt vorbereitet, aber noch nicht vollständig an das große `app.js` gekoppelt.
+## Aktueller Server-Stand
 
-## Für späteren Serverbetrieb
+Im Serverpfad werden Konto, Sammlung, Booster, Decks, Profil, Einstellungen, Marktstand und Match-Snapshot an das Backend gespiegelt. Die Match-Logik selbst läuft noch im Frontend, aber der aktive Matchzustand wird serverseitig gespeichert.
 
-Wenn du später auf deinen Server gehst, ist der sinnvolle Ablauf:
+## Deploy
 
-1. Repository auf GitHub aktuell halten
-2. auf dem Server clonen
-3. `.env` aus `.env.example` ableiten
-4. `npm run sync:frontend`
-5. `npm run start`
-
-Für Hetzner gibt es jetzt zusätzlich eine konkrete Anleitung in:
+Für Hetzner/Coolify liegt die Anleitung in:
 
 [DEPLOY_HETZNER.md](C:/Users/ginow/Desktop/EasyCrashX/1/DEPLOY_HETZNER.md)
 
-## Server-Migration
+Wichtige Env-Variablen:
 
-Die nächsten sinnvollen Migrationsschritte sind jetzt klar getrennt:
+- `HOST=0.0.0.0`
+- `PORT=3000`
+- `ADMIN_USERNAME=obsidian_admin`
+- `ADMIN_PASSWORD=<eigenes starkes Passwort>`
 
-- Frontend schrittweise von `localStorage` auf `/api/*` umstellen
-- Sessions und Rollen komplett serverseitig erzwingen
-- Gold, Sammlung, Booster und Markt vollständig ins Backend ziehen
-- Arena-Matches serverseitig speichern
-- Freundeslisten und Handel über echte Datenbank-Tabellen/API-Routen anbinden
+## Nächste sinnvolle Schritte
 
-## Hinweis
-
-Die Root-Dateien bleiben absichtlich erhalten, damit dein bisheriger lokaler Testablauf nicht kaputtgeht. `frontend/public/` ist die serverfähige Spiegelung davon.
+- Match-Aktionen selbst serverautoritativ machen
+- Freundes- und Handelsaktionen serverseitig ausbauen
+- JSON-Store bei Bedarf auf eine echte Datenbank umstellen
+- Produktivdomain, HTTPS und engere Firewall-Regeln setzen

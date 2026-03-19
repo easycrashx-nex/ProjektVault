@@ -8,6 +8,7 @@ const { ensureDataFile } = require("./lib/store");
 const { registerSystemRoutes } = require("./routes/system");
 const { registerAuthRoutes } = require("./routes/auth");
 const { registerProfileRoutes } = require("./routes/profile");
+const { registerGameRoutes } = require("./routes/game");
 const { registerShopRoutes } = require("./routes/shop");
 const { registerMarketRoutes } = require("./routes/market");
 const { registerFriendsRoutes } = require("./routes/friends");
@@ -50,6 +51,7 @@ async function createAppServer() {
   registerSystemRoutes(router);
   registerAuthRoutes(router);
   registerProfileRoutes(router);
+  registerGameRoutes(router);
   registerShopRoutes(router);
   registerMarketRoutes(router);
   registerFriendsRoutes(router);

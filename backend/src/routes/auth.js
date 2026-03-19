@@ -7,7 +7,12 @@ const {
   createSession,
   getBearerToken,
 } = require("../lib/security");
-const { updateDatabase, findAccountByUsername, sanitizeAccountForClient } = require("../lib/store");
+const { createEmptySave } = require("../lib/game-state");
+const {
+  updateDatabase,
+  findAccountByUsername,
+  sanitizeAccountForClient,
+} = require("../lib/store");
 
 function validateCredentials(username, password) {
   if (!username || username.length < 3 || username.length > 18) {
@@ -47,7 +52,7 @@ function registerAuthRoutes(router) {
         createdAt: new Date().toISOString(),
         roles: [],
         passwordHash: createPasswordHash(password),
-        profile: { gold: 260, cards: 0, boosters: 5 },
+        save: createEmptySave(),
       };
       database.sessions[session.token] = session;
       createdSessionToken = session.token;
@@ -68,7 +73,7 @@ function registerAuthRoutes(router) {
     sendJson(res, 201, {
       ok: true,
       sessionToken: createdSessionToken,
-      account: sanitizeAccountForClient(account),
+      account: sanitizeAccountForClient(account, { includeSave: true }),
     });
   });
 
@@ -91,7 +96,7 @@ function registerAuthRoutes(router) {
     sendJson(res, 200, {
       ok: true,
       sessionToken: session.token,
-      account: sanitizeAccountForClient(account),
+      account: sanitizeAccountForClient(account, { includeSave: true }),
     });
   });
 

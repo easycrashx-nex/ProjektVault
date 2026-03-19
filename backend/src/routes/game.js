@@ -1,33 +1,22 @@
 const { sendJson, parseJsonBody } = require("../lib/http");
 const { getBearerToken } = require("../lib/security");
-const { updateDatabase, getAccountBySessionToken } = require("../lib/store");
-const { sanitizeMarketState } = require("../lib/game-state");
+const {
+  updateDatabase,
+  getAccountBySessionToken,
+  sanitizeAccountForClient,
+} = require("../lib/store");
+const { sanitizeSave, sanitizeMarketState } = require("../lib/game-state");
 
-function registerMarketRoutes(router) {
-  router.get("/api/market/overview", async (_req, res) => {
-    let market = null;
-    await updateDatabase((database) => {
-      const normalizedMarket = sanitizeMarketState(database.market);
-      market = {
-        feeVault: Number(normalizedMarket.feeVault || 0),
-        updatedAt: normalizedMarket.updatedAt || null,
-        trackedCards: Object.keys(normalizedMarket.cards || {}).length,
-      };
-      return database;
-    });
-
-    sendJson(res, 200, { ok: true, market });
-  });
-
-  router.get("/api/market/state", async (req, res) => {
+function registerGameRoutes(router) {
+  router.get("/api/game/state", async (req, res) => {
     const token = getBearerToken(req);
     if (!token) {
       sendJson(res, 401, { ok: false, error: "missing_token", message: "Nicht angemeldet." });
       return;
     }
 
-    let market = null;
     let account = null;
+    let market = null;
     await updateDatabase((database) => {
       account = getAccountBySessionToken(database, token);
       market = sanitizeMarketState(database.market);
@@ -39,10 +28,14 @@ function registerMarketRoutes(router) {
       return;
     }
 
-    sendJson(res, 200, { ok: true, market });
+    sendJson(res, 200, {
+      ok: true,
+      account: sanitizeAccountForClient(account, { includeSave: true }),
+      market,
+    });
   });
 
-  router.patch("/api/market/state", async (req, res) => {
+  router.patch("/api/game/state", async (req, res) => {
     const token = getBearerToken(req);
     if (!token) {
       sendJson(res, 401, { ok: false, error: "missing_token", message: "Nicht angemeldet." });
@@ -50,20 +43,19 @@ function registerMarketRoutes(router) {
     }
 
     const body = await parseJsonBody(req);
-    if (!body?.market || typeof body.market !== "object") {
-      sendJson(res, 400, { ok: false, error: "invalid_market", message: "Kein gültiger Marktstand übergeben." });
+    if (!body?.save || typeof body.save !== "object") {
+      sendJson(res, 400, { ok: false, error: "invalid_save", message: "Kein gültiger Spielstand übergeben." });
       return;
     }
 
     let account = null;
-    let market = null;
     await updateDatabase((database) => {
       account = getAccountBySessionToken(database, token);
       if (!account) {
         return database;
       }
-      market = sanitizeMarketState(body.market);
-      database.market = market;
+
+      account.save = sanitizeSave(body.save, (value) => String(value || "").trim().replace(/\s+/g, " ").slice(0, 18));
       return database;
     });
 
@@ -72,8 +64,11 @@ function registerMarketRoutes(router) {
       return;
     }
 
-    sendJson(res, 200, { ok: true, market });
+    sendJson(res, 200, {
+      ok: true,
+      account: sanitizeAccountForClient(account, { includeSave: true }),
+    });
   });
 }
 
-module.exports = { registerMarketRoutes };
+module.exports = { registerGameRoutes };

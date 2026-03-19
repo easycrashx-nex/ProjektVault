@@ -36,6 +36,11 @@ const SERVER_RUNTIME = {
   restoring: false,
 };
 
+const SERVER_SYNC = {
+  save: Promise.resolve(),
+  market: Promise.resolve(),
+};
+
 let currentUsername = null;
 let currentAccount = null;
 let uiState = { previewLanguage: "de" };
@@ -99,15 +104,15 @@ const SECTION_SCENE_META = {
     theme: "profile",
   },
   friends: {
-    eyebrow: "Soziale Vorbereitung",
-    title: "Freunde und Handel bekommen ihren eigenen Raum",
-    text: "Freundeslisten, Einladungen und künftiger Kartentausch sind bereits als eigenständiges Modul vorbereitet.",
+    eyebrow: "Kontaktzentrum",
+    title: "Freunde, Kontakte und Handel an einem Ort",
+    text: "Behalte Freundescode, Kontaktlisten und den Handelszugang in einem eigenen sozialen Bereich im Blick.",
     theme: "friends",
   },
   settings: {
     eyebrow: "Steuerzentrale",
-    title: "Effekte, Komfort und Bestätigungen feinjustieren",
-    text: "Lokale Konto-Einstellungen greifen direkt in die Oberfläche ein und lassen sich später sauber serverseitig synchronisieren.",
+    title: "Effekte, Komfort und Sprache feinjustieren",
+    text: "Passe Oberfläche, Klickgefühl, Booster-Inszenierung und Bestätigungen direkt für dein Konto an.",
     theme: "settings",
   },
   admin: {
@@ -379,9 +384,9 @@ const PACK_TRANSLATIONS = Object.freeze({
 const UI_TEXT = Object.freeze({
   de: {
     auth: {
-      eyebrow: "Arcane Vault Online Vorbereitung",
+      eyebrow: "Arcane Vault Online",
       title: "Dein Kartenkonto wartet schon.",
-      body: "Diese Version speichert alles lokal, ist aber bereits so aufgebaut, dass sie später auf einen Server umgestellt werden kann. Erstelle jetzt ein Konto und starte mit fünf kostenlosen Starter-Boostern.",
+      body: "Erstelle dein Konto, starte mit fünf kostenlosen Starter-Boostern und baue dir direkt deine erste Sammlung auf.",
       points: [
         "Mehr als 700 Karten inklusive Trainerkarten",
         "Mehrere Booster-Stufen mit unterschiedlichen Chancen",
@@ -393,15 +398,15 @@ const UI_TEXT = Object.freeze({
       password: "Passwort",
       loginButton: "Anmelden",
       registerButton: "Konto anlegen",
-      loginHint: "Melde dich mit deinem lokalen Testkonto an.",
+      loginHint: "Melde dich mit deinem Spielkonto an.",
       registerHint: "Neue Konten starten mit 0 Karten, 5 kostenlosen Starter-Boostern und etwas Startgold.",
-      storageNote: "Speicherort: lokal im Browser. Später kann das auf Server-Login umgestellt werden.",
+      storageNote: "Dein Konto wird über den aktiven Spielserver verwaltet.",
     },
     brand: {
       eyebrow: "Strategie-Sammelkartenspiel",
       description: "Öffne Booster, sammle Karten, baue mehrere Decks und teste sie in rundenbasierten Duellen.",
       saveModeLabel: "Aktiver Speicher-Modus",
-      saveModeValue: "Lokal vorbereitet für späteren Serverbetrieb",
+      saveModeValue: "Server-Speicher aktiv",
     },
     nav: {
       shop: "Shop",
@@ -422,8 +427,8 @@ const UI_TEXT = Object.freeze({
       collection: { eyebrow: "Archivgalerie", title: "Deine Sammlung steht im Zentrum", text: "Seltene Karten, Filter, Marktwerte und Deckstatus werden wie eine kuratierte Ausstellung präsentiert." },
       decks: { eyebrow: "Strategiekammer", title: "Deckbau soll sich wie Taktik anfühlen", text: "Gespeicherte Listen, Warnungen und verfügbare Karten sind als modulare Kommandoflächen angeordnet." },
       profile: { eyebrow: "Kontoprofil", title: "Dein Konto bleibt ein eigener Baustein", text: "Spielername, Passwort und Sicherheitsdaten liegen bewusst getrennt von Sammlung und Matchlogik." },
-      friends: { eyebrow: "Soziale Vorbereitung", title: "Freunde und Handel bekommen ihren eigenen Raum", text: "Freundeslisten, Einladungen und künftiger Kartentausch sind bereits als eigenständiges Modul vorbereitet." },
-      settings: { eyebrow: "Steuerzentrale", title: "Effekte, Komfort und Bestätigungen feinjustieren", text: "Lokale Konto-Einstellungen greifen direkt in die Oberfläche ein und lassen sich später sauber serverseitig synchronisieren." },
+      friends: { eyebrow: "Kontaktzentrum", title: "Freunde, Kontakte und Handel an einem Ort", text: "Behalte Freundescode, Kontaktlisten und den Handelszugang in einem eigenen sozialen Bereich im Blick." },
+      settings: { eyebrow: "Steuerzentrale", title: "Effekte, Komfort und Sprache feinjustieren", text: "Passe Oberfläche, Klickgefühl, Booster-Inszenierung und Bestätigungen direkt für dein Konto an." },
       admin: { eyebrow: "Kontrollraum", title: "Verwaltung mit klarer Trennung zum Spiel", text: "Admin-Werkzeuge bleiben bewusst nüchtern, aber formal Teil derselben visuellen Welt." },
       arena: { eyebrow: "Duellarena", title: "Jedes Match bekommt seine eigene Bühne", text: "Board, Helden und Hand sitzen in einer inszenierten Kampfarena mit mehr Tiefe und klarerem Fokus." },
     },
@@ -450,10 +455,10 @@ const UI_TEXT = Object.freeze({
       marketName: "Name",
     },
     sections: {
-      shopTitle: "Booster kaufen und Inhalte vorbereiten",
-      shopNote: "Alle kaufbaren Inhalte liegen schon im Shop. Weitere Bereiche können hier später ergänzt werden.",
+      shopTitle: "Booster, Packs und Shop-Angebote",
+      shopNote: "Stelle dir Booster, Themen-Packs und starke Kartenzugänge direkt aus dem Shop zusammen.",
       shopOffers: "Booster-Angebote",
-      futureTitle: "Demnächst im Shop",
+      futureTitle: "Sonderangebote",
       marketTitle: "Stündliche Preisbewegungen durch Angebot und Nachfrage",
       marketNote: "Die Marktpreise aktualisieren sich jede echte Stunde. Der Marktplatzwert kann über oder unter dem normalen Händlerwert liegen.",
       marketMovers: "Top-Bewegungen",
@@ -463,21 +468,21 @@ const UI_TEXT = Object.freeze({
       collectionNote: "Karten sind anklickbar. Im Detailfenster kannst du sie prüfen und verkaufen.",
       decksTitle: "Mehrere Decks speichern und prüfen",
       decksNote: "Wenn eine Karte verkauft wurde, bleibt das Deck gespeichert, wird aber als nicht spielbar markiert.",
-      profileTitle: "Kontodaten pflegen und Sicherheit verwalten",
-      profileNote: "Spielername und Passwort werden lokal angepasst, bleiben aber so vorbereitet, dass sie später ins Serverkonto wandern können.",
-      friendsTitle: "Soziale Funktionen für Handel und Freundschaften vorbereiten",
-      friendsNote: "Dieser Bereich ist bewusst schon angelegt, damit Freundeslisten, Anfragen und Handel später modular ergänzt werden können.",
+      profileTitle: "Kontodaten, Sicherheit und Reset",
+      profileNote: "Verwalte deinen Namen, dein Passwort und deinen Kontostand zentral über dein Spielkonto.",
+      friendsTitle: "Freundesnetz und Handelshub",
+      friendsNote: "Behalte deinen Freundescode, Kontakte und den späteren Handelsbereich an einer Stelle im Blick.",
       settingsTitle: "Spielgefühl, Effekte und Bestätigungen anpassen",
       settingsNote: "Die Einstellungen werden pro Konto gespeichert und sind als sauberes eigenes Modul angelegt.",
       adminTitle: "Konten verwalten und Spielstände direkt anpassen",
-      adminNote: "Nur für das Administratorkonto sichtbar. Änderungen greifen sofort in die lokalen Spielstände.",
+      adminNote: "Nur für das Administratorkonto sichtbar. Änderungen greifen direkt in die serverseitigen Spielstände.",
       arenaTitle: "Rundenbasiertes Testduell",
     },
     shop: {
       futureItems: [
-        { title: "Kartenhüllen", copy: "Kosmetische Hüllen mit Fraktionsoptik und besonderen Rahmen." },
-        { title: "Turnier-Tickets", copy: "Später für Events, Ranglisten und Spezialbelohnungen gedacht." },
-        { title: "Account-Dienste", copy: "Profilrahmen, Namensänderungen und saisonale Extras." },
+        { title: "Fraktionsboxen", copy: "Kuratierten Kartenmix, passende Booster und garantierte Fraktionskerne im Paket sichern." },
+        { title: "Elite-Bündel", copy: "Hochpreisige Pakete mit starken Karten, Extra-Boostern und direktem Deckfortschritt." },
+        { title: "Saisonregale", copy: "Wechselnde Angebote, Themenpakete und spätere Event-Käufe laufen über denselben Shopbereich." },
       ],
     },
     market: {
@@ -567,14 +572,14 @@ const UI_TEXT = Object.freeze({
       currentPassword: "Aktuelles Passwort",
       saveUsername: "Spielernamen speichern",
       passwordTitle: "Passwort ändern",
-      passwordNote: "Für lokale Tests wird das Passwort sofort aktualisiert. Beim späteren Serverbetrieb gehört diese Prüfung ins Backend.",
+      passwordNote: "Das aktuelle Passwort wird geprüft, bevor dein neues Passwort übernommen wird.",
       newPassword: "Neues Passwort",
       confirmPassword: "Neues Passwort wiederholen",
       updatePassword: "Passwort aktualisieren",
-      serverTitle: "Server-Vorbereitung",
-      bullet1: "Profilfelder und Einstellungen liegen schon getrennt vom eigentlichen Match-System.",
-      bullet2: "Freunde, Handel und echte Sitzungen können später an API-Endpunkte gebunden werden, ohne die Oberfläche neu zu bauen.",
-      bullet3: "Das lokale Konto bleibt ein Teststand. Für echten Online-Betrieb müssen Name, Passwort und Rechte serverseitig validiert werden.",
+      serverTitle: "Kontostatus",
+      bullet1: "Dein Konto verwaltet Sammlung, Decks, Booster und Einstellungen aus einem zentralen Spielstand.",
+      bullet2: "Änderungen am Profil greifen direkt in die laufende Sitzung und bleiben serverseitig erhalten.",
+      bullet3: "Auch Reset und Verwaltung bleiben klar vom eigentlichen Match-System getrennt.",
       dangerNote: "Konto zurücksetzen entfernt nur in diesem Konto Gold, Karten, Booster und Decks. Der Login selbst bleibt erhalten.",
       resetAccount: "Konto zurücksetzen",
       totalCards: "Karten gesamt",
@@ -583,7 +588,7 @@ const UI_TEXT = Object.freeze({
     friends: {
       network: "Freundesnetz",
       codeTitle: "Freundescode {code}",
-      codeNote: "Dieser lokale Code ist nur ein Platzhalter. Für echte Freundschaften und Handel braucht es später Server-IDs und API-Prüfungen.",
+      codeNote: "Dein Freundescode identifiziert dieses Konto im sozialen Bereich und bleibt an dein Profil gebunden.",
       friends: "Freunde",
       openRequests: "Anfragen offen",
       blocked: "Blockiert",
@@ -592,25 +597,25 @@ const UI_TEXT = Object.freeze({
       moduleEmpty: "Leer",
       listEyebrow: "Freundesliste",
       listTitle: "Deine Kontakte",
-      listEmpty: "Noch keine Freunde gespeichert. Später können hier direkte Kontakte erscheinen.",
-      listNote: "Hier landen später bestätigte Freundschaften inklusive Online-Status und Schnellhandel.",
+      listEmpty: "Noch keine bestätigten Kontakte gespeichert.",
+      listNote: "Bestätigte Kontakte erscheinen hier gesammelt mit ihrem sozialen Status.",
       requestsEyebrow: "Anfragen",
       requestsTitle: "Eingehend und ausgehend",
       requestsEmpty: "Aktuell gibt es keine offenen Freundschaftsanfragen.",
-      requestsNote: "Dieser Bereich ist für spätere Server-Anfragen und Benachrichtigungen reserviert.",
+      requestsNote: "Eingehende und ausgehende Kontakte bleiben hier gebündelt im Blick.",
       tradeEyebrow: "Handel",
-      tradeTitle: "Sicherer Tausch folgt später",
-      feature1Title: "Geplante Handelslogik",
-      feature1Text: "Direkte Tauschangebote, beidseitige Bestätigung und spätere Servervalidierung.",
-      feature2Title: "Vorbereitung schon vorhanden",
-      feature2Text: "Eigener Tab, Platzhalterdaten und getrennte UI-Struktur für spätere Erweiterungen.",
-      feature3Title: "Wichtig für später",
-      feature3Text: "Freunde und Handel dürfen im Online-Betrieb nicht rein clientseitig laufen, sonst wären Exploits trivial.",
+      tradeTitle: "Handelshub",
+      feature1Title: "Direkte Kontakte",
+      feature1Text: "Freundescode, Bestätigungen und Kontaktlisten greifen auf denselben Kontostand zurück.",
+      feature2Title: "Sicherer Tausch",
+      feature2Text: "Kartenhandel und Angebote sind für den serverseitigen Freigabepfad bereits sauber getrennt angelegt.",
+      feature3Title: "Klare Kontrolle",
+      feature3Text: "Soziale Daten, Sammlung und Markt bleiben strukturell getrennt, damit spätere Features sauber andocken können.",
     },
     settings: {
       activeSettings: "Aktive Einstellungen",
       activeCount: "{count} von {total} Komfortoptionen aktiv",
-      syncNote: "Die Optionen werden pro Konto gespeichert und können später direkt mit einem Serverprofil synchronisiert werden.",
+      syncNote: "Die Optionen werden pro Konto gespeichert und wirken direkt auf die aktuelle Spielsitzung.",
       calmMode: "Ruhiger Modus",
       fullStage: "Volle Bühne",
       language: "Sprache",
@@ -625,7 +630,7 @@ const UI_TEXT = Object.freeze({
       confirmNote: "Fragt vor Lösch- und Reset-Aktionen nach, bevor Daten geändert werden.",
       resetButton: "Einstellungen zurücksetzen",
       sessionTitle: "Sitzung",
-      sessionNote: "Melde dich von diesem lokalen Konto ab. Später kann diese Aktion durch echtes Server-Logout ersetzt werden.",
+      sessionNote: "Melde dich sauber von deinem aktuellen Konto ab.",
       logout: "Abmelden",
       clickEffects: "Klickeffekte",
       packEffects: "Booster-Inszenierung",
@@ -999,6 +1004,163 @@ async function apiRequest(path, { method = "GET", body = null, token = null } = 
   return payload;
 }
 
+function isServerSessionActive() {
+  const snapshot = getSessionSnapshot();
+  return Boolean(snapshot?.mode === SESSION_MODES.server && isValidSessionToken(snapshot?.token) && currentAccount?.username);
+}
+
+function applyServerMarketSnapshot(serverMarket) {
+  if (!serverMarket || typeof serverMarket !== "object") {
+    return;
+  }
+
+  database.market = normalizeMarketState(serverMarket);
+}
+
+async function loadServerGameState(token, { render = true } = {}) {
+  const sessionToken = token || getSessionSnapshot()?.token;
+  if (!isValidSessionToken(sessionToken)) {
+    return false;
+  }
+
+  const response = await apiRequest("/api/game/state", { token: sessionToken });
+  if (!mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false })) {
+    return false;
+  }
+
+  applyServerMarketSnapshot(response?.market);
+  uiState.adminCacheDirty = true;
+  if (render) {
+    renderAll();
+  }
+  return true;
+}
+
+function queueServerSaveSync() {
+  if (!isServerSessionActive()) {
+    return Promise.resolve(false);
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const snapshot = cloneJsonValue(currentAccount?.save, createEmptySave());
+  SERVER_SYNC.save = SERVER_SYNC.save
+    .catch(() => undefined)
+    .then(async () => {
+      const response = await apiRequest("/api/game/state", {
+        method: "PATCH",
+        token: sessionToken,
+        body: { save: snapshot },
+      });
+      mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
+      return true;
+    })
+    .catch((error) => {
+      console.error(error);
+      showToast("Server-Synchronisierung fehlgeschlagen.");
+      return false;
+    });
+
+  return SERVER_SYNC.save;
+}
+
+function queueServerMarketSync() {
+  if (!isServerSessionActive()) {
+    return Promise.resolve(false);
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const marketSnapshot = cloneJsonValue(database.market, createInitialMarketState());
+  SERVER_SYNC.market = SERVER_SYNC.market
+    .catch(() => undefined)
+    .then(async () => {
+      const response = await apiRequest("/api/market/state", {
+        method: "PATCH",
+        token: sessionToken,
+        body: { market: marketSnapshot },
+      });
+      applyServerMarketSnapshot(response?.market);
+      return true;
+    })
+    .catch((error) => {
+      console.error(error);
+      showToast("Markt-Synchronisierung fehlgeschlagen.");
+      return false;
+    });
+
+  return SERVER_SYNC.market;
+}
+
+function applyServerAccountsSnapshot(accounts) {
+  if (!Array.isArray(accounts)) {
+    return;
+  }
+
+  const nextAccounts = {};
+  accounts.forEach((serverAccount) => {
+    const username = sanitizeUsername(serverAccount?.username);
+    if (!username) {
+      return;
+    }
+
+    const existing = findStoredUsername(username) ? normalizeAccount(database.accounts[findStoredUsername(username)]) : normalizeAccount({
+      username,
+      passwordHash: "",
+      isAdmin: Boolean(serverAccount?.isAdmin),
+      createdAt: serverAccount?.createdAt || new Date().toISOString(),
+      sessionToken: currentAccount?.username === username ? getSessionSnapshot()?.token : null,
+      save: serverAccount?.save || createEmptySave(),
+    });
+
+    nextAccounts[username] = normalizeAccount({
+      ...existing,
+      username,
+      passwordHash: existing.passwordHash || "",
+      isAdmin: Boolean(serverAccount?.isAdmin) || existing.isAdmin,
+      createdAt: serverAccount?.createdAt || existing.createdAt,
+      sessionToken: currentAccount?.username === username ? getSessionSnapshot()?.token : existing.sessionToken,
+      save: serverAccount?.save || existing.save || createEmptySave(),
+    });
+  });
+
+  database.accounts = nextAccounts;
+  if (currentAccount?.username && nextAccounts[currentAccount.username]) {
+    currentAccount = nextAccounts[currentAccount.username];
+  }
+}
+
+async function refreshServerAdminMirror({ render = true } = {}) {
+  if (!isServerSessionActive() || !isCurrentUserAdmin()) {
+    return false;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/admin/accounts", { token: sessionToken });
+  applyServerAccountsSnapshot(response?.accounts);
+  if (render) {
+    renderAdminPanel();
+  }
+  return true;
+}
+
+async function runServerAdminAction(action, payload = {}) {
+  if (!isServerSessionActive() || !isCurrentUserAdmin()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/admin/action", {
+    method: "POST",
+    token: sessionToken,
+    body: {
+      action,
+      ...payload,
+    },
+  });
+
+  await refreshServerAdminMirror({ render: false });
+  return response;
+}
+
 function mergeServerAccountIntoLocalState(serverAccount, token, { render = true } = {}) {
   const username = sanitizeUsername(serverAccount?.username);
 
@@ -1021,9 +1183,9 @@ function mergeServerAccountIntoLocalState(serverAccount, token, { render = true 
     username,
     createdAt: serverAccount?.createdAt || existingAccount.createdAt,
     sessionToken: token,
-    isAdmin: existingAccount.isAdmin || username === ADMIN_BOOTSTRAP.username,
+    isAdmin: Boolean(serverAccount?.isAdmin) || existingAccount.isAdmin || username === ADMIN_BOOTSTRAP.username,
     passwordHash: existingAccount.passwordHash || "",
-    save: existingAccount.save || createEmptySave(),
+    save: serverAccount?.save || existingAccount.save || createEmptySave(),
   });
 
   if (storedUsername && storedUsername !== username) {
@@ -1037,6 +1199,7 @@ function mergeServerAccountIntoLocalState(serverAccount, token, { render = true 
   currentAccount = database.accounts[username];
   uiState.previewLanguage = currentAccount.save?.settings?.language || "de";
   uiState.adminSelectedUser = null;
+  uiState.adminCacheDirty = true;
   restoreRuntimeMatchFromAccount(true);
 
   storeSessionSnapshot({
@@ -1071,8 +1234,7 @@ async function initializeServerSession() {
 
   SERVER_RUNTIME.restoring = true;
   try {
-    const response = await apiRequest("/api/profile/me", { token: snapshot.token });
-    return mergeServerAccountIntoLocalState(response?.account, snapshot.token);
+    return await loadServerGameState(snapshot.token);
   } catch {
     clearSessionSnapshot();
     currentUsername = null;
@@ -1096,9 +1258,9 @@ function getMotionStateLabel(reduced) {
 
 Object.assign(UI_TEXT.en, {
   auth: {
-    eyebrow: "Arcane Vault Online Preparation",
+    eyebrow: "Arcane Vault Online",
     title: "Your card account is ready.",
-    body: "This version stores everything locally, but it is already structured so it can later move to a server. Create an account now and start with five free starter boosters.",
+    body: "Create your account, start with five free starter boosters, and begin building your collection right away.",
     points: [
       "More than 700 cards including trainer cards",
       "Multiple booster tiers with different odds",
@@ -1110,15 +1272,15 @@ Object.assign(UI_TEXT.en, {
     password: "Password",
     loginButton: "Log in",
     registerButton: "Create account",
-    loginHint: "Log in with your local test account.",
+    loginHint: "Log in with your game account.",
     registerHint: "New accounts start with 0 cards, 5 free starter boosters and some starting gold.",
-    storageNote: "Storage: local in the browser. This can later move to server login.",
+    storageNote: "Your account is handled through the active game server.",
   },
   brand: {
     eyebrow: "Strategy Trading Card Game",
     description: "Open boosters, collect cards, build multiple decks and test them in turn-based duels.",
     saveModeLabel: "Active save mode",
-    saveModeValue: "Local setup for later server deployment",
+    saveModeValue: "Server storage active",
   },
   nav: {
     shop: "Shop",
@@ -1140,7 +1302,7 @@ Object.assign(UI_TEXT.en, {
     decks: { eyebrow: "Strategy Chamber", title: "Deckbuilding should feel tactical", text: "Saved lists, warnings and available cards are arranged as modular command surfaces." },
     profile: { eyebrow: "Account Profile", title: "Your account remains its own module", text: "Player name, password and security data stay deliberately separate from collection and match logic." },
     friends: { eyebrow: "Social Preparation", title: "Friends and trading get their own space", text: "Friend lists, invites and future card trading are already prepared as a dedicated module." },
-    settings: { eyebrow: "Control Center", title: "Fine-tune effects, comfort and confirmations", text: "Local account settings directly affect the interface and can later be synced cleanly on the server." },
+    settings: { eyebrow: "Control Center", title: "Fine-tune effects, comfort and language", text: "Adjust interface behavior, click feedback, booster presentation and confirmations directly for your account." },
     admin: { eyebrow: "Control Room", title: "Management clearly separated from play", text: "Admin tools stay intentionally sober while still belonging to the same visual world." },
     arena: { eyebrow: "Duel Arena", title: "Every match gets its own stage", text: "Board, heroes and hand sit inside a staged battle arena with more depth and clearer focus." },
   },
@@ -1168,7 +1330,7 @@ Object.assign(UI_TEXT.en, {
   },
   sections: {
     shopTitle: "Buy boosters and prepare content",
-    shopNote: "All purchasable content already lives in the shop. More modules can be added here later.",
+    shopNote: "Build your collection through boosters, curated packs and premium shop offers.",
     shopOffers: "Booster offers",
     futureTitle: "Coming soon in the shop",
     marketTitle: "Hourly price movement through supply and demand",
@@ -1181,9 +1343,9 @@ Object.assign(UI_TEXT.en, {
     decksTitle: "Save and validate multiple decks",
     decksNote: "If a card was sold, the deck remains saved but is marked as unplayable.",
     profileTitle: "Manage account data and security",
-    profileNote: "Player name and password are updated locally, but the structure is ready to move into a server account later.",
+    profileNote: "Manage your player name, password and account access from one central profile.",
     friendsTitle: "Prepare social features for trading and friendships",
-    friendsNote: "This area already exists so friend lists, requests and trading can be added modularly later.",
+    friendsNote: "Keep your friend code, contacts and social hub in one place.",
     settingsTitle: "Adjust game feel, effects and confirmations",
     settingsNote: "Settings are stored per account and already exist as a clean standalone module.",
     adminTitle: "Manage accounts and edit saves directly",
@@ -1476,7 +1638,7 @@ Object.assign(UI_TEXT.fr, {
   auth: {
     eyebrow: "Préparation en ligne Arcane Vault",
     title: "Ton compte de cartes t'attend déjà.",
-    body: "Cette version sauvegarde tout en local, mais elle est déjà structurée pour passer plus tard sur un serveur. Crée un compte maintenant et commence avec cinq boosters de départ gratuits.",
+    body: "Crée ton compte, commence avec cinq boosters de départ gratuits et lance directement ta première collection.",
     points: [
       "Plus de 700 cartes, y compris des cartes d'entraîneur",
       "Plusieurs paliers de boosters avec des chances différentes",
@@ -1490,13 +1652,13 @@ Object.assign(UI_TEXT.fr, {
     registerButton: "Créer le compte",
     loginHint: "Connecte-toi avec ton compte de test local.",
     registerHint: "Les nouveaux comptes commencent avec 0 carte, 5 boosters de départ gratuits et un peu d'or initial.",
-    storageNote: "Stockage : local dans le navigateur. Cela pourra plus tard passer sur une connexion serveur.",
+    storageNote: "Ton compte est géré par le serveur de jeu actif.",
   },
   brand: {
     eyebrow: "Jeu de cartes stratégique",
     description: "Ouvre des boosters, collectionne des cartes, construis plusieurs decks et teste-les dans des duels au tour par tour.",
     saveModeLabel: "Mode de sauvegarde actif",
-    saveModeValue: "Préparé en local pour un futur serveur",
+    saveModeValue: "Stockage serveur actif",
   },
   nav: {
     shop: "Boutique",
@@ -1866,7 +2028,7 @@ Object.assign(UI_TEXT.de.shop, {
   summaryGuaranteed: "Garantien",
   summaryBoosters: "Booster-Inhalt",
   summaryPricing: "Preisrahmen",
-  summaryModuleNote: "Der Shop läuft jetzt über Katalogdaten. Neue Booster oder Packs lassen sich später ergänzen, ohne die Oberfläche neu zu bauen.",
+  summaryModuleNote: "Booster und Packs greifen auf denselben Katalog zu und lassen sich sauber im laufenden Shop verwalten.",
   bundleGuaranteed: "Garantierte Karten",
   bundleBoosters: "Enthaltene Booster",
   bundleBuy: "Pack kaufen",
@@ -1991,11 +2153,11 @@ Object.assign(UI_TEXT.de, {
     authReservedUsername: "Dieser Spielername ist reserviert.",
     authUsernameTaken: "Dieser Spielername ist bereits vergeben.",
     authAccountCreated: "Konto {username} wurde erstellt.",
-    authAccountCreateFailed: "Das Konto konnte lokal nicht sicher erstellt werden. Bitte versuche es erneut.",
+    authAccountCreateFailed: "Das Konto konnte nicht sicher erstellt werden. Bitte versuche es erneut.",
     authInvalidCredentials: "Spielername oder Passwort sind nicht korrekt.",
     authWelcomeBack: "Willkommen zurück, {username}.",
-    authLoginFailed: "Die Anmeldung konnte lokal nicht sicher geprüft werden. Bitte versuche es erneut.",
-    adminNameLocked: "Das Administratorkonto bleibt lokal auf den reservierten Namen fixiert.",
+    authLoginFailed: "Die Anmeldung konnte nicht sicher geprüft werden. Bitte versuche es erneut.",
+    adminNameLocked: "Das Administratorkonto bleibt auf den reservierten Namen fixiert.",
     profileCurrentPasswordRequired: "Bitte bestätige die Änderung mit deinem aktuellen Passwort.",
     profileCurrentPasswordMissing: "Bitte gib dein aktuelles Passwort ein.",
     profilePasswordMin: "Das neue Passwort muss mindestens 4 Zeichen lang sein.",
@@ -2003,12 +2165,12 @@ Object.assign(UI_TEXT.de, {
     profilePasswordSame: "Bitte wähle ein neues Passwort statt desselben Werts.",
     profileCurrentPasswordWrong: "Das aktuelle Passwort ist nicht korrekt.",
     profileRenameSuccess: "Dein Spielername wurde auf {username} geändert.",
-    profileRenameFailed: "Der Spielername konnte lokal nicht sicher geändert werden.",
+    profileRenameFailed: "Der Spielername konnte nicht sicher geändert werden.",
     profilePasswordSuccess: "Dein Passwort wurde aktualisiert.",
-    profilePasswordFailed: "Das Passwort konnte lokal nicht sicher aktualisiert werden.",
+    profilePasswordFailed: "Das Passwort konnte nicht sicher aktualisiert werden.",
     settingsReset: "Die Einstellungen wurden zurückgesetzt.",
     accountResetConfirm: "Möchtest du wirklich nur dieses Konto zurücksetzen? Karten, Gold, Booster und Decks gehen dabei verloren.",
-    accountResetDone: "Das Konto wurde lokal zurückgesetzt.",
+    accountResetDone: "Das Konto wurde zurückgesetzt.",
     deckMissing: "Es ist kein aktives Deck vorhanden.",
     deckSize: "Das Deck hat {count}/{size} Karten.",
     deckUnavailableCard: "Das Deck enthält eine nicht mehr verfügbare Karte.",
@@ -3810,6 +3972,7 @@ uiState = {
   section: "shop",
   modalCardId: null,
   adminSelectedUser: null,
+  adminCacheDirty: true,
   visualFxReady: false,
   lastSceneTheme: null,
   openingFxTimer: null,
@@ -4931,6 +5094,7 @@ async function handleRegister(event) {
       }
 
       formElement.reset();
+      await loadServerGameState(response?.sessionToken);
       showToast(getUiText("messages.authAccountCreated", { username }));
     } catch (error) {
       setAuthMessage(error?.payload?.message || getUiText("messages.authAccountCreateFailed"));
@@ -4983,6 +5147,7 @@ async function handleLogin(event) {
       }
 
       formElement.reset();
+      await loadServerGameState(response?.sessionToken);
       showToast(getUiText("messages.authWelcomeBack", { username: sanitizeUsername(response?.account?.username) || username }));
     } catch (error) {
       setAuthMessage(error?.payload?.message || getUiText("messages.authInvalidCredentials"));
@@ -5970,6 +6135,10 @@ function normalizeAccount(account) {
 }
 
 function ensureAdminAccount() {
+  if (isServerRuntimeCandidate()) {
+    return;
+  }
+
   const existing = database.accounts[ADMIN_BOOTSTRAP.username];
   const normalized = normalizeAccount({
     ...existing,
@@ -6065,6 +6234,10 @@ function updateAccountSetting(key, value) {
 }
 
 function loadDatabase() {
+  if (isServerRuntimeCandidate()) {
+    return { version: 2, accounts: {}, market: createInitialMarketState() };
+  }
+
   const raw = localStorage.getItem(STORAGE_KEYS.database);
 
   if (!raw) {
@@ -6181,7 +6354,9 @@ function saveDatabase() {
     market: normalizeMarketState(database.market),
   };
 
-  localStorage.setItem(STORAGE_KEYS.database, JSON.stringify(database));
+  if (!isServerRuntimeCandidate()) {
+    localStorage.setItem(STORAGE_KEYS.database, JSON.stringify(database));
+  }
 }
 
 function syncCurrentMatchStateIntoAccount() {
@@ -6217,6 +6392,9 @@ function persistCurrentMatchIfNeeded(forceArena = false) {
   saveDatabase();
   currentAccount = database.accounts[currentAccount.username];
   restoreRuntimeMatchFromAccount(forceArena);
+  if (isServerSessionActive()) {
+    queueServerSaveSync();
+  }
 }
 
 function persistCurrentAccount() {
@@ -6229,12 +6407,18 @@ function persistCurrentAccount() {
   saveDatabase();
   currentAccount = database.accounts[currentAccount.username];
   restoreRuntimeMatchFromAccount();
+  if (isServerSessionActive()) {
+    queueServerSaveSync();
+  }
 }
 
 function handleMarketTick() {
   const changed = syncMarketState();
 
   if (changed && currentAccount) {
+    if (isServerSessionActive()) {
+      queueServerMarketSync();
+    }
     renderAll();
   }
 }
@@ -6584,6 +6768,11 @@ function renderAdminPanel() {
     return;
   }
 
+  if (isServerSessionActive() && uiState.adminCacheDirty) {
+    uiState.adminCacheDirty = false;
+    void refreshServerAdminMirror({ render: true });
+  }
+
   const accounts = Object.values(database.accounts)
     .map((account) => normalizeAccount(account))
     .sort((left, right) => Number(right.isAdmin) - Number(left.isAdmin) || left.username.localeCompare(right.username, getCurrentLocale()));
@@ -6788,7 +6977,7 @@ function renderProfile() {
 
 function renderFriendBucket(element, { eyebrow, title, list, emptyText, note }) {
   const rows = list.length
-    ? list.map((entry) => `<div class="friend-row"><strong>${entry}</strong><span>${getCurrentLanguage() === "fr" ? "Espace réservé local" : getCurrentLanguage() === "en" ? "Local placeholder" : "Lokaler Platzhalter"}</span></div>`).join("")
+    ? list.map((entry) => `<div class="friend-row"><strong>${entry}</strong><span>${getCurrentLanguage() === "fr" ? "Contact du réseau" : getCurrentLanguage() === "en" ? "Network contact" : "Netzwerkkontakt"}</span></div>`).join("")
     : `<p class="mini-note">${emptyText}</p>`;
 
   element.innerHTML = `
@@ -8161,7 +8350,7 @@ function getSelectedAdminAccount() {
   return account ? normalizeAccount(account) : null;
 }
 
-function grantGoldToSelectedAccount() {
+async function grantGoldToSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminGoldAmount.value);
 
@@ -8175,6 +8364,17 @@ function grantGoldToSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("grantGold", { username: selectedAccount.username, amount });
+      renderAll();
+      showToast(getUiText("messages.adminGoldGranted", { amount, username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.gold += amount;
   });
@@ -8182,7 +8382,7 @@ function grantGoldToSelectedAccount() {
   showToast(getUiText("messages.adminGoldGranted", { amount, username: selectedAccount.username }));
 }
 
-function removeGoldFromSelectedAccount() {
+async function removeGoldFromSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminGoldAmount.value);
 
@@ -8202,6 +8402,17 @@ function removeGoldFromSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("removeGold", { username: selectedAccount.username, amount: removable });
+      renderAll();
+      showToast(getUiText("messages.adminGoldRemoved", { amount: removable, username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.gold = Math.max(0, account.save.gold - removable);
   });
@@ -8209,7 +8420,7 @@ function removeGoldFromSelectedAccount() {
   showToast(getUiText("messages.adminGoldRemoved", { amount: removable, username: selectedAccount.username }));
 }
 
-function grantPacksToSelectedAccount() {
+async function grantPacksToSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminPackAmount.value);
   const packId = elements.adminPackSelect.value;
@@ -8229,6 +8440,17 @@ function grantPacksToSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("grantPack", { username: selectedAccount.username, amount, packId });
+      renderAll();
+      showToast(getUiText("messages.adminPackGranted", { amount, pack: getPackLabel(packId), username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.packs[packId] = (account.save.packs[packId] || 0) + amount;
   });
@@ -8236,7 +8458,7 @@ function grantPacksToSelectedAccount() {
   showToast(getUiText("messages.adminPackGranted", { amount, pack: getPackLabel(packId), username: selectedAccount.username }));
 }
 
-function removePacksFromSelectedAccount() {
+async function removePacksFromSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminPackAmount.value);
   const packId = elements.adminPackSelect.value;
@@ -8263,6 +8485,17 @@ function removePacksFromSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("removePack", { username: selectedAccount.username, amount: removable, packId });
+      renderAll();
+      showToast(getUiText("messages.adminPackRemoved", { amount: removable, pack: getPackLabel(packId), username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.packs[packId] = Math.max(0, (account.save.packs[packId] || 0) - removable);
   });
@@ -8270,7 +8503,7 @@ function removePacksFromSelectedAccount() {
   showToast(getUiText("messages.adminPackRemoved", { amount: removable, pack: getPackLabel(packId), username: selectedAccount.username }));
 }
 
-function grantCardsToSelectedAccount() {
+async function grantCardsToSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminCardAmount.value);
   const cardId = elements.adminCardSelect.value;
@@ -8291,6 +8524,17 @@ function grantCardsToSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("grantCard", { username: selectedAccount.username, amount, cardId });
+      renderAll();
+      showToast(getUiText("messages.adminCardGranted", { amount, card: card.name, username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.collection[cardId] = (account.save.collection[cardId] || 0) + amount;
   });
@@ -8298,7 +8542,7 @@ function grantCardsToSelectedAccount() {
   showToast(getUiText("messages.adminCardGranted", { amount, card: card.name, username: selectedAccount.username }));
 }
 
-function removeCardsFromSelectedAccount() {
+async function removeCardsFromSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminCardAmount.value);
   const cardId = elements.adminCardSelect.value;
@@ -8326,6 +8570,17 @@ function removeCardsFromSelectedAccount() {
     return;
   }
 
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("removeCard", { username: selectedAccount.username, amount: removable, cardId });
+      renderAll();
+      showToast(getUiText("messages.adminCardRemoved", { amount: removable, card: card.name, username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
   updateStoredAccount(selectedAccount.username, (account) => {
     account.save.collection[cardId] = Math.max(0, (account.save.collection[cardId] || 0) - removable);
     if (account.save.collection[cardId] === 0) {
@@ -8336,7 +8591,7 @@ function removeCardsFromSelectedAccount() {
   showToast(getUiText("messages.adminCardRemoved", { amount: removable, card: card.name, username: selectedAccount.username }));
 }
 
-function deleteSelectedAccount() {
+async function deleteSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
 
   if (!selectedAccount) {
@@ -8350,6 +8605,20 @@ function deleteSelectedAccount() {
   }
 
   if (!requestActionConfirmation(getUiText("messages.adminDeleteConfirm", { username: selectedAccount.username }), { force: true })) {
+    return;
+  }
+
+  if (isServerSessionActive()) {
+    try {
+      await runServerAdminAction("deleteAccount", { username: selectedAccount.username });
+      uiState.adminSelectedUser = null;
+      uiState.adminCacheDirty = true;
+      await refreshServerAdminMirror({ render: false });
+      renderAll();
+      showToast(getUiText("messages.adminDeleted", { username: selectedAccount.username }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
     return;
   }
 
@@ -9314,6 +9583,9 @@ function sellCardOnMarket(cardId, amount) {
   database.market.feeVault += quote.fee;
   recordMarketTrade(cardId, "sell", sellAmount);
   persistCurrentAccount();
+  if (isServerSessionActive()) {
+    queueServerMarketSync();
+  }
   renderAll();
   showToast(`${sellAmount}× ${card.name} am Marktplatz verkauft. Netto: ${quote.net} Gold, Gebühr: ${quote.fee} Gold.`);
 }
@@ -9343,6 +9615,9 @@ function buyCardOnMarket(cardId, amount = 1) {
   getSave().collection[cardId] = (getSave().collection[cardId] || 0) + buyAmount;
   recordMarketTrade(cardId, "buy", buyAmount);
   persistCurrentAccount();
+  if (isServerSessionActive()) {
+    queueServerMarketSync();
+  }
   renderAll();
   showToast(`${buyAmount}× ${card.name} am Marktplatz gekauft.`);
 }

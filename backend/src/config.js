@@ -11,6 +11,8 @@ module.exports = {
   ROOT_DIR,
   HOST: process.env.HOST || "0.0.0.0",
   PORT: parsePort(process.env.PORT, 3000),
+  ADMIN_USERNAME: process.env.ADMIN_USERNAME || "obsidian_admin",
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || "bitte-vor-serverstart-aendern",
   PUBLIC_DIR: path.join(ROOT_DIR, "frontend", "public"),
   DATA_FILE: path.join(ROOT_DIR, "backend", "data", "local-database.json"),
   SESSION_TTL_HOURS: 24 * 30,

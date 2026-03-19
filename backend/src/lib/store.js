@@ -1,18 +1,26 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { DATA_FILE } = require("../config");
-const { canonicalizeUsername } = require("./security");
+const { DATA_FILE, ADMIN_USERNAME, ADMIN_PASSWORD } = require("../config");
+const {
+  canonicalizeUsername,
+  sanitizeUsername,
+  createPasswordHash,
+  isSessionExpired,
+} = require("./security");
+const {
+  createEmptySave,
+  createInitialMarketState,
+  sanitizeSave,
+  sanitizeMarketState,
+  sanitizeAccountForClient,
+} = require("./game-state");
 
 function createEmptyDatabase() {
   return {
-    version: 1,
+    version: 2,
     accounts: {},
     sessions: {},
-    market: {
-      feeVault: 0,
-      cards: {},
-      updatedAt: null,
-    },
+    market: createInitialMarketState(),
     audit: [],
   };
 }
@@ -26,27 +34,124 @@ async function ensureDataFile() {
   }
 }
 
+function normalizeSession(session) {
+  if (!session?.token || !session?.username) {
+    return null;
+  }
+
+  return {
+    token: String(session.token),
+    username: sanitizeUsername(session.username),
+    createdAt: typeof session.createdAt === "string" ? session.createdAt : new Date().toISOString(),
+    expiresAt: typeof session.expiresAt === "string" ? session.expiresAt : null,
+  };
+}
+
+function normalizeAccount(account) {
+  const username = sanitizeUsername(account?.username);
+  if (!username) {
+    return null;
+  }
+
+  const roles = Array.isArray(account?.roles)
+    ? [...new Set(account.roles.map((role) => String(role || "").trim()).filter(Boolean))]
+    : [];
+
+  return {
+    username,
+    canonical: canonicalizeUsername(username),
+    createdAt: typeof account?.createdAt === "string" ? account.createdAt : new Date().toISOString(),
+    roles,
+    passwordHash: account?.passwordHash || null,
+    save: sanitizeSave(account?.save, sanitizeUsername),
+  };
+}
+
+function ensureBootstrapAdmin(database) {
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+    return database;
+  }
+
+  const existing = findAccountByUsername(database, ADMIN_USERNAME);
+  if (existing) {
+    if (!existing.roles.includes("admin")) {
+      existing.roles = [...existing.roles, "admin"];
+    }
+    return database;
+  }
+
+  const username = sanitizeUsername(ADMIN_USERNAME);
+  database.accounts[username] = normalizeAccount({
+    username,
+    roles: ["admin"],
+    createdAt: new Date().toISOString(),
+    passwordHash: createPasswordHash(ADMIN_PASSWORD),
+    save: createEmptySave(),
+  });
+  return database;
+}
+
+function normalizeDatabase(database) {
+  const base = createEmptyDatabase();
+  const next = {
+    version: 2,
+    accounts: {},
+    sessions: {},
+    market: sanitizeMarketState(database?.market),
+    audit: Array.isArray(database?.audit) ? database.audit.slice(-400) : [],
+  };
+
+  if (database?.accounts && typeof database.accounts === "object") {
+    Object.entries(database.accounts).forEach(([key, account]) => {
+      const normalized = normalizeAccount({
+        ...account,
+        username: sanitizeUsername(account?.username || key),
+      });
+      if (normalized) {
+        next.accounts[normalized.username] = normalized;
+      }
+    });
+  }
+
+  if (database?.sessions && typeof database.sessions === "object") {
+    Object.entries(database.sessions).forEach(([token, session]) => {
+      const normalized = normalizeSession({ ...session, token });
+      if (normalized && !isSessionExpired(normalized)) {
+        next.sessions[normalized.token] = normalized;
+      }
+    });
+  }
+
+  ensureBootstrapAdmin(next);
+
+  return {
+    ...base,
+    ...next,
+  };
+}
+
 async function readDatabase() {
   await ensureDataFile();
   const raw = await fs.readFile(DATA_FILE, "utf8");
   try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : createEmptyDatabase();
+    return normalizeDatabase(JSON.parse(raw));
   } catch {
-    return createEmptyDatabase();
+    return normalizeDatabase(createEmptyDatabase());
   }
 }
 
 async function writeDatabase(database) {
   await ensureDataFile();
-  await fs.writeFile(DATA_FILE, JSON.stringify(database, null, 2), "utf8");
+  const normalized = normalizeDatabase(database);
+  await fs.writeFile(DATA_FILE, JSON.stringify(normalized, null, 2), "utf8");
 }
 
 async function updateDatabase(updater) {
   const database = await readDatabase();
-  const nextDatabase = await updater(database) || database;
-  await writeDatabase(nextDatabase);
-  return nextDatabase;
+  const nextDatabase = (await updater(database)) || database;
+  const normalized = normalizeDatabase(nextDatabase);
+  await writeDatabase(normalized);
+  return normalized;
 }
 
 function findAccountByUsername(database, username) {
@@ -54,21 +159,16 @@ function findAccountByUsername(database, username) {
   return Object.values(database.accounts || {}).find((account) => canonicalizeUsername(account.username) === canonicalTarget) || null;
 }
 
-function sanitizeAccountForClient(account) {
-  if (!account) {
+function getAccountBySessionToken(database, token) {
+  const session = database.sessions?.[token];
+  if (!session || isSessionExpired(session)) {
     return null;
   }
+  return findAccountByUsername(database, session.username);
+}
 
-  return {
-    username: account.username,
-    createdAt: account.createdAt,
-    roles: Array.isArray(account.roles) ? [...account.roles] : [],
-    profile: {
-      gold: Number(account.profile?.gold || 0),
-      cards: Number(account.profile?.cards || 0),
-      boosters: Number(account.profile?.boosters || 0),
-    },
-  };
+function hasAdminRole(account) {
+  return Boolean(account?.roles && account.roles.includes("admin"));
 }
 
 module.exports = {
@@ -78,5 +178,9 @@ module.exports = {
   writeDatabase,
   updateDatabase,
   findAccountByUsername,
+  getAccountBySessionToken,
+  hasAdminRole,
+  normalizeAccount,
+  normalizeDatabase,
   sanitizeAccountForClient,
 };
