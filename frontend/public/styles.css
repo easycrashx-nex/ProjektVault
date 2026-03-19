@@ -23,6 +23,23 @@
   --shadow-1: 0 22px 60px rgba(0, 0, 0, 0.34);
   --shadow-2: 0 28px 90px rgba(0, 0, 0, 0.46);
   --blur: blur(18px);
+  --space-2xs: 6px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 28px;
+  --space-3xl: 32px;
+  --layout-pad: 20px;
+  --layout-gap: 18px;
+  --panel-pad: 22px;
+  --panel-gap: 18px;
+  --group-gap: 14px;
+  --compact-gap: 12px;
+  --auth-shell-pad: 28px;
+  --auth-shell-gap: 28px;
+  --hero-gap: 20px;
   --radius-xl: 34px;
   --radius-lg: 24px;
   --radius-md: 18px;
@@ -335,7 +352,7 @@ p {
 .app-root {
   position: relative;
   z-index: 1;
-  padding: 20px;
+  padding: var(--layout-pad);
 }
 
 .auth-screen {
@@ -348,8 +365,8 @@ p {
   width: min(1180px, 100%);
   display: grid;
   grid-template-columns: 1.22fr 0.88fr;
-  gap: 28px;
-  padding: 28px;
+  gap: var(--auth-shell-gap);
+  padding: var(--auth-shell-pad);
   border-radius: 38px;
   border: 1px solid var(--panel-border-strong);
   background:
@@ -408,9 +425,9 @@ p {
 }
 
 .auth-copy {
-  padding: 32px;
+  padding: var(--space-3xl);
   display: grid;
-  gap: 18px;
+  gap: var(--panel-gap);
   align-content: center;
   background:
     radial-gradient(circle at 8% 0%, rgba(255, 210, 122, 0.18), transparent 34%),
@@ -439,21 +456,21 @@ p {
   margin: 4px 0 0;
   padding-left: 20px;
   display: grid;
-  gap: 10px;
+  gap: var(--compact-gap);
   color: var(--text-soft);
 }
 
 .auth-panel {
-  padding: 24px;
+  padding: var(--space-xl);
   display: grid;
-  gap: 18px;
+  gap: var(--panel-gap);
   align-content: start;
 }
 
 .auth-tab-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--compact-gap);
 }
 
 .auth-tab.active {
@@ -472,7 +489,7 @@ p {
 .profile-form label,
 .admin-tools label {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .auth-form span,
@@ -490,12 +507,12 @@ p {
 .game-shell {
   display: grid;
   grid-template-columns: 294px 1fr;
-  gap: 18px;
+  gap: var(--layout-gap);
 }
 
 .sidebar {
   display: grid;
-  gap: 18px;
+  gap: var(--layout-gap);
   align-content: start;
 }
 
@@ -511,7 +528,7 @@ p {
 .topbar,
 .hand-panel,
 .modal-card-shell {
-  padding: 22px;
+  padding: var(--panel-pad);
 }
 
 .brand-card {
@@ -523,7 +540,7 @@ p {
 
 .nav-list {
   display: grid;
-  gap: 10px;
+  gap: var(--compact-gap);
 }
 
 .nav-button {
@@ -549,13 +566,13 @@ p {
 
 .main-shell {
   display: grid;
-  gap: 18px;
+  gap: var(--layout-gap);
 }
 
 .topbar {
   display: grid;
   grid-template-columns: 220px 1fr auto;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: center;
   background:
     radial-gradient(circle at 84% 20%, rgba(121, 217, 255, 0.08), transparent 24%),
@@ -570,13 +587,13 @@ p {
 .resource-bar {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--compact-gap);
 }
 
 .resource-chip {
   position: relative;
   overflow: hidden;
-  padding: 14px 16px;
+  padding: var(--group-gap) var(--space-md);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -597,7 +614,7 @@ p {
 
 .resource-chip span {
   display: block;
-  color: var(--text-muted);
+  color: rgba(255, 210, 122, 0.82);
   font-size: 0.7rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -639,16 +656,16 @@ p {
   flex-wrap: nowrap;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: var(--compact-gap);
 }
 
 .topbar-icon-nav {
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(78px, auto);
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: stretch;
-  padding: 8px;
+  padding: var(--space-xs);
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -664,10 +681,10 @@ p {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 6px;
+  gap: var(--space-2xs);
   min-width: 78px;
   height: 64px;
-  padding: 10px 12px 9px;
+  padding: 10px var(--space-sm);
   border-radius: 18px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -695,7 +712,7 @@ p {
   position: relative;
   width: 22px;
   height: 22px;
-  color: var(--text-soft);
+  color: rgba(255, 210, 122, 0.82);
   pointer-events: none;
   transition: color 160ms ease, transform 160ms ease;
 }
@@ -706,7 +723,7 @@ p {
   line-height: 1;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(214, 221, 236, 0.68);
+  color: rgba(255, 210, 122, 0.82);
   transition: color 160ms ease;
 }
 
@@ -733,7 +750,7 @@ p {
 .topbar-icon-button.active svg,
 .topbar-icon-button:hover svg,
 .topbar-icon-button:focus-visible svg {
-  color: var(--text);
+  color: rgba(255, 233, 186, 0.98);
   transform: scale(1.04);
 }
 
@@ -746,7 +763,7 @@ p {
 .scene-banner {
   display: grid;
   grid-template-columns: 1.14fr 0.86fr;
-  gap: 20px;
+  gap: var(--hero-gap);
   align-items: center;
   min-height: 220px;
   background:
@@ -758,7 +775,7 @@ p {
 
 .scene-banner-copy {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
   align-content: center;
   max-width: 760px;
 }
@@ -876,7 +893,7 @@ body[data-scene="settings"] .scene-core {
 
 .section-panel {
   display: none;
-  gap: 22px;
+  gap: var(--panel-gap);
   background:
     radial-gradient(circle at 92% 0%, rgba(121, 217, 255, 0.06), transparent 22%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
@@ -905,7 +922,7 @@ body[data-scene="settings"] .scene-core {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--compact-gap);
 }
 
 .section-head {
@@ -923,7 +940,7 @@ body[data-scene="settings"] .scene-core {
 .battle-stage,
 .admin-layout {
   display: grid;
-  gap: 18px;
+  gap: var(--layout-gap);
 }
 
 .shop-layout {
@@ -939,7 +956,7 @@ body[data-scene="settings"] .scene-core {
 .bundle-list,
 .bundle-summary-row {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .shop-catalog-column,
@@ -948,7 +965,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .shop-catalog-head {
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .shop-tab-row {
@@ -959,7 +976,7 @@ body[data-scene="settings"] .scene-core {
   position: relative;
   display: grid;
   gap: 4px;
-  padding: 14px 16px;
+  padding: var(--group-gap) var(--space-md);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background:
@@ -1001,7 +1018,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .shop-summary-panel {
-  padding: 20px;
+  padding: var(--space-lg);
 }
 
 .shop-summary-grid {
@@ -1009,7 +1026,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .shop-summary-card {
-  padding: 14px;
+  padding: var(--group-gap);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -1082,7 +1099,7 @@ body[data-scene="settings"] .scene-core {
 .admin-summary,
 .modal-details {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .deck-column {
@@ -1091,7 +1108,7 @@ body[data-scene="settings"] .scene-core {
 
 .subheading {
   font-size: 1.35rem;
-  margin-bottom: 14px;
+  margin-bottom: var(--group-gap);
 }
 
 .pack-grid {
@@ -1113,7 +1130,7 @@ body[data-scene="settings"] .scene-core {
 .pack-card {
   position: relative;
   overflow: hidden;
-  padding: 18px;
+  padding: var(--panel-gap);
   border-radius: 26px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background:
@@ -1148,9 +1165,9 @@ body[data-scene="settings"] .scene-core {
   position: relative;
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--compact-gap);
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .pack-kicker,
@@ -1177,7 +1194,7 @@ body[data-scene="settings"] .scene-core {
   place-items: center;
   width: 88px;
   height: 88px;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .pack-crest-core,
@@ -1217,8 +1234,8 @@ body[data-scene="settings"] .scene-core {
 .pack-odds {
   position: relative;
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  gap: var(--space-xs);
+  padding: var(--group-gap);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -1228,14 +1245,14 @@ body[data-scene="settings"] .scene-core {
 .odds-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--compact-gap);
   font-size: 0.92rem;
 }
 
 .pack-actions {
   position: relative;
   z-index: 1;
-  margin-top: 12px;
+  margin-top: var(--compact-gap);
   flex-wrap: wrap;
 }
 
@@ -1289,7 +1306,7 @@ body[data-scene="settings"] .scene-core {
 .bundle-group {
   position: relative;
   z-index: 1;
-  padding: 14px;
+  padding: var(--group-gap);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -1299,7 +1316,7 @@ body[data-scene="settings"] .scene-core {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--compact-gap);
 }
 
 .bundle-group-head .eyebrow {
@@ -1321,7 +1338,7 @@ body[data-scene="settings"] .scene-core {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--compact-gap);
   color: var(--text-soft);
   font-size: 0.92rem;
   line-height: 1.5;
@@ -1387,7 +1404,7 @@ body[data-scene="settings"] .scene-core {
 .detail-block,
 .arena-status,
 .battle-header {
-  padding: 18px;
+  padding: var(--panel-gap);
 }
 
 .future-card {
@@ -1395,7 +1412,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .opening-header {
-  padding: 20px;
+  padding: var(--space-lg);
   background:
     radial-gradient(circle at top right, rgba(255, 210, 122, 0.12), transparent 28%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
@@ -1406,24 +1423,24 @@ body[data-scene="settings"] .scene-core {
 .opening-preview-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--compact-gap);
   align-items: center;
 }
 
 .opening-preview-head {
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--compact-gap);
 }
 
 .opening-preview-meta {
-  margin-top: 14px;
+  margin-top: var(--group-gap);
 }
 
 .opening-stage {
   position: relative;
   overflow: hidden;
   min-height: 360px;
-  padding: 20px;
+  padding: var(--space-lg);
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -1520,7 +1537,7 @@ body[data-scene="settings"] .scene-core {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .reveal-card {
@@ -1532,7 +1549,7 @@ body[data-scene="settings"] .scene-core {
 .deck-toolbar,
 .market-toolbar {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .filter-toolbar {
@@ -1543,7 +1560,7 @@ body[data-scene="settings"] .scene-core {
 .deck-toolbar label,
 .market-toolbar label,
 .admin-tools label {
-  padding: 12px;
+  padding: var(--space-sm);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -1557,7 +1574,7 @@ body[data-scene="settings"] .scene-core {
 
 .market-toolbar {
   grid-template-columns: 1.24fr 0.78fr 0.78fr;
-  margin-bottom: 18px;
+  margin-bottom: var(--panel-gap);
 }
 
 .market-overview {
@@ -1568,7 +1585,7 @@ body[data-scene="settings"] .scene-core {
 .mover-card,
 .admin-account-card,
 .admin-stat-card {
-  padding: 18px;
+  padding: var(--panel-gap);
 }
 
 .market-card strong,
@@ -1604,7 +1621,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .price-stack {
-  margin-top: 6px;
+  margin-top: var(--space-2xs);
 }
 
 .price-line span {
@@ -1626,7 +1643,7 @@ body[data-scene="settings"] .scene-core {
 .checkbox-line {
   display: flex !important;
   align-items: center;
-  gap: 10px;
+  gap: var(--compact-gap);
   padding-top: 0 !important;
 }
 
@@ -1681,8 +1698,8 @@ body[data-scene="settings"] .scene-core {
 .admin-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-top: 12px;
+  gap: var(--space-xs) var(--group-gap);
+  margin-top: var(--compact-gap);
   color: var(--text-muted);
 }
 
@@ -1714,12 +1731,12 @@ body[data-scene="settings"] .scene-core {
 }
 
 .admin-summary-block {
-  padding: 18px;
+  padding: var(--panel-gap);
 }
 
 .admin-tools {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .admin-tool-group {
@@ -1733,7 +1750,7 @@ body[data-scene="settings"] .scene-core {
 .admin-tool-group summary {
   position: relative;
   list-style: none;
-  padding: 16px 18px;
+  padding: var(--space-md) var(--panel-gap);
   cursor: pointer;
   font-family: "Cinzel", serif;
   font-size: 1rem;
@@ -1761,15 +1778,15 @@ body[data-scene="settings"] .scene-core {
 .admin-tool-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 0 18px 18px;
+  gap: var(--group-gap);
+  padding: 0 var(--panel-gap) var(--panel-gap);
   align-items: end;
 }
 
 .admin-tool-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--compact-gap);
 }
 
 .admin-tool-actions.wide-row,
@@ -1779,7 +1796,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .danger-note {
-  padding: 14px 16px;
+  padding: var(--group-gap) var(--space-md);
   border-radius: 18px;
   border: 1px solid rgba(255, 126, 130, 0.2);
   background: rgba(255, 126, 130, 0.08);
@@ -1822,7 +1839,7 @@ body[data-scene="settings"] .scene-core {
 .settings-grid,
 .settings-summary-panel {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .profile-summary-head,
@@ -1833,11 +1850,11 @@ body[data-scene="settings"] .scene-core {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--compact-gap);
 }
 
 .profile-form {
-  margin-top: 16px;
+  margin-top: var(--space-md);
 }
 
 .profile-danger-note {
@@ -1864,11 +1881,11 @@ body[data-scene="settings"] .scene-core {
 .settings-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .profile-stat-card {
-  padding: 16px 18px;
+  padding: var(--space-md) var(--panel-gap);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -1903,7 +1920,7 @@ body[data-scene="settings"] .scene-core {
 .friend-row,
 .friend-feature-card,
 .settings-option {
-  padding: 16px 18px;
+  padding: var(--space-md) var(--panel-gap);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -1918,18 +1935,18 @@ body[data-scene="settings"] .scene-core {
 
 .friend-feature-card {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .settings-grid {
-  margin-top: 16px;
+  margin-top: var(--space-md);
 }
 
 .settings-option {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: start;
-  gap: 14px;
+  gap: var(--group-gap);
   cursor: pointer;
 }
 
@@ -1939,7 +1956,7 @@ body[data-scene="settings"] .scene-core {
 
 .settings-option div {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2xs);
 }
 
 .settings-option strong {
@@ -1956,10 +1973,10 @@ body[data-scene="settings"] .scene-core {
   position: relative;
   overflow: hidden;
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
   align-content: start;
   min-height: 356px;
-  padding: 18px;
+  padding: var(--panel-gap);
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background:
@@ -2241,7 +2258,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .saved-deck-card {
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .saved-deck-card.active {
@@ -2254,8 +2271,8 @@ body[data-scene="settings"] .scene-core {
 .deck-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: var(--compact-gap);
+  margin-bottom: var(--group-gap);
 }
 
 .warning-item {
@@ -2274,12 +2291,12 @@ body[data-scene="settings"] .scene-core {
 
 .arena-shell {
   display: grid;
-  gap: 18px;
+  gap: var(--layout-gap);
 }
 
 .arena-difficulty-field {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 220px;
 }
 
@@ -2305,13 +2322,13 @@ body[data-scene="settings"] .scene-core {
 .arena-status-shell {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.75fr);
-  gap: 18px;
+  gap: var(--layout-gap);
   align-items: start;
 }
 
 .arena-status-copy {
   display: grid;
-  gap: 10px;
+  gap: var(--compact-gap);
 }
 
 .arena-status-title {
@@ -2322,14 +2339,14 @@ body[data-scene="settings"] .scene-core {
 .arena-side-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--compact-gap);
   justify-content: flex-end;
 }
 
 .battle-header {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
+  gap: var(--group-gap);
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 42%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
@@ -2338,8 +2355,8 @@ body[data-scene="settings"] .scene-core {
 
 .arena-insight-card {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: var(--compact-gap);
+  padding: var(--group-gap) var(--space-md);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
@@ -2360,7 +2377,7 @@ body[data-scene="settings"] .scene-core {
 .battle-stage {
   grid-template-columns: 1fr 0.82fr 1fr;
   align-items: start;
-  padding: 16px;
+  padding: var(--space-md);
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
@@ -2371,12 +2388,12 @@ body[data-scene="settings"] .scene-core {
 
 .battle-lane {
   display: grid;
-  gap: 14px;
+  gap: var(--group-gap);
 }
 
 .hero-card {
   display: grid;
-  gap: 10px;
+  gap: var(--compact-gap);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
     rgba(12, 19, 31, 0.88);
@@ -2449,9 +2466,9 @@ body[data-scene="settings"] .scene-core {
 .board-slot-placeholder {
   display: grid;
   place-items: center;
-  gap: 6px;
+  gap: var(--space-2xs);
   min-height: 292px;
-  padding: 18px;
+  padding: var(--panel-gap);
   border-radius: 22px;
   border: 1px dashed rgba(255, 255, 255, 0.1);
   background:
@@ -2478,7 +2495,7 @@ body[data-scene="settings"] .scene-core {
 .battle-log {
   max-height: 760px;
   overflow: auto;
-  padding: 18px;
+  padding: var(--panel-gap);
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
@@ -2512,7 +2529,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .hand-head {
-  margin-bottom: 14px;
+  margin-bottom: var(--group-gap);
   flex-wrap: wrap;
 }
 
@@ -2541,7 +2558,7 @@ body[data-scene="settings"] .scene-core {
   z-index: 36;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-lg);
   background: rgba(3, 6, 12, 0.72);
   backdrop-filter: blur(18px);
 }
@@ -2580,12 +2597,12 @@ body[data-scene="settings"] .scene-core {
   z-index: 1;
   display: grid;
   grid-template-columns: minmax(290px, 360px) 1fr;
-  gap: 24px;
+  gap: var(--space-xl);
   align-items: start;
 }
 
 .detail-block h4 {
-  margin-bottom: 12px;
+  margin-bottom: var(--compact-gap);
   font-size: 1rem;
 }
 
@@ -2595,9 +2612,9 @@ body[data-scene="settings"] .scene-core {
   bottom: 22px;
   z-index: 42;
   display: grid;
-  gap: 6px;
+  gap: var(--space-2xs);
   min-width: min(380px, calc(100vw - 32px));
-  padding: 16px 18px;
+  padding: var(--space-md) var(--panel-gap);
   border-radius: 18px;
   border: 1px solid rgba(255, 210, 122, 0.24);
   background:
@@ -2879,8 +2896,26 @@ body[data-scene="settings"] .scene-core {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --layout-pad: 10px;
+    --layout-gap: 16px;
+    --panel-pad: 16px;
+    --panel-gap: 16px;
+    --group-gap: 12px;
+    --compact-gap: 10px;
+    --auth-shell-pad: 16px;
+    --auth-shell-gap: 16px;
+    --hero-gap: 16px;
+  }
+
   .app-root {
-    padding: 10px;
+    padding: var(--layout-pad);
+  }
+
+  .auth-card {
+    padding: var(--auth-shell-pad);
+    gap: var(--auth-shell-gap);
+    border-radius: 26px;
   }
 
   .auth-copy,
@@ -2896,12 +2931,12 @@ body[data-scene="settings"] .scene-core {
   .hero-card,
   .topbar,
   .hand-panel {
-    padding: 16px;
+    padding: var(--panel-pad);
     border-radius: 24px;
   }
 
   .modal-card-shell {
-    padding: 72px 16px 16px;
+    padding: 72px var(--panel-pad) var(--panel-pad);
     border-radius: 24px;
   }
 
