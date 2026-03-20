@@ -973,7 +973,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .shop-tab-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .shop-tab-button {
@@ -1107,7 +1107,7 @@ body[data-scene="settings"] .scene-core {
 }
 
 .friends-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .admin-layout {
@@ -2083,6 +2083,361 @@ body[data-scene="settings"] .scene-core {
   line-height: 1.65;
 }
 
+.identity-preview,
+.profile-loadout-grid,
+.cosmetic-group-list,
+.cosmetic-owned-grid,
+.social-card-grid,
+.trade-grid,
+.friend-search-form,
+.cosmetic-shop-grid,
+.offer-list {
+  display: grid;
+  gap: var(--group-gap);
+}
+
+.identity-preview {
+  grid-template-columns: minmax(164px, 0.88fr) minmax(0, 1.12fr);
+  align-items: center;
+  padding: var(--panel-gap);
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(255, 210, 122, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.identity-preview.compact {
+  grid-template-columns: 88px minmax(0, 1fr);
+  padding: var(--group-gap);
+  border-radius: 20px;
+}
+
+.identity-preview-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 178px;
+  padding: var(--panel-gap);
+  border-radius: 24px;
+  border: 1px solid var(--tone-border, rgba(255, 255, 255, 0.08));
+  background:
+    radial-gradient(circle at 50% 36%, var(--tone-bg, rgba(255, 255, 255, 0.1)), transparent 64%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.identity-preview.compact .identity-preview-stage {
+  min-height: 88px;
+  padding: var(--space-sm);
+  border-radius: 20px;
+}
+
+.identity-preview-stage::after {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+.identity-frame-badge,
+.identity-avatar,
+.cosmetic-card-symbol,
+.cosmetic-owned-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--tone-border, rgba(255, 255, 255, 0.12));
+  color: var(--tone-color, var(--text));
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16), transparent 70%),
+    var(--tone-bg, rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 16px 34px rgba(0, 0, 0, 0.16);
+}
+
+.identity-frame-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.identity-avatar,
+.cosmetic-card-symbol {
+  width: 94px;
+  height: 94px;
+  font-family: "Cinzel", serif;
+  font-size: 1.7rem;
+  letter-spacing: 0.06em;
+}
+
+.identity-preview.compact .identity-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 1.1rem;
+}
+
+.identity-preview-copy,
+.cosmetic-card-copy,
+.trade-builder,
+.duel-builder,
+.social-stack,
+.social-offer-card {
+  display: grid;
+  gap: var(--compact-gap);
+}
+
+.identity-preview-copy h3 {
+  font-size: 1.5rem;
+}
+
+.identity-preview.compact .identity-preview-copy h3 {
+  font-size: 1.15rem;
+}
+
+.identity-pill-row,
+.social-mini-stats,
+.social-action-row,
+.profile-cta-row,
+.cosmetic-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.identity-pill-row .meta-chip,
+.social-mini-stats .meta-chip {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-loadout-grid,
+.trade-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.profile-loadout-form,
+.trade-builder,
+.duel-builder {
+  align-content: start;
+  padding: var(--panel-gap);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.profile-cta-row {
+  margin-top: 4px;
+}
+
+.profile-cta-row .primary-button,
+.profile-cta-row .secondary-button {
+  flex: 1 1 180px;
+}
+
+.cosmetic-group-list {
+  align-content: start;
+}
+
+.cosmetic-group-block {
+  display: grid;
+  gap: var(--group-gap);
+  padding: var(--panel-gap);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.cosmetic-group-head,
+.social-profile-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--group-gap);
+}
+
+.cosmetic-owned-grid,
+.social-card-grid,
+.cosmetic-shop-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.cosmetic-owned-card,
+.social-profile-card,
+.social-offer-card,
+.trade-builder,
+.duel-builder,
+.cosmetic-card {
+  padding: var(--panel-gap);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.cosmetic-owned-card.active,
+.cosmetic-card.active,
+.social-profile-card {
+  background:
+    radial-gradient(circle at top right, rgba(255, 210, 122, 0.1), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.cosmetic-owned-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.cosmetic-owned-symbol {
+  width: 46px;
+  height: 46px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.social-profile-card .identity-preview {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.social-profile-card .identity-preview.compact .identity-preview-copy h3 {
+  font-size: 1.08rem;
+}
+
+.social-action-row .social-action-button {
+  flex: 1 1 132px;
+}
+
+.friend-search-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.friend-search-form .wide-field {
+  margin: 0;
+}
+
+.friend-search-form .primary-button {
+  min-width: 148px;
+}
+
+.trade-builder,
+.duel-builder {
+  min-height: 100%;
+}
+
+.offer-list {
+  align-content: start;
+}
+
+.social-offer-card .social-action-row .social-action-button {
+  flex: 1 1 140px;
+}
+
+.cosmetic-card {
+  align-content: start;
+}
+
+.cosmetic-card-stage {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-sm);
+  min-height: 120px;
+  padding: var(--panel-gap);
+  border-radius: 22px;
+  border: 1px solid var(--tone-border, rgba(255, 255, 255, 0.08));
+  background:
+    radial-gradient(circle at 50% 36%, var(--tone-bg, rgba(255, 255, 255, 0.1)), transparent 68%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.cosmetic-card-copy h3 {
+  font-size: 1.18rem;
+}
+
+.cosmetic-card-actions .primary-button,
+.cosmetic-card-actions .secondary-button {
+  flex: 1 1 148px;
+}
+
+.tone-core {
+  --tone-border: rgba(255, 210, 122, 0.2);
+  --tone-bg: rgba(255, 210, 122, 0.12);
+  --tone-color: #fff0cc;
+}
+
+.tone-ember {
+  --tone-border: rgba(255, 126, 130, 0.24);
+  --tone-bg: rgba(255, 126, 130, 0.14);
+  --tone-color: #ffd8dc;
+}
+
+.tone-mist {
+  --tone-border: rgba(121, 217, 255, 0.24);
+  --tone-bg: rgba(121, 217, 255, 0.14);
+  --tone-color: #def6ff;
+}
+
+.tone-thorn {
+  --tone-border: rgba(121, 240, 178, 0.22);
+  --tone-bg: rgba(121, 240, 178, 0.12);
+  --tone-color: #ddfff1;
+}
+
+.tone-storm {
+  --tone-border: rgba(103, 188, 255, 0.26);
+  --tone-bg: rgba(103, 188, 255, 0.12);
+  --tone-color: #dff3ff;
+}
+
+.tone-rune {
+  --tone-border: rgba(181, 157, 255, 0.24);
+  --tone-bg: rgba(181, 157, 255, 0.12);
+  --tone-color: #ece2ff;
+}
+
+.tone-aurora {
+  --tone-border: rgba(255, 224, 140, 0.24);
+  --tone-bg: rgba(255, 224, 140, 0.12);
+  --tone-color: #fff0c6;
+}
+
+.tone-prism {
+  --tone-border: rgba(255, 126, 130, 0.26);
+  --tone-bg: linear-gradient(135deg, rgba(255, 126, 130, 0.12), rgba(103, 188, 255, 0.12), rgba(121, 240, 178, 0.12));
+  --tone-color: #fff4f6;
+}
+
+.tone-halo {
+  --tone-border: rgba(214, 235, 255, 0.3);
+  --tone-bg: linear-gradient(135deg, rgba(255, 223, 131, 0.12), rgba(214, 235, 255, 0.14), rgba(184, 255, 240, 0.1));
+  --tone-color: #f8fbff;
+}
+
 .game-card {
   position: relative;
   overflow: hidden;
@@ -2469,7 +2824,8 @@ body[data-scene="settings"] .scene-core {
 .tone-neutral,
 .tone-unit,
 .tone-spell,
-.tone-trainer {
+.tone-trainer,
+.tone-steel {
   --tone-border: rgba(255, 255, 255, 0.08);
   --tone-bg: rgba(255, 255, 255, 0.06);
   --tone-color: var(--text-soft);
@@ -2484,21 +2840,24 @@ body[data-scene="settings"] .scene-core {
 }
 
 .tone-heal,
-.tone-grove {
+.tone-grove,
+.tone-verdant {
   --tone-border: rgba(121, 240, 178, 0.22);
   --tone-bg: rgba(121, 240, 178, 0.12);
   --tone-color: #ddfff1;
 }
 
 .tone-draw,
-.tone-star {
+.tone-star,
+.tone-gold {
   --tone-border: rgba(255, 224, 140, 0.24);
   --tone-bg: rgba(255, 224, 140, 0.12);
   --tone-color: #fff0c6;
 }
 
 .tone-mana,
-.tone-storm {
+.tone-storm,
+.tone-sky {
   --tone-border: rgba(103, 188, 255, 0.26);
   --tone-bg: rgba(103, 188, 255, 0.12);
   --tone-color: #dff3ff;
@@ -2507,14 +2866,16 @@ body[data-scene="settings"] .scene-core {
 .tone-buff,
 .tone-fortify,
 .tone-barrier,
-.tone-rune {
+.tone-rune,
+.tone-violet {
   --tone-border: rgba(181, 157, 255, 0.24);
   --tone-bg: rgba(181, 157, 255, 0.12);
   --tone-color: #ece2ff;
 }
 
 .tone-freeze,
-.tone-mist {
+.tone-mist,
+.tone-aqua {
   --tone-border: rgba(121, 217, 255, 0.24);
   --tone-bg: rgba(121, 217, 255, 0.12);
   --tone-color: #def6ff;
@@ -2523,7 +2884,8 @@ body[data-scene="settings"] .scene-core {
 .tone-poison,
 .tone-bone,
 .tone-weaken,
-.tone-shadow {
+.tone-shadow,
+.tone-void {
   --tone-border: rgba(187, 166, 233, 0.22);
   --tone-bg: rgba(187, 166, 233, 0.12);
   --tone-color: #ebe4ff;
@@ -2541,6 +2903,12 @@ body[data-scene="settings"] .scene-core {
   --tone-border: rgba(255, 210, 122, 0.24);
   --tone-bg: rgba(255, 210, 122, 0.12);
   --tone-color: #ffeac2;
+}
+
+.tone-rainbow {
+  --tone-border: rgba(255, 223, 131, 0.28);
+  --tone-bg: linear-gradient(135deg, rgba(255, 126, 130, 0.12), rgba(255, 223, 131, 0.12), rgba(103, 188, 255, 0.12), rgba(121, 240, 178, 0.12));
+  --tone-color: #fff7e4;
 }
 
 .tone-tempo,
@@ -3365,6 +3733,26 @@ body[data-scene="settings"] .scene-core {
     grid-template-columns: 1fr;
   }
 
+  .profile-loadout-grid,
+  .trade-grid,
+  .identity-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-preview.compact {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .cosmetic-owned-grid,
+  .social-card-grid,
+  .cosmetic-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .friend-search-form {
+    grid-template-columns: 1fr;
+  }
+
   .market-results-meta {
     justify-content: flex-start;
   }
@@ -3427,6 +3815,11 @@ body[data-scene="settings"] .scene-core {
   .profile-stat-grid,
   .friends-stat-grid,
   .settings-summary-grid,
+  .profile-loadout-grid,
+  .trade-grid,
+  .cosmetic-owned-grid,
+  .social-card-grid,
+  .cosmetic-shop-grid,
   .pack-grid,
   .future-grid,
   .card-grid,
@@ -3445,7 +3838,10 @@ body[data-scene="settings"] .scene-core {
   .settings-summary-head,
   .friend-row,
   .form-actions,
-  .market-discovery-head {
+  .market-discovery-head,
+  .cosmetic-group-head,
+  .social-profile-head,
+  .friend-search-form {
     flex-direction: column;
     align-items: stretch;
   }
@@ -3524,6 +3920,23 @@ body[data-scene="settings"] .scene-core {
 
   .settings-option {
     grid-template-columns: 1fr;
+  }
+
+  .identity-preview,
+  .identity-preview.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-preview.compact .identity-preview-stage {
+    min-height: 116px;
+  }
+
+  .social-action-row .social-action-button,
+  .profile-cta-row .primary-button,
+  .profile-cta-row .secondary-button,
+  .cosmetic-card-actions .primary-button,
+  .cosmetic-card-actions .secondary-button {
+    flex-basis: 100%;
   }
 
   .modal-close {

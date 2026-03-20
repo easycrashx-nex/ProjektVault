@@ -143,11 +143,27 @@ const DEFAULT_PLAYER_SETTINGS = Object.freeze({
   confirmActions: true,
 });
 
+const DEFAULT_PROFILE_DISPLAY = Object.freeze({
+  avatarId: "vault-core",
+  frameId: "bronze-sigil",
+  titleId: "vault-initiate",
+});
+
+const DEFAULT_COSMETICS = Object.freeze({
+  avatars: Object.freeze(["vault-core"]),
+  frames: Object.freeze(["bronze-sigil"]),
+  titles: Object.freeze(["vault-initiate"]),
+});
+
 const DEFAULT_FRIEND_STATE = Object.freeze({
   friends: [],
   incoming: [],
   outgoing: [],
   blocked: [],
+  tradeOffersIncoming: [],
+  tradeOffersOutgoing: [],
+  duelChallengesIncoming: [],
+  duelChallengesOutgoing: [],
 });
 
 const ARENA_DIFFICULTIES = Object.freeze({
@@ -1341,6 +1357,431 @@ function getPackDescription(packId) {
   return PACK_TRANSLATIONS[getCurrentLanguage()]?.[packId]?.description || PACK_TRANSLATIONS.de[packId]?.description || PACK_DEFINITIONS[packId]?.description || "";
 }
 
+function getCosmeticGroupLabel(type) {
+  if (getCurrentLanguage() === "fr") {
+    return type === "avatars" ? "Portraits" : type === "frames" ? "Cadres" : "Titres";
+  }
+
+  if (getCurrentLanguage() === "en") {
+    return type === "avatars" ? "Avatars" : type === "frames" ? "Frames" : "Titles";
+  }
+
+  return type === "avatars" ? "Profilbilder" : type === "frames" ? "Profilrahmen" : "Titel";
+}
+
+function getCosmeticCollectionTitle() {
+  if (getCurrentLanguage() === "fr") {
+    return "Identité de profil";
+  }
+
+  if (getCurrentLanguage() === "en") {
+    return "Profile identity";
+  }
+
+  return "Profil-Identität";
+}
+
+function getCosmeticItem(type, itemId) {
+  return COSMETIC_DEFINITIONS[type]?.find((entry) => entry.id === itemId) || null;
+}
+
+function getCosmeticLabel(type, itemId) {
+  const item = getCosmeticItem(type, itemId);
+  return item?.label?.[getCurrentLanguage()] || item?.label?.de || itemId;
+}
+
+function getCosmeticDescription(type, itemId) {
+  const item = getCosmeticItem(type, itemId);
+  return item?.description?.[getCurrentLanguage()] || item?.description?.de || "";
+}
+
+function pickLocalizedText(value) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  return value[getCurrentLanguage()] || value.de || Object.values(value)[0] || "";
+}
+
+function localText(de, en, fr) {
+  return pickLocalizedText({ de, en, fr });
+}
+
+function getCosmeticInventory() {
+  return getSave()?.cosmetics || cloneJsonValue(DEFAULT_COSMETICS);
+}
+
+function getProfileDisplay() {
+  const save = getSave();
+  const cosmetics = getCosmeticInventory();
+  const fallback = cloneJsonValue(DEFAULT_PROFILE_DISPLAY);
+  const display = save?.profileDisplay || fallback;
+  return {
+    avatarId: cosmetics.avatars.includes(display.avatarId) ? display.avatarId : fallback.avatarId,
+    frameId: cosmetics.frames.includes(display.frameId) ? display.frameId : fallback.frameId,
+    titleId: cosmetics.titles.includes(display.titleId) ? display.titleId : fallback.titleId,
+  };
+}
+
+function getCosmeticPreviewSymbol(type, itemId) {
+  const item = getCosmeticItem(type, itemId);
+  return item?.symbol || "◈";
+}
+
+function getCosmeticTone(type, itemId) {
+  const item = getCosmeticItem(type, itemId);
+  return item?.tone || "steel";
+}
+
+function getProfileDisplaySnapshot(profile) {
+  if (!profile || typeof profile !== "object") {
+    return getProfileDisplay();
+  }
+
+  return {
+    avatarId: profile.avatarId || DEFAULT_PROFILE_DISPLAY.avatarId,
+    frameId: profile.frameId || DEFAULT_PROFILE_DISPLAY.frameId,
+    titleId: profile.titleId || DEFAULT_PROFILE_DISPLAY.titleId,
+  };
+}
+
+function buildIdentityPreviewMarkup({ username, display, note = "", compact = false }) {
+  const activeDisplay = getProfileDisplaySnapshot(display);
+  const avatarTone = getCosmeticTone("avatars", activeDisplay.avatarId);
+  const frameTone = getCosmeticTone("frames", activeDisplay.frameId);
+  const titleTone = getCosmeticTone("titles", activeDisplay.titleId);
+  const avatarSymbol = getCosmeticPreviewSymbol("avatars", activeDisplay.avatarId);
+  const frameSymbol = getCosmeticPreviewSymbol("frames", activeDisplay.frameId);
+  const titleLabel = getCosmeticLabel("titles", activeDisplay.titleId);
+  const avatarLabel = getCosmeticLabel("avatars", activeDisplay.avatarId);
+  const frameLabel = getCosmeticLabel("frames", activeDisplay.frameId);
+  const supportText = note || getCosmeticDescription("titles", activeDisplay.titleId) || getCosmeticDescription("avatars", activeDisplay.avatarId) || getCosmeticDescription("frames", activeDisplay.frameId);
+
+  return `
+    <div class="identity-preview${compact ? " compact" : ""}">
+      <div class="identity-preview-stage tone-${frameTone}">
+        <div class="identity-frame-badge tone-${titleTone}">${escapeHtml(frameSymbol)}</div>
+        <div class="identity-avatar tone-${avatarTone}">${escapeHtml(avatarSymbol)}</div>
+      </div>
+      <div class="identity-preview-copy">
+        <p class="eyebrow">${escapeHtml(titleLabel)}</p>
+        <h3>${escapeHtml(username)}</h3>
+        <div class="identity-pill-row">
+          <span class="meta-chip">${escapeHtml(avatarLabel)}</span>
+          <span class="meta-chip">${escapeHtml(frameLabel)}</span>
+        </div>
+        <p class="mini-note">${escapeHtml(supportText)}</p>
+      </div>
+    </div>
+  `;
+}
+
+function buildDataAttributeMarkup(attributes = {}) {
+  return Object.entries(attributes)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([key, value]) => ` data-${key}="${escapeHtml(String(value))}"`)
+    .join("");
+}
+
+function buildPanelActionButtonMarkup(label, attributes = {}, tone = "secondary") {
+  return `
+    <button class="${tone === "primary" ? "primary-button" : "secondary-button"} social-action-button" type="button"${buildDataAttributeMarkup(attributes)}>
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
+function buildCosmeticSelectOptions(type, selectedId) {
+  const owned = getCosmeticInventory()[type] || [];
+  return owned
+    .map((itemId) => {
+      const item = getCosmeticItem(type, itemId);
+      if (!item) {
+        return "";
+      }
+      return `<option value="${escapeHtml(itemId)}"${itemId === selectedId ? " selected" : ""}>${escapeHtml(getCosmeticLabel(type, itemId))}</option>`;
+    })
+    .join("");
+}
+
+function buildOwnedCosmeticCardMarkup(type, itemId, selectedId) {
+  const item = getCosmeticItem(type, itemId);
+  if (!item) {
+    return "";
+  }
+
+  const active = itemId === selectedId;
+  return `
+    <article class="cosmetic-owned-card tone-${escapeHtml(item.tone || "steel")}${active ? " active" : ""}">
+      <div class="cosmetic-owned-head">
+        <span class="cosmetic-owned-symbol">${escapeHtml(item.symbol || "◈")}</span>
+        <span class="status-pill ${active ? "ok" : "turn"}">${active ? localText("Aktiv", "Active", "Actif") : localText("Besitzt", "Owned", "Possédé")}</span>
+      </div>
+      <strong>${escapeHtml(getCosmeticLabel(type, itemId))}</strong>
+      <p class="mini-note">${escapeHtml(getCosmeticDescription(type, itemId))}</p>
+      ${active
+        ? ""
+        : buildPanelActionButtonMarkup(localText("Anlegen", "Equip", "Équiper"), {
+          "profile-equip-type": type,
+          "profile-equip-id": itemId,
+        })}
+    </article>
+  `;
+}
+
+function buildSocialProfileCardMarkup(profile, {
+  relationship = "",
+  actionsMarkup = "",
+  note = "",
+} = {}) {
+  if (!profile) {
+    return "";
+  }
+
+  const stats = profile.stats || {};
+  const supportText = note || profile.activeDeckName || localText("Noch kein aktives Deck gespeichert.", "No active deck saved yet.", "Aucun deck actif enregistré.");
+  return `
+    <article class="social-profile-card">
+      <div class="social-profile-head">
+        ${buildIdentityPreviewMarkup({
+          username: profile.username,
+          display: profile,
+          note: supportText,
+          compact: true,
+        })}
+        ${relationship ? `<span class="status-pill turn">${escapeHtml(getRelationshipPillLabel(relationship))}</span>` : ""}
+      </div>
+      <div class="social-mini-stats">
+        <span class="meta-chip">${localText("Gold", "Gold", "Or")}: ${escapeHtml(String(stats.gold || 0))}</span>
+        <span class="meta-chip">${localText("Karten", "Cards", "Cartes")}: ${escapeHtml(String(stats.cards || 0))}</span>
+        <span class="meta-chip">${localText("Booster", "Boosters", "Boosters")}: ${escapeHtml(String(stats.boosters || 0))}</span>
+      </div>
+      ${actionsMarkup ? `<div class="social-action-row">${actionsMarkup}</div>` : ""}
+    </article>
+  `;
+}
+
+function getFallbackSocialProfile(username) {
+  const safeUsername = sanitizeUsername(username) || localText("Unbekannt", "Unknown", "Inconnu");
+  return {
+    username: safeUsername,
+    createdAt: "",
+    online: false,
+    titleId: DEFAULT_PROFILE_DISPLAY.titleId,
+    avatarId: DEFAULT_PROFILE_DISPLAY.avatarId,
+    frameId: DEFAULT_PROFILE_DISPLAY.frameId,
+    stats: {
+      gold: 0,
+      cards: 0,
+      uniqueCards: 0,
+      boosters: 0,
+    },
+    activeDeckName: "",
+  };
+}
+
+function createCosmeticShopCard(type, itemId) {
+  const item = getCosmeticItem(type, itemId);
+  if (!item) {
+    return document.createElement("div");
+  }
+
+  const element = document.createElement("article");
+  const display = getProfileDisplay();
+  const inventory = getCosmeticInventory();
+  const owned = (inventory[type] || []).includes(itemId);
+  const active = (type === "avatars" && display.avatarId === itemId)
+    || (type === "frames" && display.frameId === itemId)
+    || (type === "titles" && display.titleId === itemId);
+  const blocked = isMatchSessionLocked();
+  const insufficientGold = (getSave()?.gold || 0) < item.price;
+
+  element.className = `cosmetic-card tone-${item.tone || "steel"}${active ? " active" : ""}`;
+  element.innerHTML = `
+    <div class="cosmetic-card-stage tone-${escapeHtml(item.tone || "steel")}">
+      <span class="cosmetic-card-symbol">${escapeHtml(item.symbol || "◈")}</span>
+      <span class="status-pill ${active ? "ok" : owned ? "turn" : "warn"}">${escapeHtml(getCosmeticGroupLabel(type))}</span>
+    </div>
+    <div class="cosmetic-card-copy">
+      <p class="eyebrow">${escapeHtml(item.tier || localText("Profil", "Profile", "Profil"))}</p>
+      <h3>${escapeHtml(getCosmeticLabel(type, itemId))}</h3>
+      <p class="mini-note">${escapeHtml(getCosmeticDescription(type, itemId))}</p>
+      <div class="identity-pill-row">
+        <span class="meta-chip">${escapeHtml(getCosmeticCollectionTitle())}</span>
+        <span class="meta-chip">${escapeHtml(formatCurrency(item.price))}</span>
+      </div>
+    </div>
+  `;
+
+  const actions = document.createElement("div");
+  actions.className = "cosmetic-card-actions";
+
+  if (active) {
+    actions.append(createActionButton(localText("Aktiv", "Active", "Actif"), () => {}, true));
+  } else if (owned) {
+    actions.append(createActionButton(localText("Anlegen", "Equip", "Équiper"), () => {
+      const field = type === "avatars" ? "avatarId" : type === "frames" ? "frameId" : "titleId";
+      applyProfileDisplayChange({ [field]: itemId });
+    }, blocked));
+  } else {
+    actions.append(createActionButton(localText("Kaufen", "Buy", "Acheter"), () => handleCosmeticPurchase(type, itemId), blocked || insufficientGold));
+  }
+
+  const helper = document.createElement("p");
+  helper.className = "mini-note";
+  helper.textContent = active
+    ? localText("Derzeit auf deinem Profil aktiv.", "Currently active on your profile.", "Actuellement actif sur ton profil.")
+    : owned
+      ? localText("Bereits freigeschaltet und sofort nutzbar.", "Already unlocked and ready to equip.", "Déjà débloqué et prêt à être équipé.")
+      : blocked
+        ? getUiText("messages.matchCollectionLocked")
+        : insufficientGold
+          ? localText("Dir fehlt noch Gold für diesen Kauf.", "You still need more gold for this purchase.", "Il te manque encore de l'or pour cet achat.")
+          : localText("Wird direkt in Profil, Freunde und Topbar sichtbar.", "Shows up instantly in profile, friends and the top bar.", "Apparaît directement dans le profil, les amis et la barre supérieure.");
+
+  element.append(actions, helper);
+  return element;
+}
+
+async function applyProfileDisplayChange(partialDisplay, { quiet = false } = {}) {
+  if (!currentAccount) {
+    return false;
+  }
+
+  const nextDisplay = sanitizeProfileDisplayState({
+    ...getProfileDisplay(),
+    ...(partialDisplay || {}),
+  }, DEFAULT_PROFILE_DISPLAY, getCosmeticInventory());
+
+  try {
+    if (isServerSessionActive()) {
+      await saveProfileDisplayOnServer(nextDisplay);
+    } else {
+      getSave().profileDisplay = nextDisplay;
+      persistCurrentAccount();
+    }
+    renderAll();
+    if (!quiet) {
+      showToast(localText("Profil-Design gespeichert.", "Profile style saved.", "Style de profil enregistré."));
+    }
+    return true;
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Profil-Design konnte nicht gespeichert werden.", "Profile style could not be saved.", "Le style du profil n'a pas pu être enregistré."));
+    return false;
+  }
+}
+
+function bindProfileLoadoutPanelEvents() {
+  const form = elements.profileLoadoutPanel.querySelector("#profileDisplayFormDynamic");
+  if (form) {
+    form.addEventListener("submit", handleProfileDisplaySubmit);
+  }
+
+  elements.profileLoadoutPanel.querySelectorAll("[data-shop-section]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (isMatchSessionLocked()) {
+        showToast(getUiText("messages.matchCollectionLocked"));
+        return;
+      }
+      getSave().shopTab = String(button.dataset.shopSection || "cosmetics");
+      persistCurrentAccount();
+      uiState.section = "shop";
+      renderAll();
+    });
+  });
+
+  elements.profileCosmeticsPanel.querySelectorAll("[data-profile-equip-type]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await applyProfileDisplayChange({
+        [String(button.dataset.profileEquipType) === "avatars"
+          ? "avatarId"
+          : String(button.dataset.profileEquipType) === "frames"
+            ? "frameId"
+            : "titleId"]: String(button.dataset.profileEquipId || ""),
+      });
+    });
+  });
+}
+
+function bindFriendsPanelEvents() {
+  const searchForm = elements.friendsSummary.querySelector("#friendSearchForm");
+  if (searchForm) {
+    searchForm.addEventListener("submit", handleFriendSearchSubmit);
+  }
+
+  elements.friendsSummary.querySelectorAll("[data-friend-request]").forEach((button) => {
+    button.addEventListener("click", () => sendFriendRequest(button.dataset.friendRequest));
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-request-action]").forEach((button) => {
+    button.addEventListener("click", () => handleFriendRequestAction(button.dataset.username, button.dataset.requestAction));
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-remove-friend]").forEach((button) => {
+    button.addEventListener("click", () => removeFriend(button.dataset.removeFriend));
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-block-user]").forEach((button) => {
+    button.addEventListener("click", () => blockFriend(button.dataset.blockUser));
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-unblock-user]").forEach((button) => {
+    button.addEventListener("click", () => unblockFriend(button.dataset.unblockUser));
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-trade-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.section = "friends";
+      uiState.friendTradeTarget = sanitizeUsername(button.dataset.tradeTarget);
+      renderFriends();
+      setFriendTradeTarget(button.dataset.tradeTarget);
+    });
+  });
+
+  elements.friendsSummary.querySelectorAll("[data-duel-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.friendChallengeTarget = sanitizeUsername(button.dataset.duelTarget);
+      renderFriends();
+    });
+  });
+
+  const tradeForm = elements.friendsTradePanel.querySelector("#friendTradeForm");
+  if (tradeForm) {
+    tradeForm.addEventListener("submit", handleFriendTradeSubmit);
+    const tradeSelect = tradeForm.querySelector('[name="tradeFriend"]');
+    if (tradeSelect) {
+      tradeSelect.addEventListener("change", () => {
+        uiState.friendTradeTarget = sanitizeUsername(tradeSelect.value);
+        setFriendTradeTarget(tradeSelect.value);
+      });
+    }
+  }
+
+  elements.friendsTradePanel.querySelectorAll("[data-trade-offer-action]").forEach((button) => {
+    button.addEventListener("click", () => handleTradeOfferAction(button.dataset.tradeOfferId, button.dataset.tradeOfferAction));
+  });
+
+  const challengeForm = elements.friendsDuelPanel.querySelector("#friendChallengeForm");
+  if (challengeForm) {
+    challengeForm.addEventListener("submit", handleFriendChallengeSubmit);
+    const challengeSelect = challengeForm.querySelector('[name="challengeFriend"]');
+    if (challengeSelect) {
+      challengeSelect.addEventListener("change", () => {
+        uiState.friendChallengeTarget = sanitizeUsername(challengeSelect.value);
+      });
+    }
+  }
+
+  elements.friendsDuelPanel.querySelectorAll("[data-challenge-action]").forEach((button) => {
+    button.addEventListener("click", () => handleFriendChallengeAction(button.dataset.challengeId, button.dataset.challengeAction));
+  });
+}
+
 function getShopBundleTierLabel(tierId) {
   return getUiText(`shop.bundleTiers.${tierId}`);
 }
@@ -1621,6 +2062,149 @@ async function runServerAdminAction(action, payload = {}) {
   return response;
 }
 
+function applyServerFriendsOverview(payload, { render = true } = {}) {
+  if (!currentAccount || !payload) {
+    return false;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  if (payload.account && sessionToken) {
+    mergeServerAccountIntoLocalState(payload.account, sessionToken, { render: false });
+  }
+  currentAccount.save.friends = sanitizeFriendState(payload.friends, createDefaultFriendState());
+  database.accounts[currentAccount.username] = normalizeAccount(currentAccount);
+  currentAccount = database.accounts[currentAccount.username];
+  uiState.socialProfiles = payload.profiles && typeof payload.profiles === "object" ? cloneJsonValue(payload.profiles, {}) : {};
+  if (uiState.friendTradeTarget && !currentAccount.save.friends.friends.some((entry) => canonicalizeUsername(entry) === canonicalizeUsername(uiState.friendTradeTarget))) {
+    uiState.friendTradeTarget = "";
+    uiState.friendTradeOptions = null;
+  }
+  if (uiState.friendChallengeTarget && !currentAccount.save.friends.friends.some((entry) => canonicalizeUsername(entry) === canonicalizeUsername(uiState.friendChallengeTarget))) {
+    uiState.friendChallengeTarget = "";
+  }
+  uiState.friendsHydrated = true;
+  saveDatabase();
+  if (render) {
+    renderFriends();
+  }
+  return true;
+}
+
+async function refreshServerFriendsOverview({ render = true } = {}) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/friends/overview", { token: sessionToken });
+  applyServerFriendsOverview(response, { render });
+  return response;
+}
+
+async function hydrateFriendsSection({ force = false, render = true } = {}) {
+  if (!isServerSessionActive()) {
+    uiState.friendsHydrated = true;
+    return null;
+  }
+
+  if (uiState.friendsLoading) {
+    return null;
+  }
+
+  if (uiState.friendsHydrated && !force) {
+    return null;
+  }
+
+  uiState.friendsLoading = true;
+  if (render) {
+    renderFriends();
+  }
+
+  try {
+    return await refreshServerFriendsOverview({ render });
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freundesdaten konnten nicht geladen werden.");
+    return null;
+  } finally {
+    uiState.friendsLoading = false;
+    if (render) {
+      renderFriends();
+    }
+  }
+}
+
+async function runServerFriendsAction(path, body = {}, { render = true } = {}) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest(path, {
+    method: "POST",
+    token: sessionToken,
+    body,
+  });
+  applyServerFriendsOverview(response, { render });
+  return response;
+}
+
+async function loadServerTradeOptions(username) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  return apiRequest(`/api/friends/trade/options?username=${encodeURIComponent(username)}`, {
+    token: sessionToken,
+  });
+}
+
+async function searchServerFriends(query) {
+  if (!isServerSessionActive()) {
+    return [];
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest(`/api/friends/search?query=${encodeURIComponent(query)}`, {
+    token: sessionToken,
+  });
+  return Array.isArray(response?.results) ? response.results : [];
+}
+
+async function purchaseCosmeticOnServer(cosmeticType, itemId) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/shop/cosmetics/purchase", {
+    method: "POST",
+    token: sessionToken,
+    body: {
+      cosmeticType,
+      itemId,
+    },
+  });
+  mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
+  return response;
+}
+
+async function saveProfileDisplayOnServer(display) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/profile/display", {
+    method: "PATCH",
+    token: sessionToken,
+    body: { display },
+  });
+  mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
+  return response;
+}
+
 function mergeServerAccountIntoLocalState(serverAccount, token, { render = true } = {}) {
   const username = sanitizeUsername(serverAccount?.username);
 
@@ -1705,6 +2289,488 @@ async function initializeServerSession() {
     return false;
   } finally {
     SERVER_RUNTIME.restoring = false;
+  }
+}
+
+function getSocialProfile(username) {
+  const safeUsername = sanitizeUsername(username);
+  return safeUsername ? uiState.socialProfiles[safeUsername] || null : null;
+}
+
+function getFriendTradeTarget(state = getFriendState()) {
+  if (uiState.friendTradeTarget && state.friends.some((entry) => canonicalizeUsername(entry) === canonicalizeUsername(uiState.friendTradeTarget))) {
+    return uiState.friendTradeTarget;
+  }
+  return state.friends[0] || "";
+}
+
+function getFriendChallengeTarget(state = getFriendState()) {
+  if (uiState.friendChallengeTarget && state.friends.some((entry) => canonicalizeUsername(entry) === canonicalizeUsername(uiState.friendChallengeTarget))) {
+    return uiState.friendChallengeTarget;
+  }
+  return state.friends[0] || "";
+}
+
+function getRelationshipPillLabel(relationship) {
+  if (getCurrentLanguage() === "fr") {
+    return relationship === "friend"
+      ? "Ami"
+      : relationship === "incoming"
+        ? "Entrante"
+        : relationship === "outgoing"
+          ? "Sortante"
+          : relationship === "blocked"
+            ? "Bloqué"
+            : "Trouvé";
+  }
+
+  if (getCurrentLanguage() === "en") {
+    return relationship === "friend"
+      ? "Friend"
+      : relationship === "incoming"
+        ? "Incoming"
+        : relationship === "outgoing"
+          ? "Outgoing"
+          : relationship === "blocked"
+            ? "Blocked"
+            : "Found";
+  }
+
+  return relationship === "friend"
+    ? "Freund"
+    : relationship === "incoming"
+      ? "Eingehend"
+      : relationship === "outgoing"
+        ? "Ausgehend"
+        : relationship === "blocked"
+          ? "Blockiert"
+          : "Gefunden";
+}
+
+function getTradeCardLabel(cardId) {
+  return getCard(cardId)?.name || cardId;
+}
+
+async function refreshFriendSearchResults({ render = true } = {}) {
+  if (!isServerSessionActive()) {
+    uiState.friendSearchResults = [];
+    if (render) {
+      renderFriends();
+    }
+    return [];
+  }
+
+  const query = uiState.friendSearchQuery.trim();
+  if (query.length < 2) {
+    uiState.friendSearchResults = [];
+    if (render) {
+      renderFriends();
+    }
+    return [];
+  }
+
+  uiState.friendSearchBusy = true;
+  if (render) {
+    renderFriends();
+  }
+
+  try {
+    const results = await searchServerFriends(query);
+    uiState.friendSearchResults = results;
+    return results;
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || (getCurrentLanguage() === "fr" ? "La recherche d'amis a échoué." : getCurrentLanguage() === "en" ? "Friend search failed." : "Freundessuche fehlgeschlagen."));
+    return [];
+  } finally {
+    uiState.friendSearchBusy = false;
+    if (render) {
+      renderFriends();
+    }
+  }
+}
+
+async function handleFriendSearchSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const input = form.querySelector('input[name="friendSearch"]');
+  uiState.friendSearchQuery = String(input?.value || "").trim().slice(0, 18);
+  await refreshFriendSearchResults();
+}
+
+async function sendFriendRequest(username) {
+  const safeUsername = sanitizeUsername(username);
+  if (!safeUsername || !isServerSessionActive()) {
+    return;
+  }
+
+  try {
+    await runServerFriendsAction("/api/friends/request", { username: safeUsername }, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Demande d'amitié envoyée." : getCurrentLanguage() === "en" ? "Friend request sent." : "Freundschaftsanfrage gesendet.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freundschaftsanfrage fehlgeschlagen.");
+  }
+}
+
+async function handleFriendRequestAction(username, action) {
+  const safeUsername = sanitizeUsername(username);
+  if (!safeUsername || !isServerSessionActive()) {
+    return;
+  }
+
+  try {
+    await runServerFriendsAction("/api/friends/request/respond", { username: safeUsername, action }, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(action === "accept"
+      ? (getCurrentLanguage() === "fr" ? "Freundschaft bestätigt." : getCurrentLanguage() === "en" ? "Friendship confirmed." : "Freundschaft bestätigt.")
+      : action === "cancel"
+        ? (getCurrentLanguage() === "fr" ? "Anfrage zurückgezogen." : getCurrentLanguage() === "en" ? "Request cancelled." : "Anfrage zurückgezogen.")
+        : (getCurrentLanguage() === "fr" ? "Anfrage abgelehnt." : getCurrentLanguage() === "en" ? "Request declined." : "Anfrage abgelehnt."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freundesaktion fehlgeschlagen.");
+  }
+}
+
+async function removeFriend(username) {
+  const safeUsername = sanitizeUsername(username);
+  if (!safeUsername || !isServerSessionActive()) {
+    return;
+  }
+  const message = getCurrentLanguage() === "fr"
+    ? `${safeUsername} des amis ?`
+    : getCurrentLanguage() === "en"
+      ? `Remove ${safeUsername} from your friends?`
+      : `${safeUsername} aus der Freundesliste entfernen?`;
+  if (!requestActionConfirmation(message)) {
+    return;
+  }
+
+  try {
+    await runServerFriendsAction("/api/friends/remove", { username: safeUsername }, { render: false });
+    uiState.friendTradeOptions = null;
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Freund entfernt." : getCurrentLanguage() === "en" ? "Friend removed." : "Freund entfernt.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freund konnte nicht entfernt werden.");
+  }
+}
+
+async function blockFriend(username) {
+  const safeUsername = sanitizeUsername(username);
+  if (!safeUsername || !isServerSessionActive()) {
+    return;
+  }
+  const message = getCurrentLanguage() === "fr"
+    ? `${safeUsername} blockieren?`
+    : getCurrentLanguage() === "en"
+      ? `Block ${safeUsername}?`
+      : `${safeUsername} blockieren?`;
+  if (!requestActionConfirmation(message)) {
+    return;
+  }
+
+  try {
+    await runServerFriendsAction("/api/friends/block", { username: safeUsername }, { render: false });
+    uiState.friendTradeOptions = null;
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Konto blockiert." : getCurrentLanguage() === "en" ? "Account blocked." : "Konto blockiert.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Blockieren fehlgeschlagen.");
+  }
+}
+
+async function unblockFriend(username) {
+  const safeUsername = sanitizeUsername(username);
+  if (!safeUsername || !isServerSessionActive()) {
+    return;
+  }
+
+  try {
+    await runServerFriendsAction("/api/friends/unblock", { username: safeUsername }, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Blockierung aufgehoben." : getCurrentLanguage() === "en" ? "Block removed." : "Blockierung aufgehoben.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Entsperren fehlgeschlagen.");
+  }
+}
+
+async function setFriendTradeTarget(username, { render = true } = {}) {
+  const safeUsername = sanitizeUsername(username);
+  uiState.friendTradeTarget = safeUsername;
+  uiState.friendTradeOptions = null;
+
+  if (!safeUsername || !isServerSessionActive()) {
+    if (render) {
+      renderFriends();
+    }
+    return null;
+  }
+
+  uiState.friendTradeBusy = true;
+  if (render) {
+    renderFriends();
+  }
+
+  try {
+    const response = await loadServerTradeOptions(safeUsername);
+    uiState.friendTradeOptions = response;
+    return response;
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || (getCurrentLanguage() === "fr" ? "Les cartes d'échange n'ont pas pu être chargées." : getCurrentLanguage() === "en" ? "Trade cards could not be loaded." : "Handelskarten konnten nicht geladen werden."));
+    return null;
+  } finally {
+    uiState.friendTradeBusy = false;
+    if (render) {
+      renderFriends();
+    }
+  }
+}
+
+async function handleFriendTradeSubmit(event) {
+  event.preventDefault();
+  if (!isServerSessionActive()) {
+    return;
+  }
+
+  const form = event.currentTarget;
+  const username = sanitizeUsername(form.querySelector('[name="tradeFriend"]')?.value);
+  const offeredCardId = String(form.querySelector('[name="offeredCardId"]')?.value || "").trim();
+  const requestedCardId = String(form.querySelector('[name="requestedCardId"]')?.value || "").trim();
+  const note = String(form.querySelector('[name="tradeNote"]')?.value || "").trim().slice(0, 140);
+
+  if (!username || !offeredCardId || !requestedCardId) {
+    showToast(getCurrentLanguage() === "fr" ? "Sélectionne les deux cartes pour l'échange." : getCurrentLanguage() === "en" ? "Select both cards for the trade." : "Wähle beide Karten für den Handel aus.");
+    return;
+  }
+
+  uiState.friendTradeBusy = true;
+  renderFriends();
+  try {
+    await runServerFriendsAction("/api/friends/trade/create", {
+      username,
+      offeredCardId,
+      requestedCardId,
+      note,
+    }, { render: false });
+    await setFriendTradeTarget(username, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Handelsangebot gesendet." : getCurrentLanguage() === "en" ? "Trade offer sent." : "Handelsangebot gesendet.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Handelsangebot fehlgeschlagen.");
+  } finally {
+    uiState.friendTradeBusy = false;
+    renderFriends();
+  }
+}
+
+async function handleTradeOfferAction(offerId, action) {
+  if (!offerId || !isServerSessionActive()) {
+    return;
+  }
+
+  uiState.friendTradeBusy = true;
+  renderFriends();
+  try {
+    await runServerFriendsAction("/api/friends/trade/respond", { offerId, action }, { render: false });
+    if (uiState.friendTradeTarget) {
+      await setFriendTradeTarget(uiState.friendTradeTarget, { render: false });
+    }
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(action === "accept"
+      ? (getCurrentLanguage() === "fr" ? "Tausch abgeschlossen." : getCurrentLanguage() === "en" ? "Trade completed." : "Tausch abgeschlossen.")
+      : action === "cancel"
+        ? (getCurrentLanguage() === "fr" ? "Angebot zurückgezogen." : getCurrentLanguage() === "en" ? "Offer cancelled." : "Angebot zurückgezogen.")
+        : (getCurrentLanguage() === "fr" ? "Angebot abgelehnt." : getCurrentLanguage() === "en" ? "Offer declined." : "Angebot abgelehnt."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Handelsaktion fehlgeschlagen.");
+  } finally {
+    uiState.friendTradeBusy = false;
+    renderFriends();
+  }
+}
+
+async function handleFriendChallengeSubmit(event) {
+  event.preventDefault();
+  if (!isServerSessionActive()) {
+    return;
+  }
+
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck);
+  if (!validation.valid) {
+    showToast(validation.messages[0] || getUiText("messages.matchNotPlayable"));
+    return;
+  }
+
+  const form = event.currentTarget;
+  const username = sanitizeUsername(form.querySelector('[name="challengeFriend"]')?.value);
+  if (!username) {
+    showToast(getCurrentLanguage() === "fr" ? "Choisis un ami pour le duel." : getCurrentLanguage() === "en" ? "Choose a friend for the duel." : "Wähle einen Freund für das Duell.");
+    return;
+  }
+
+  uiState.friendChallengeBusy = true;
+  renderFriends();
+  try {
+    await runServerFriendsAction("/api/friends/challenge/create", {
+      username,
+      deckName: activeDeck.name,
+      deckCards: activeDeck.cards,
+    }, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    renderFriends();
+    showToast(getCurrentLanguage() === "fr" ? "Freundesduell gesendet." : getCurrentLanguage() === "en" ? "Friend duel sent." : "Freundesduell gesendet.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freundesduell konnte nicht gesendet werden.");
+  } finally {
+    uiState.friendChallengeBusy = false;
+    renderFriends();
+  }
+}
+
+function startFriendMatchFromChallenge(challenge) {
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck);
+  if (!validation.valid) {
+    showToast(validation.messages[0] || getUiText("messages.matchNotPlayable"));
+    return false;
+  }
+
+  const enemyDeckCards = Array.isArray(challenge?.deckCards) ? challenge.deckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize) : [];
+  if (enemyDeckCards.length !== APP_CONFIG.deckSize) {
+    showToast(getCurrentLanguage() === "fr" ? "Le deck du duel n'est plus complet." : getCurrentLanguage() === "en" ? "The duel deck is no longer complete." : "Das Duell-Deck ist nicht mehr vollständig.");
+    return false;
+  }
+
+  uiState.match = createMatch(activeDeck.cards, getArenaDifficultyId(getSave().arenaDifficulty), {
+    mode: "friend",
+    opponentLabel: sanitizeUsername(challenge.from) || (getCurrentLanguage() === "fr" ? "Ami" : getCurrentLanguage() === "en" ? "Friend" : "Freund"),
+    opponentDeckName: String(challenge.deckName || "").trim().slice(0, 48),
+    enemyDeckCards,
+    rewardWin: 0,
+    rewardLoss: 0,
+    forfeitPenalty: 0,
+  });
+  uiState.section = "arena";
+  startTurn("player");
+  renderAll();
+  showToast(getCurrentLanguage() === "fr" ? "Freundesduell gestartet." : getCurrentLanguage() === "en" ? "Friend duel started." : "Freundesduell gestartet.");
+  return true;
+}
+
+async function handleFriendChallengeAction(challengeId, action) {
+  if (!challengeId || !isServerSessionActive()) {
+    return;
+  }
+
+  uiState.friendChallengeBusy = true;
+  renderFriends();
+  try {
+    const response = await runServerFriendsAction("/api/friends/challenge/respond", { challengeId, action }, { render: false });
+    await refreshFriendSearchResults({ render: false });
+    if (action === "accept" && response?.challenge) {
+      startFriendMatchFromChallenge(response.challenge);
+      return;
+    }
+    renderFriends();
+    showToast(action === "cancel"
+      ? (getCurrentLanguage() === "fr" ? "Herausforderung zurückgezogen." : getCurrentLanguage() === "en" ? "Challenge cancelled." : "Herausforderung zurückgezogen.")
+      : (getCurrentLanguage() === "fr" ? "Herausforderung aktualisiert." : getCurrentLanguage() === "en" ? "Challenge updated." : "Herausforderung aktualisiert."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Freundesduell-Aktion fehlgeschlagen.");
+  } finally {
+    uiState.friendChallengeBusy = false;
+    renderFriends();
+  }
+}
+
+async function handleCosmeticPurchase(cosmeticType, itemId) {
+  if (!currentAccount) {
+    return;
+  }
+
+  if (isMatchSessionLocked()) {
+    showToast(getUiText("messages.matchCollectionLocked"));
+    return;
+  }
+
+  const item = getCosmeticItem(cosmeticType, itemId);
+  if (!item) {
+    showToast(getCurrentLanguage() === "fr" ? "Cet objet de profil n'existe pas." : getCurrentLanguage() === "en" ? "This profile item does not exist." : "Dieses Profilobjekt existiert nicht.");
+    return;
+  }
+
+  const inventory = getCosmeticInventory();
+  if ((inventory[cosmeticType] || []).includes(itemId)) {
+    showToast(getCurrentLanguage() === "fr" ? "Bereits freigeschaltet." : getCurrentLanguage() === "en" ? "Already unlocked." : "Bereits freigeschaltet.");
+    return;
+  }
+
+  if ((getSave().gold || 0) < item.price) {
+    showToast(getCurrentLanguage() === "fr" ? "Nicht genug Gold." : getCurrentLanguage() === "en" ? "Not enough gold." : "Nicht genug Gold.");
+    return;
+  }
+
+  try {
+    if (isServerSessionActive()) {
+      await purchaseCosmeticOnServer(cosmeticType, itemId);
+    } else {
+      getSave().gold -= item.price;
+      getSave().cosmetics[cosmeticType] = [...new Set([...(getSave().cosmetics[cosmeticType] || []), itemId])];
+      persistCurrentAccount();
+    }
+    renderAll();
+    showToast(getCurrentLanguage() === "fr" ? "Profilobjekt gekauft." : getCurrentLanguage() === "en" ? "Profile item purchased." : "Profilobjekt gekauft.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Profilobjekt konnte nicht gekauft werden.");
+  }
+}
+
+async function handleProfileDisplaySubmit(event) {
+  event.preventDefault();
+  if (!currentAccount) {
+    return;
+  }
+
+  const form = event.currentTarget;
+  const display = {
+    avatarId: String(form.querySelector('[name="avatarId"]')?.value || ""),
+    frameId: String(form.querySelector('[name="frameId"]')?.value || ""),
+    titleId: String(form.querySelector('[name="titleId"]')?.value || ""),
+  };
+
+  try {
+    if (isServerSessionActive()) {
+      await saveProfileDisplayOnServer(display);
+    } else {
+      getSave().profileDisplay = sanitizeProfileDisplayState(display, DEFAULT_PROFILE_DISPLAY, getCosmeticInventory());
+      persistCurrentAccount();
+    }
+    renderProfile();
+    renderTopBar();
+    showToast(getCurrentLanguage() === "fr" ? "Profil aktualisé." : getCurrentLanguage() === "en" ? "Profile updated." : "Profil aktualisiert.");
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || "Profil konnte nicht aktualisiert werden.");
   }
 }
 
@@ -2501,17 +3567,21 @@ Object.assign(UI_TEXT.fr, {
 });
 
 Object.assign(UI_TEXT.de.shop, {
-  tabs: { boosters: "Booster", packs: "Packs" },
+  tabs: { boosters: "Booster", packs: "Packs", cosmetics: "Profil-Shop" },
   teasers: {
     boosters: "Klassische Einzelkäufe mit fünf Zufallskarten pro Booster.",
     packs: "Feste Karten plus zusätzliche Booster in einem Kauf.",
+    cosmetics: "Profilbilder, Rahmen und Titel für dein Konto.",
   },
   tabHeadingBoosters: "Booster-Angebote",
   tabHeadingPacks: "Packs mit festen Karten und Bonus-Boostern",
+  tabHeadingCosmetics: "Profilbilder, Rahmen und Titel",
   tabNoteBoosters: "Booster bleiben der flexible Weg für einzelne Käufe und zufällige Pulls über alle Seltenheiten hinweg.",
   tabNotePacks: "Packs liefern garantierte Fraktionskarten direkt in deine Sammlung und legen zusätzliche Booster in dein Inventar.",
+  tabNoteCosmetics: "Im Profil-Shop schaltest du neue Identitätselemente für Kontoansicht, Freundesliste und spätere soziale Bereiche frei.",
   summaryTitleBoosters: "Booster-Markt",
   summaryTitlePacks: "Pack-Serien",
+  summaryTitleCosmetics: "Profil-Kosmetik",
   summaryOffers: "Angebote",
   summaryGuaranteed: "Garantien",
   summaryBoosters: "Booster-Inhalt",
@@ -2536,17 +3606,21 @@ Object.assign(UI_TEXT.de.shop, {
 });
 
 Object.assign(UI_TEXT.en.shop, {
-  tabs: { boosters: "Boosters", packs: "Packs" },
+  tabs: { boosters: "Boosters", packs: "Packs", cosmetics: "Profile Shop" },
   teasers: {
     boosters: "Classic single purchases with five random cards per booster.",
     packs: "Fixed cards plus extra boosters in one purchase.",
+    cosmetics: "Avatars, frames and titles for your account identity.",
   },
   tabHeadingBoosters: "Booster Offers",
   tabHeadingPacks: "Packs with fixed cards and bonus boosters",
+  tabHeadingCosmetics: "Avatars, frames and titles",
   tabNoteBoosters: "Boosters stay the flexible route for single purchases and random pulls across every rarity.",
   tabNotePacks: "Packs place guaranteed faction cards directly into your collection and add extra boosters to your inventory.",
+  tabNoteCosmetics: "The profile shop unlocks identity items for your account card, friend list and future social surfaces.",
   summaryTitleBoosters: "Booster Market",
   summaryTitlePacks: "Pack Series",
+  summaryTitleCosmetics: "Profile Cosmetics",
   summaryOffers: "Offers",
   summaryGuaranteed: "Guarantees",
   summaryBoosters: "Booster Content",
@@ -2571,17 +3645,21 @@ Object.assign(UI_TEXT.en.shop, {
 });
 
 Object.assign(UI_TEXT.fr.shop, {
-  tabs: { boosters: "Boosters", packs: "Packs" },
+  tabs: { boosters: "Boosters", packs: "Packs", cosmetics: "Boutique profil" },
   teasers: {
     boosters: "Achats classiques avec cinq cartes aléatoires par booster.",
     packs: "Cartes fixes plus boosters supplémentaires dans un seul achat.",
+    cosmetics: "Portraits, cadres et titres pour l'identité du compte.",
   },
   tabHeadingBoosters: "Offres de boosters",
   tabHeadingPacks: "Packs avec cartes fixes et boosters bonus",
+  tabHeadingCosmetics: "Portraits, cadres et titres",
   tabNoteBoosters: "Les boosters restent la voie flexible pour les achats unitaires et les tirages aléatoires sur toutes les raretés.",
   tabNotePacks: "Les packs placent directement des cartes de faction garanties dans ta collection et ajoutent des boosters à ton inventaire.",
+  tabNoteCosmetics: "La boutique profil débloque des éléments d'identité pour la carte de compte, la liste d'amis et les futurs espaces sociaux.",
   summaryTitleBoosters: "Marché des boosters",
   summaryTitlePacks: "Séries de packs",
+  summaryTitleCosmetics: "Cosmétiques de profil",
   summaryOffers: "Offres",
   summaryGuaranteed: "Garanties",
   summaryBoosters: "Contenu booster",
@@ -3268,6 +4346,43 @@ const FUTURE_SHOP_ITEMS = [
   { title: "Account-Dienste", copy: "Profilrahmen, Namensänderungen und saisonale Extras." },
 ];
 
+const COSMETIC_DEFINITIONS = Object.freeze({
+  avatars: Object.freeze([
+    { id: "vault-core", symbol: "◈", tone: "gold", price: 0, label: { de: "Kernsigille", en: "Core Sigil", fr: "Sigille centrale" }, description: { de: "Der ruhige Startpunkt für jedes Profil.", en: "The calm starting point for every profile.", fr: "Le point de départ calme de chaque profil." } },
+    { id: "ember-mask", symbol: "✦", tone: "ember", price: 180, label: { de: "Glutmaske", en: "Ember Mask", fr: "Masque de braise" }, description: { de: "Warmer Glanz mit offensivem Einschlag.", en: "Warm glow with an aggressive edge.", fr: "Une lueur chaude à l'allure offensive." } },
+    { id: "mist-orb", symbol: "◌", tone: "aqua", price: 180, label: { de: "Nebelorb", en: "Mist Orb", fr: "Orbe de brume" }, description: { de: "Sanfter Fokus für kontrollierte Decks.", en: "Soft focus for controlled decks.", fr: "Un accent doux pour les decks de contrôle." } },
+    { id: "thorn-mark", symbol: "✿", tone: "verdant", price: 180, label: { de: "Dornenmarke", en: "Thorn Mark", fr: "Marque d'épine" }, description: { de: "Naturverbunden und ruhig, aber zäh.", en: "Nature-bound, calm and resilient.", fr: "Ancrée dans la nature, calme et tenace." } },
+    { id: "storm-eye", symbol: "⚡", tone: "sky", price: 260, label: { de: "Sturmauge", en: "Storm Eye", fr: "Œil de tempête" }, description: { de: "Direkt, schnell und voller Spannung.", en: "Direct, fast and full of tension.", fr: "Direct, rapide et chargé d'énergie." } },
+    { id: "rune-disc", symbol: "⌘", tone: "steel", price: 260, label: { de: "Runenscheibe", en: "Rune Disc", fr: "Disque runique" }, description: { de: "Klare Linien für strategische Spieler.", en: "Clean lines for strategic players.", fr: "Des lignes nettes pour les joueurs stratégiques." } },
+    { id: "astral-iris", symbol: "✺", tone: "violet", price: 420, label: { de: "Astraliris", en: "Astral Iris", fr: "Iris astral" }, description: { de: "Leuchtender Fokus für seltene Sammlungen.", en: "Radiant focus for rare collections.", fr: "Un éclat lumineux pour les collections rares." } },
+    { id: "mythic-crown", symbol: "✹", tone: "rainbow", price: 620, label: { de: "Mythenkrone", en: "Mythic Crown", fr: "Couronne mythique" }, description: { de: "Ein prunkvoller Blickfang für Spitzenprofile.", en: "A lavish centerpiece for top-tier profiles.", fr: "Une pièce maîtresse fastueuse pour les grands profils." } },
+  ]),
+  frames: Object.freeze([
+    { id: "bronze-sigil", symbol: "▣", tone: "gold", price: 0, label: { de: "Bronzerahmen", en: "Bronze Frame", fr: "Cadre bronze" }, description: { de: "Sauberer Standardrahmen für den Start.", en: "Clean standard frame for the beginning.", fr: "Cadre standard propre pour débuter." } },
+    { id: "silver-sigil", symbol: "⬒", tone: "steel", price: 170, label: { de: "Silberrahmen", en: "Silver Frame", fr: "Cadre argent" }, description: { de: "Kühler Metall-Look mit mehr Kontrast.", en: "Cool metallic look with stronger contrast.", fr: "Un style métallique froid avec plus de contraste." } },
+    { id: "verdant-ring", symbol: "⬡", tone: "verdant", price: 210, label: { de: "Wurzelring", en: "Verdant Ring", fr: "Anneau verdoyant" }, description: { de: "Sanfte Naturfarben rund um dein Profil.", en: "Soft natural tones around your profile.", fr: "Des teintes naturelles douces autour de ton profil." } },
+    { id: "ember-edge", symbol: "◧", tone: "ember", price: 250, label: { de: "Glutkante", en: "Ember Edge", fr: "Bord braise" }, description: { de: "Glühende Kante für aggressive Auftritte.", en: "Burning edge for aggressive presences.", fr: "Une bordure ardente pour une présence agressive." } },
+    { id: "storm-crest", symbol: "◨", tone: "sky", price: 250, label: { de: "Sturmkranz", en: "Storm Crest", fr: "Couronne d'orage" }, description: { de: "Luftiger Rahmen mit heller Energie.", en: "Airy frame with bright energy.", fr: "Cadre aérien traversé d'énergie claire." } },
+    { id: "void-trace", symbol: "◇", tone: "void", price: 360, label: { de: "Schattenzug", en: "Void Trace", fr: "Trace du vide" }, description: { de: "Dunkler Kontrast mit stiller Präsenz.", en: "Dark contrast with quiet presence.", fr: "Contraste sombre avec une présence discrète." } },
+    { id: "aurora-prism", symbol: "⬢", tone: "aqua", price: 520, label: { de: "Auroraprisma", en: "Aurora Prism", fr: "Prisme d'aurore" }, description: { de: "Schillernde Linien für Sammlerprofile.", en: "Shifting lines for collector profiles.", fr: "Des lignes irisées pour les profils de collection." } },
+    { id: "transcendent-halo", symbol: "✧", tone: "rainbow", price: 760, label: { de: "Transzendenz-Halo", en: "Transcendent Halo", fr: "Halo transcendant" }, description: { de: "Der höchste Rahmen mit prismatischer Aura.", en: "The highest frame with a prismatic aura.", fr: "Le cadre ultime avec une aura prismatique." } },
+  ]),
+  titles: Object.freeze([
+    { id: "vault-initiate", tone: "gold", price: 0, label: { de: "Tresor-Novize", en: "Vault Initiate", fr: "Novice du coffre" }, description: { de: "Der erste Titel für neue Konten.", en: "The first title for new accounts.", fr: "Le premier titre des nouveaux comptes." } },
+    { id: "market-runner", tone: "steel", price: 90, label: { de: "Marktläufer", en: "Market Runner", fr: "Coureur du marché" }, description: { de: "Für Spieler, die jede Runde Preise scannen.", en: "For players who scan prices every round.", fr: "Pour les joueurs qui scrutent les prix à chaque rotation." } },
+    { id: "pack-hunter", tone: "gold", price: 120, label: { de: "Siegeljäger", en: "Seal Hunter", fr: "Chasseur de sceaux" }, description: { de: "Booster zuerst, Fragen später.", en: "Boosters first, questions later.", fr: "Les boosters d'abord, les questions ensuite." } },
+    { id: "arena-scout", tone: "sky", price: 160, label: { de: "Arenakundschafter", en: "Arena Scout", fr: "Éclaireur de l'arène" }, description: { de: "Für erste Freundesduelle und Testkämpfe.", en: "For first friend duels and test fights.", fr: "Pour les premiers duels amicaux et matchs de test." } },
+    { id: "ember-tactician", tone: "ember", price: 180, label: { de: "Gluttaktiker", en: "Ember Tactician", fr: "Tacticien des braises" }, description: { de: "Hart am Brett, ruhig im Plan.", en: "Hard on the board, calm in the plan.", fr: "Dur sur le plateau, calme dans le plan." } },
+    { id: "mist-duelist", tone: "aqua", price: 180, label: { de: "Nebelduellant", en: "Mist Duelist", fr: "Duelliste des brumes" }, description: { de: "Für kontrollierte Züge und saubere Antworten.", en: "For measured turns and clean answers.", fr: "Pour les tours mesurés et les réponses propres." } },
+    { id: "thorn-warden", tone: "verdant", price: 240, label: { de: "Dornenwächter", en: "Thorn Warden", fr: "Gardien des épines" }, description: { de: "Bleibt stehen, wenn andere schon kippen.", en: "Still stands when others already fall.", fr: "Reste debout quand les autres chutent déjà." } },
+    { id: "rune-architect", tone: "steel", price: 240, label: { de: "Runenarchitekt", en: "Rune Architect", fr: "Architecte runique" }, description: { de: "Decks werden gebaut, nicht nur gespielt.", en: "Decks are built, not just played.", fr: "Les decks se construisent, pas seulement se jouent." } },
+    { id: "market-oracle", tone: "gold", price: 300, label: { de: "Marktorakel", en: "Market Oracle", fr: "Oracle du marché" }, description: { de: "Sieht Preiswellen vor allen anderen.", en: "Sees price waves before everyone else.", fr: "Voit les vagues du marché avant tout le monde." } },
+    { id: "vault-master", tone: "violet", price: 420, label: { de: "Projekt-Vault-Meister", en: "Projekt Vault Master", fr: "Maître de Projekt Vault" }, description: { de: "Ein Titel für große Sammlungen und klare Übersicht.", en: "A title for large collections and sharp oversight.", fr: "Un titre pour les grandes collections et la vision nette." } },
+    { id: "myth-bearer", tone: "rainbow", price: 560, label: { de: "Mythenträger", en: "Myth Bearer", fr: "Porte-mythe" }, description: { de: "Trägt seltene Züge mit Stil.", en: "Carries rare plays with style.", fr: "Porte les coups rares avec style." } },
+    { id: "transcendent-scion", tone: "rainbow", price: 780, label: { de: "Transzendenten-Erbe", en: "Transcendent Scion", fr: "Héritier transcendant" }, description: { de: "Die höchste Shop-Auszeichnung für dein Profil.", en: "The highest shop honor for your profile.", fr: "La plus haute distinction de boutique pour ton profil." } },
+  ]),
+});
+
 const SHOP_TAB_DEFINITIONS = Object.freeze({
   boosters: Object.freeze({
     id: "boosters",
@@ -3280,6 +4395,12 @@ const SHOP_TAB_DEFINITIONS = Object.freeze({
     headingKey: "shop.tabHeadingPacks",
     noteKey: "shop.tabNotePacks",
     summaryTitleKey: "shop.summaryTitlePacks",
+  }),
+  cosmetics: Object.freeze({
+    id: "cosmetics",
+    headingKey: "shop.tabHeadingCosmetics",
+    noteKey: "shop.tabNoteCosmetics",
+    summaryTitleKey: "shop.summaryTitleCosmetics",
   }),
 });
 
@@ -4458,6 +5579,7 @@ const elements = {
   shopCatalogNote: document.getElementById("shopCatalogNote"),
   shopPackGrid: document.getElementById("shopPackGrid"),
   shopBundleGrid: document.getElementById("shopBundleGrid"),
+  shopCosmeticGrid: document.getElementById("shopCosmeticGrid"),
   shopSummaryPanel: document.getElementById("shopSummaryPanel"),
   shopFutureHeading: document.getElementById("shopFutureHeading"),
   futureShopGrid: document.getElementById("futureShopGrid"),
@@ -4506,6 +5628,8 @@ const elements = {
   wikiContentHeading: document.getElementById("wikiContentHeading"),
   wikiContent: document.getElementById("wikiContent"),
   profileSummary: document.getElementById("profileSummary"),
+  profileLoadoutPanel: document.getElementById("profileLoadoutPanel"),
+  profileCosmeticsPanel: document.getElementById("profileCosmeticsPanel"),
   profileRenameForm: document.getElementById("profileRenameForm"),
   profileNameInput: document.getElementById("profileNameInput"),
   profileRenamePasswordInput: document.getElementById("profileRenamePasswordInput"),
@@ -4517,6 +5641,7 @@ const elements = {
   friendsListPanel: document.getElementById("friendsListPanel"),
   friendsPendingPanel: document.getElementById("friendsPendingPanel"),
   friendsTradePanel: document.getElementById("friendsTradePanel"),
+  friendsDuelPanel: document.getElementById("friendsDuelPanel"),
   settingsSummary: document.getElementById("settingsSummary"),
   settingsLanguageSelect: document.getElementById("settingsLanguageSelect"),
   settingsClickEffects: document.getElementById("settingsClickEffects"),
@@ -4574,6 +5699,17 @@ uiState = {
     rarity: "all",
     sort: "hot",
   },
+  socialProfiles: {},
+  friendSearchResults: [],
+  friendSearchBusy: false,
+  friendSearchQuery: "",
+  friendsHydrated: false,
+  friendsLoading: false,
+  friendTradeTarget: "",
+  friendTradeOptions: null,
+  friendTradeBusy: false,
+  friendChallengeTarget: "",
+  friendChallengeBusy: false,
   wikiSearch: "",
   wikiTopic: "all",
   previewLanguage: "de",
@@ -6342,6 +7478,8 @@ function createEmptySave() {
     arenaDifficulty: "standard",
     settings: createDefaultSettings(),
     friends: createDefaultFriendState(),
+    profileDisplay: cloneJsonValue(DEFAULT_PROFILE_DISPLAY),
+    cosmetics: cloneJsonValue(DEFAULT_COSMETICS),
     lastOpened: {
       packId: "starter",
       cards: [],
@@ -6375,6 +7513,10 @@ function createDefaultSettings() {
 
 function createDefaultFriendState() {
   return cloneJsonValue(DEFAULT_FRIEND_STATE);
+}
+
+function createDefaultCosmetics() {
+  return cloneJsonValue(DEFAULT_COSMETICS);
 }
 
 function sanitizeCollection(collection) {
@@ -6422,12 +7564,104 @@ function sanitizeFriendEntries(entries) {
     .slice(0, 120);
 }
 
+function sanitizeSocialOfferEntries(entries, kind) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  const seen = new Set();
+  return entries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const id = String(entry.id || "").trim().slice(0, 64);
+      const from = sanitizeUsername(entry.from);
+      const to = sanitizeUsername(entry.to);
+      if (!id || !from || !to) {
+        return null;
+      }
+
+      if (kind === "trade") {
+        const offeredCardId = CARD_MAP.has(entry.offeredCardId) ? entry.offeredCardId : "";
+        const requestedCardId = CARD_MAP.has(entry.requestedCardId) ? entry.requestedCardId : "";
+        if (!offeredCardId || !requestedCardId) {
+          return null;
+        }
+
+        return {
+          id,
+          from,
+          to,
+          offeredCardId,
+          requestedCardId,
+          createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+          note: String(entry.note || "").trim().slice(0, 140),
+        };
+      }
+
+      const deckCards = Array.isArray(entry.deckCards)
+        ? entry.deckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+        : [];
+      if (!deckCards.length) {
+        return null;
+      }
+
+      return {
+        id,
+        from,
+        to,
+        deckName: String(entry.deckName || "").trim().slice(0, 48),
+        deckCards,
+        createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+      };
+    })
+    .filter((entry) => {
+      if (!entry || seen.has(entry.id)) {
+        return false;
+      }
+      seen.add(entry.id);
+      return true;
+    })
+    .slice(0, 64);
+}
+
 function sanitizeFriendState(friends, baseFriends) {
   return {
     friends: sanitizeFriendEntries(friends?.friends ?? baseFriends.friends),
     incoming: sanitizeFriendEntries(friends?.incoming ?? baseFriends.incoming),
     outgoing: sanitizeFriendEntries(friends?.outgoing ?? baseFriends.outgoing),
     blocked: sanitizeFriendEntries(friends?.blocked ?? baseFriends.blocked),
+    tradeOffersIncoming: sanitizeSocialOfferEntries(friends?.tradeOffersIncoming ?? baseFriends.tradeOffersIncoming, "trade"),
+    tradeOffersOutgoing: sanitizeSocialOfferEntries(friends?.tradeOffersOutgoing ?? baseFriends.tradeOffersOutgoing, "trade"),
+    duelChallengesIncoming: sanitizeSocialOfferEntries(friends?.duelChallengesIncoming ?? baseFriends.duelChallengesIncoming, "duel"),
+    duelChallengesOutgoing: sanitizeSocialOfferEntries(friends?.duelChallengesOutgoing ?? baseFriends.duelChallengesOutgoing, "duel"),
+  };
+}
+
+function sanitizeCosmeticInventory(cosmetics, baseCosmetics) {
+  const sanitizeOwned = (entries, fallbackEntries) => [...new Set(
+    (Array.isArray(entries) ? entries : fallbackEntries)
+      .map((entry) => String(entry || "").trim().slice(0, 64))
+      .filter(Boolean),
+  )];
+
+  return {
+    avatars: sanitizeOwned(cosmetics?.avatars, baseCosmetics.avatars).filter((id) => Boolean(getCosmeticItem("avatars", id))),
+    frames: sanitizeOwned(cosmetics?.frames, baseCosmetics.frames).filter((id) => Boolean(getCosmeticItem("frames", id))),
+    titles: sanitizeOwned(cosmetics?.titles, baseCosmetics.titles).filter((id) => Boolean(getCosmeticItem("titles", id))),
+  };
+}
+
+function sanitizeProfileDisplayState(profileDisplay, baseDisplay, cosmetics) {
+  const avatarId = String(profileDisplay?.avatarId || "").trim().slice(0, 64);
+  const frameId = String(profileDisplay?.frameId || "").trim().slice(0, 64);
+  const titleId = String(profileDisplay?.titleId || "").trim().slice(0, 64);
+  return {
+    avatarId: cosmetics.avatars.includes(avatarId) ? avatarId : baseDisplay.avatarId,
+    frameId: cosmetics.frames.includes(frameId) ? frameId : baseDisplay.frameId,
+    titleId: cosmetics.titles.includes(titleId) ? titleId : baseDisplay.titleId,
   };
 }
 
@@ -6760,6 +7994,7 @@ function normalizeAccount(account) {
   const baseSave = createEmptySave();
   const save = account?.save || baseSave;
   const decks = sanitizeDecks(save.decks);
+  const cosmetics = sanitizeCosmeticInventory(save.cosmetics, baseSave.cosmetics);
   const isAdmin = username === ADMIN_BOOTSTRAP.username && account?.isAdmin === true;
   const normalized = {
     ...account,
@@ -6775,6 +8010,8 @@ function normalizeAccount(account) {
       packs: sanitizePackInventory(save.packs, baseSave.packs),
       settings: sanitizePlayerSettings(save.settings, baseSave.settings),
       friends: sanitizeFriendState(save.friends, baseSave.friends),
+      cosmetics,
+      profileDisplay: sanitizeProfileDisplayState(save.profileDisplay, baseSave.profileDisplay, cosmetics),
       filters: sanitizeCollectionFilters(save.filters, baseSave.filters),
       lastOpened: sanitizeLastOpened(save.lastOpened, baseSave.lastOpened),
       activeMatch: sanitizeSavedMatchState(save.activeMatch),
@@ -7373,6 +8610,9 @@ function requestSectionChange(section) {
 
   uiState.section = section;
   renderAll();
+  if (section === "friends") {
+    hydrateFriendsSection({ render: true });
+  }
 }
 
 function renderNavigation() {
@@ -12540,6 +13780,1106 @@ function buildDescription(type, effect, keywords = [], synergy = null, timing = 
   }
 
   return parts.join(" ");
+}
+
+function handleProfileDisplaySubmit(event) {
+  event.preventDefault();
+  if (!currentAccount) {
+    return;
+  }
+
+  const form = event.currentTarget;
+  const display = {
+    avatarId: String(form.querySelector('[name="avatarId"]')?.value || ""),
+    frameId: String(form.querySelector('[name="frameId"]')?.value || ""),
+    titleId: String(form.querySelector('[name="titleId"]')?.value || ""),
+  };
+
+  applyProfileDisplayChange(display);
+}
+
+function bindFriendsPanelEvents() {
+  const containers = [
+    elements.friendsSummary,
+    elements.friendsListPanel,
+    elements.friendsPendingPanel,
+    elements.friendsTradePanel,
+    elements.friendsDuelPanel,
+  ].filter(Boolean);
+  const findAll = (selector) => containers.flatMap((container) => [...container.querySelectorAll(selector)]);
+
+  const searchForm = elements.friendsSummary.querySelector("#friendSearchForm");
+  if (searchForm) {
+    searchForm.addEventListener("submit", handleFriendSearchSubmit);
+  }
+
+  findAll("[data-friend-request]").forEach((button) => {
+    button.addEventListener("click", () => sendFriendRequest(button.dataset.friendRequest));
+  });
+  findAll("[data-request-action]").forEach((button) => {
+    button.addEventListener("click", () => handleFriendRequestAction(button.dataset.username, button.dataset.requestAction));
+  });
+  findAll("[data-remove-friend]").forEach((button) => {
+    button.addEventListener("click", () => removeFriend(button.dataset.removeFriend));
+  });
+  findAll("[data-block-user]").forEach((button) => {
+    button.addEventListener("click", () => blockFriend(button.dataset.blockUser));
+  });
+  findAll("[data-unblock-user]").forEach((button) => {
+    button.addEventListener("click", () => unblockFriend(button.dataset.unblockUser));
+  });
+  findAll("[data-trade-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.section = "friends";
+      uiState.friendTradeTarget = sanitizeUsername(button.dataset.tradeTarget);
+      renderFriends();
+      setFriendTradeTarget(button.dataset.tradeTarget);
+    });
+  });
+  findAll("[data-duel-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      uiState.section = "friends";
+      uiState.friendChallengeTarget = sanitizeUsername(button.dataset.duelTarget);
+      renderFriends();
+    });
+  });
+
+  const tradeForm = elements.friendsTradePanel.querySelector("#friendTradeForm");
+  if (tradeForm) {
+    tradeForm.addEventListener("submit", handleFriendTradeSubmit);
+    const tradeSelect = tradeForm.querySelector('[name="tradeFriend"]');
+    if (tradeSelect) {
+      tradeSelect.addEventListener("change", () => {
+        uiState.friendTradeTarget = sanitizeUsername(tradeSelect.value);
+        setFriendTradeTarget(tradeSelect.value);
+      });
+    }
+  }
+
+  findAll("[data-trade-offer-action]").forEach((button) => {
+    button.addEventListener("click", () => handleTradeOfferAction(button.dataset.tradeOfferId, button.dataset.tradeOfferAction));
+  });
+
+  const challengeForm = elements.friendsDuelPanel.querySelector("#friendChallengeForm");
+  if (challengeForm) {
+    challengeForm.addEventListener("submit", handleFriendChallengeSubmit);
+    const challengeSelect = challengeForm.querySelector('[name="challengeFriend"]');
+    if (challengeSelect) {
+      challengeSelect.addEventListener("change", () => {
+        uiState.friendChallengeTarget = sanitizeUsername(challengeSelect.value);
+      });
+    }
+  }
+
+  findAll("[data-challenge-action]").forEach((button) => {
+    button.addEventListener("click", () => handleFriendChallengeAction(button.dataset.challengeId, button.dataset.challengeAction));
+  });
+}
+
+function renderProfile() {
+  if (!currentAccount) {
+    elements.profileSummary.innerHTML = "";
+    elements.profileLoadoutPanel.innerHTML = "";
+    elements.profileCosmeticsPanel.innerHTML = "";
+    return;
+  }
+
+  const save = getSave();
+  const stats = summarizeSave(save);
+  const activeDeck = getActiveDeck();
+  const profileLocked = isCurrentUserAdmin();
+  const display = getProfileDisplay();
+  const inventory = getCosmeticInventory();
+  const social = getFriendState();
+  const totalOwnedCosmetics = ["avatars", "frames", "titles"].reduce((sum, type) => sum + (inventory[type] || []).length, 0);
+
+  elements.profileSummary.innerHTML = `
+    <div class="profile-summary-head">
+      <div>
+        <p class="eyebrow">${localText("Aktives Profil", "Active profile", "Profil actif")}</p>
+        <h3>${escapeHtml(currentAccount.username)}</h3>
+        <p class="mini-note">${escapeHtml(localText(
+          `Freundescode ${getFriendCode(currentAccount)} · Erstellt am ${formatAccountDate(currentAccount.createdAt)}`,
+          `Friend code ${getFriendCode(currentAccount)} · Created on ${formatAccountDate(currentAccount.createdAt)}`,
+          `Code ami ${getFriendCode(currentAccount)} · Créé le ${formatAccountDate(currentAccount.createdAt)}`,
+        ))}</p>
+      </div>
+      <span class="status-pill ${profileLocked ? "warn" : "ok"}">${profileLocked ? localText("Fixiert", "Locked", "Verrouillé") : localText("Bearbeitbar", "Editable", "Modifiable")}</span>
+    </div>
+    ${buildIdentityPreviewMarkup({
+      username: currentAccount.username,
+      display,
+      note: activeDeck
+        ? localText(`Aktives Deck: ${activeDeck.name}`, `Active deck: ${activeDeck.name}`, `Deck actif : ${activeDeck.name}`)
+        : localText("Noch kein aktives Deck ausgerüstet.", "No active deck equipped yet.", "Aucun deck actif équipé pour le moment."),
+    })}
+    <div class="profile-stat-grid">
+      <article class="profile-stat-card">
+        <span>${localText("Gold", "Gold", "Or")}</span>
+        <strong>${save.gold}</strong>
+      </article>
+      <article class="profile-stat-card">
+        <span>${localText("Karten gesamt", "Cards owned", "Cartes possédées")}</span>
+        <strong>${stats.totalCards}</strong>
+      </article>
+      <article class="profile-stat-card">
+        <span>${localText("Freunde", "Friends", "Amis")}</span>
+        <strong>${social.friends.length}</strong>
+      </article>
+      <article class="profile-stat-card">
+        <span>${localText("Kosmetik", "Cosmetics", "Cosmétiques")}</span>
+        <strong>${totalOwnedCosmetics}</strong>
+      </article>
+    </div>
+  `;
+
+  elements.profileLoadoutPanel.innerHTML = `
+    <p class="eyebrow">${localText("Profil-Loadout", "Profile loadout", "Loadout du profil")}</p>
+    <h3>${getCosmeticCollectionTitle()}</h3>
+    <div class="profile-loadout-grid">
+      ${buildIdentityPreviewMarkup({
+        username: currentAccount.username,
+        display,
+        note: localText("Dieses Set wird in Topbar, Freundesliste und späteren Social-Bereichen angezeigt.", "This loadout appears in the top bar, friend list and future social areas.", "Ce loadout apparaît dans la barre supérieure, la liste d'amis et les futurs espaces sociaux."),
+      })}
+      <form class="profile-form profile-loadout-form" id="profileDisplayFormDynamic">
+        <label>
+          <span>${getCosmeticGroupLabel("avatars")}</span>
+          <select name="avatarId">${buildCosmeticSelectOptions("avatars", display.avatarId)}</select>
+        </label>
+        <label>
+          <span>${getCosmeticGroupLabel("frames")}</span>
+          <select name="frameId">${buildCosmeticSelectOptions("frames", display.frameId)}</select>
+        </label>
+        <label>
+          <span>${getCosmeticGroupLabel("titles")}</span>
+          <select name="titleId">${buildCosmeticSelectOptions("titles", display.titleId)}</select>
+        </label>
+        <div class="form-actions profile-cta-row">
+          <button class="primary-button" type="submit">${localText("Profil speichern", "Save profile", "Enregistrer le profil")}</button>
+          <button class="secondary-button" type="button" data-shop-section="cosmetics">${localText("Zum Profil-Shop", "Open profile shop", "Ouvrir la boutique profil")}</button>
+        </div>
+      </form>
+    </div>
+    <p class="mini-note">${profileLocked
+      ? localText("Das Bootstrap-Adminprofil bleibt absichtlich an die reservierte Identität gebunden.", "The bootstrap admin profile intentionally stays bound to the reserved identity.", "Le profil admin bootstrap reste volontairement lié à l'identité réservée.")
+      : localText("Änderungen greifen direkt in dein Profil ein und werden serverseitig gespeichert.", "Changes apply to your identity immediately and are saved on the server.", "Les changements s'appliquent immédiatement à ton identité et sont enregistrés côté serveur.")}</p>
+  `;
+
+  elements.profileCosmeticsPanel.innerHTML = `
+    <p class="eyebrow">${localText("Freigeschaltet", "Unlocked", "Débloqué")}</p>
+    <h3>${localText("Deine Profilsammlung", "Your profile collection", "Ta collection de profil")}</h3>
+    <div class="cosmetic-group-list">
+      ${["avatars", "frames", "titles"].map((type) => `
+        <section class="cosmetic-group-block">
+          <div class="cosmetic-group-head">
+            <div>
+              <p class="eyebrow">${escapeHtml(getCosmeticGroupLabel(type))}</p>
+              <h4>${escapeHtml(localText("Freigeschaltet", "Owned", "Possédé"))}</h4>
+            </div>
+            <span class="status-pill turn">${(inventory[type] || []).length}</span>
+          </div>
+          <div class="cosmetic-owned-grid">
+            ${(inventory[type] || []).map((itemId) => buildOwnedCosmeticCardMarkup(type, itemId, type === "avatars" ? display.avatarId : type === "frames" ? display.frameId : display.titleId)).join("")
+              || `<article class="empty-state-card"><h4 class="subheading">${localText("Noch leer", "Still empty", "Encore vide")}</h4><p class="mini-note">${localText("Im Profil-Shop kannst du weitere Elemente kaufen.", "You can buy more items in the profile shop.", "Tu peux acheter plus d'éléments dans la boutique profil.")}</p></article>`}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+
+  bindProfileLoadoutPanelEvents();
+
+  if (profileLocked) {
+    elements.profileLoadoutPanel.querySelectorAll("select, button").forEach((element) => {
+      element.disabled = true;
+    });
+  }
+
+  elements.profileNameInput.value = currentAccount.username;
+  [
+    elements.profileNameInput,
+    elements.profileRenamePasswordInput,
+    elements.profileCurrentPasswordInput,
+    elements.profileNewPasswordInput,
+    elements.profileConfirmPasswordInput,
+  ].forEach((field) => {
+    field.disabled = profileLocked;
+  });
+  [...elements.profileRenameForm.querySelectorAll("button"), ...elements.profilePasswordForm.querySelectorAll("button")].forEach((button) => {
+    button.disabled = profileLocked;
+  });
+}
+
+function renderFriends() {
+  if (!currentAccount) {
+    elements.friendsSummary.innerHTML = "";
+    elements.friendsListPanel.innerHTML = "";
+    elements.friendsPendingPanel.innerHTML = "";
+    elements.friendsTradePanel.innerHTML = "";
+    elements.friendsDuelPanel.innerHTML = "";
+    return;
+  }
+
+  const social = getFriendState();
+  const networkReady = isServerSessionActive();
+  const matchLocked = isMatchSessionLocked();
+  const profileFor = (username) => getSocialProfile(username) || getFallbackSocialProfile(username);
+  const tradeTarget = getFriendTradeTarget(social);
+  const challengeTarget = getFriendChallengeTarget(social);
+  const tradeOptions = uiState.friendTradeOptions && canonicalizeUsername(uiState.friendTradeOptions?.target?.username) === canonicalizeUsername(tradeTarget)
+    ? uiState.friendTradeOptions
+    : null;
+  const activeDeck = getActiveDeck();
+  const duelValidation = validateDeck(activeDeck);
+  const incomingOffers = social.tradeOffersIncoming || [];
+  const outgoingOffers = social.tradeOffersOutgoing || [];
+  const incomingChallenges = social.duelChallengesIncoming || [];
+  const outgoingChallenges = social.duelChallengesOutgoing || [];
+
+  if (networkReady && !uiState.friendsHydrated && !uiState.friendsLoading) {
+    queueMicrotask(() => hydrateFriendsSection({ render: true }));
+  }
+
+  if (networkReady && tradeTarget && !uiState.friendTradeBusy && !tradeOptions) {
+    queueMicrotask(() => setFriendTradeTarget(tradeTarget));
+  }
+
+  const buildSearchActions = (profile, relationship) => {
+    if (relationship === "friend") {
+      return `
+        <button class="secondary-button social-action-button" type="button" data-trade-target="${escapeHtml(profile.username)}">${localText("Handeln", "Trade", "Échanger")}</button>
+        <button class="primary-button social-action-button" type="button" data-duel-target="${escapeHtml(profile.username)}">${localText("Duell", "Duel", "Duel")}</button>
+      `;
+    }
+    if (relationship === "incoming") {
+      return `
+        <button class="primary-button social-action-button" type="button" data-request-action="accept" data-username="${escapeHtml(profile.username)}">${localText("Annehmen", "Accept", "Accepter")}</button>
+        <button class="secondary-button social-action-button" type="button" data-request-action="decline" data-username="${escapeHtml(profile.username)}">${localText("Ablehnen", "Decline", "Refuser")}</button>
+      `;
+    }
+    if (relationship === "outgoing") {
+      return `<button class="secondary-button social-action-button" type="button" data-request-action="cancel" data-username="${escapeHtml(profile.username)}">${localText("Zurückziehen", "Cancel", "Annuler")}</button>`;
+    }
+    if (relationship === "blocked") {
+      return `<button class="secondary-button social-action-button" type="button" data-unblock-user="${escapeHtml(profile.username)}">${localText("Entsperren", "Unblock", "Débloquer")}</button>`;
+    }
+    return `<button class="primary-button social-action-button" type="button" data-friend-request="${escapeHtml(profile.username)}">${localText("Freund hinzufügen", "Add friend", "Ajouter")}</button>`;
+  };
+
+  const searchMarkup = !networkReady
+    ? `<article class="empty-state-card"><h4 class="subheading">${localText("Server nötig", "Server required", "Serveur requis")}</h4><p class="mini-note">${localText("Suche, Handel und Duelle laufen nur im Servermodus.", "Search, trading and duels are server-only features.", "La recherche, les échanges et les duels fonctionnent uniquement en mode serveur.")}</p></article>`
+    : uiState.friendSearchBusy
+      ? `<article class="empty-state-card"><h4 class="subheading">${localText("Suche läuft", "Searching", "Recherche en cours")}</h4><p class="mini-note">${localText("Konten werden gerade durchsucht.", "Searching player accounts right now.", "Les comptes sont en cours de recherche.")}</p></article>`
+      : uiState.friendSearchResults.length
+        ? `<div class="social-card-grid">${uiState.friendSearchResults.map((result) => buildSocialProfileCardMarkup(result, {
+          relationship: result.relationship,
+          actionsMarkup: buildSearchActions(result, result.relationship),
+          note: result.activeDeckName || localText("Noch kein aktives Deck gespeichert.", "No active deck saved yet.", "Aucun deck actif enregistré."),
+        })).join("")}</div>`
+        : `<article class="empty-state-card"><h4 class="subheading">${uiState.friendSearchQuery.trim().length >= 2 ? localText("Keine Treffer", "No matches", "Aucun résultat") : localText("Suche starten", "Start searching", "Lancer une recherche")}</h4><p class="mini-note">${uiState.friendSearchQuery.trim().length >= 2 ? localText("Zu dieser Suche wurde kein passendes Konto gefunden.", "No matching account was found for this search.", "Aucun compte correspondant n'a été trouvé pour cette recherche.") : localText("Suche nach Spielernamen oder Freundescode, um Kontakte direkt zu finden.", "Search by player name or friend code to find contacts quickly.", "Recherche par nom du joueur ou code ami pour trouver rapidement des contacts.")}</p></article>`;
+
+  const friendCardsMarkup = social.friends.length
+    ? `<div class="social-card-grid">${social.friends.map((username) => buildSocialProfileCardMarkup(profileFor(username), {
+      relationship: "friend",
+      actionsMarkup: `
+        <button class="secondary-button social-action-button" type="button" data-trade-target="${escapeHtml(username)}">${localText("Handel", "Trade", "Échange")}</button>
+        <button class="secondary-button social-action-button" type="button" data-duel-target="${escapeHtml(username)}">${localText("Duell", "Duel", "Duel")}</button>
+        <button class="secondary-button social-action-button" type="button" data-remove-friend="${escapeHtml(username)}">${localText("Entfernen", "Remove", "Retirer")}</button>
+        <button class="secondary-button social-action-button" type="button" data-block-user="${escapeHtml(username)}">${localText("Blockieren", "Block", "Bloquer")}</button>
+      `,
+      note: profileFor(username).activeDeckName || localText("Bereit für Handel und Freundesduelle.", "Ready for trading and friend duels.", "Prêt pour les échanges et les duels amicaux."),
+    })).join("")}</div>`
+    : `<article class="empty-state-card"><h4 class="subheading">${localText("Noch keine Freunde", "No friends yet", "Pas encore d'amis")}</h4><p class="mini-note">${localText("Suche oben nach Spielern und schicke deine erste Anfrage direkt aus dem Netzwerk-Panel.", "Use the search above to find players and send your first request directly from the network panel.", "Utilise la recherche ci-dessus pour trouver des joueurs et envoyer ta première demande depuis le panneau réseau.")}</p></article>`;
+
+  const pendingSections = [
+    {
+      title: localText("Eingehende Anfragen", "Incoming requests", "Demandes reçues"),
+      entries: social.incoming,
+      renderActions: (username) => `
+        <button class="primary-button social-action-button" type="button" data-request-action="accept" data-username="${escapeHtml(username)}">${localText("Annehmen", "Accept", "Accepter")}</button>
+        <button class="secondary-button social-action-button" type="button" data-request-action="decline" data-username="${escapeHtml(username)}">${localText("Ablehnen", "Decline", "Refuser")}</button>
+      `,
+      note: localText("Diese Konten warten auf deine Antwort.", "These accounts are waiting for your response.", "Ces comptes attendent ta réponse."),
+    },
+    {
+      title: localText("Ausgehende Anfragen", "Outgoing requests", "Demandes envoyées"),
+      entries: social.outgoing,
+      renderActions: (username) => `<button class="secondary-button social-action-button" type="button" data-request-action="cancel" data-username="${escapeHtml(username)}">${localText("Zurückziehen", "Cancel", "Annuler")}</button>`,
+      note: localText("Gesendet und noch nicht beantwortet.", "Sent and still unanswered.", "Envoyées et encore sans réponse."),
+    },
+    {
+      title: localText("Blockierte Konten", "Blocked accounts", "Comptes bloqués"),
+      entries: social.blocked,
+      renderActions: (username) => `<button class="secondary-button social-action-button" type="button" data-unblock-user="${escapeHtml(username)}">${localText("Entsperren", "Unblock", "Débloquer")}</button>`,
+      note: localText("Blockierte Konten können weder anfragen noch handeln.", "Blocked accounts can neither request nor trade.", "Les comptes bloqués ne peuvent ni envoyer de demande ni échanger."),
+    },
+  ];
+
+  const pendingMarkup = pendingSections.map((section) => `
+    <section class="social-stack">
+      <div class="friends-summary-head">
+        <div>
+          <p class="eyebrow">${escapeHtml(section.title)}</p>
+          <h4>${escapeHtml(section.title)}</h4>
+        </div>
+        <span class="status-pill turn">${section.entries.length}</span>
+      </div>
+      ${section.entries.length
+        ? `<div class="social-card-grid">${section.entries.map((username) => buildSocialProfileCardMarkup(profileFor(username), {
+          actionsMarkup: section.renderActions(username),
+          note: section.note,
+        })).join("")}</div>`
+        : `<article class="empty-state-card"><h4 class="subheading">${localText("Aktuell leer", "Currently empty", "Actuellement vide")}</h4><p class="mini-note">${escapeHtml(section.note)}</p></article>`}
+    </section>
+  `).join("");
+
+  const offerMarkup = (offer, incoming) => `
+    <article class="social-offer-card">
+      <div class="friends-summary-head">
+        <div>
+          <p class="eyebrow">${incoming ? localText("Eingehend", "Incoming", "Entrant") : localText("Ausgehend", "Outgoing", "Sortant")}</p>
+          <h4>${escapeHtml((incoming ? offer.from : offer.to) || "")}</h4>
+        </div>
+        <span class="status-pill turn">${escapeHtml(new Date(offer.createdAt).toLocaleDateString())}</span>
+      </div>
+      <p class="mini-note">${escapeHtml(localText("Bietet", "Offers", "Propose"))} <strong>${escapeHtml(getTradeCardLabel(offer.offeredCardId))}</strong> · ${escapeHtml(localText("möchte", "wants", "veut"))} <strong>${escapeHtml(getTradeCardLabel(offer.requestedCardId))}</strong></p>
+      ${offer.note ? `<p class="mini-note">${escapeHtml(offer.note)}</p>` : ""}
+      <div class="social-action-row">
+        ${incoming
+          ? `
+            <button class="primary-button social-action-button" type="button" data-trade-offer-action="accept" data-trade-offer-id="${escapeHtml(offer.id)}">${localText("Annehmen", "Accept", "Accepter")}</button>
+            <button class="secondary-button social-action-button" type="button" data-trade-offer-action="decline" data-trade-offer-id="${escapeHtml(offer.id)}">${localText("Ablehnen", "Decline", "Refuser")}</button>
+          `
+          : `<button class="secondary-button social-action-button" type="button" data-trade-offer-action="cancel" data-trade-offer-id="${escapeHtml(offer.id)}">${localText("Zurückziehen", "Cancel", "Annuler")}</button>`}
+      </div>
+    </article>
+  `;
+
+  const tradeMarkup = !networkReady
+    ? `<article class="empty-state-card"><h4 class="subheading">${localText("Server notwendig", "Server required", "Serveur requis")}</h4><p class="mini-note">${localText("Handel läuft vollständig über den Server und steht lokal nicht zur Verfügung.", "Trading runs fully through the server and is unavailable offline.", "Les échanges passent entièrement par le serveur et ne sont pas disponibles hors ligne.")}</p></article>`
+    : !social.friends.length
+      ? `<article class="empty-state-card"><h4 class="subheading">${localText("Noch keine Handelspartner", "No trade partners yet", "Pas encore de partenaires d'échange")}</h4><p class="mini-note">${localText("Sobald du Freunde hast, kannst du hier Karten gegeneinander tauschen.", "Once you have friends, you can exchange cards here.", "Dès que tu as des amis, tu peux échanger des cartes ici.")}</p></article>`
+      : `
+        <div class="trade-grid">
+          <div class="trade-builder">
+            <p class="eyebrow">${localText("Neues Angebot", "New offer", "Nouvelle offre")}</p>
+            <h3>${localText("Handel vorbereiten", "Prepare trade", "Préparer un échange")}</h3>
+            ${tradeOptions?.target ? buildSocialProfileCardMarkup(tradeOptions.target, {
+              relationship: "friend",
+              note: tradeOptions.target.activeDeckName || localText("Ausgewählter Handelspartner.", "Selected trading partner.", "Partenaire d'échange sélectionné."),
+            }) : `<p class="mini-note">${uiState.friendTradeBusy ? localText("Lade Karten für den Handel …", "Loading trade cards …", "Chargement des cartes d'échange …") : localText("Wähle einen Freund aus, um seine tauschbaren Karten zu laden.", "Choose a friend to load their tradable cards.", "Choisis un ami pour charger ses cartes échangeables.")}</p>`}
+            <form class="profile-form" id="friendTradeForm">
+              <label>
+                <span>${localText("Freund", "Friend", "Ami")}</span>
+                <select name="tradeFriend">${social.friends.map((username) => `<option value="${escapeHtml(username)}"${canonicalizeUsername(username) === canonicalizeUsername(tradeTarget) ? " selected" : ""}>${escapeHtml(username)}</option>`).join("")}</select>
+              </label>
+              <label>
+                <span>${localText("Deine Karte", "Your card", "Ta carte")}</span>
+                <select name="offeredCardId">
+                  <option value="">${localText("Karte wählen", "Choose card", "Choisir une carte")}</option>
+                  ${(tradeOptions?.yourCards || []).map((entry) => `<option value="${escapeHtml(entry.cardId)}">${escapeHtml(getTradeCardLabel(entry.cardId))} (${entry.count}×)</option>`).join("")}
+                </select>
+              </label>
+              <label>
+                <span>${localText("Gewünschte Karte", "Requested card", "Carte demandée")}</span>
+                <select name="requestedCardId">
+                  <option value="">${localText("Karte wählen", "Choose card", "Choisir une carte")}</option>
+                  ${(tradeOptions?.theirCards || []).map((entry) => `<option value="${escapeHtml(entry.cardId)}">${escapeHtml(getTradeCardLabel(entry.cardId))} (${entry.count}×)</option>`).join("")}
+                </select>
+              </label>
+              <label>
+                <span>${localText("Notiz", "Note", "Note")}</span>
+                <input type="text" name="tradeNote" maxlength="140" placeholder="${escapeHtml(localText("Kurze Nachricht zum Angebot", "Short note for the offer", "Petit message pour l'offre"))}">
+              </label>
+              <div class="form-actions">
+                <button class="primary-button" type="submit"${matchLocked || uiState.friendTradeBusy ? " disabled" : ""}>${localText("Angebot senden", "Send offer", "Envoyer l'offre")}</button>
+              </div>
+            </form>
+            ${matchLocked ? `<p class="mini-note arena-lock-note">${getUiText("messages.matchCollectionLocked")}</p>` : ""}
+          </div>
+          <div class="social-stack">
+            <p class="eyebrow">${localText("Offene Angebote", "Open offers", "Offres ouvertes")}</p>
+            <div class="offer-list">
+              ${incomingOffers.map((offer) => offerMarkup(offer, true)).join("")}
+              ${outgoingOffers.map((offer) => offerMarkup(offer, false)).join("")}
+              ${!incomingOffers.length && !outgoingOffers.length ? `<article class="empty-state-card"><h4 class="subheading">${localText("Noch keine Angebote", "No offers yet", "Pas encore d'offres")}</h4><p class="mini-note">${localText("Hier erscheinen eingehende und ausgehende Tauschangebote.", "Incoming and outgoing trade offers appear here.", "Les offres d'échange entrantes et sortantes apparaissent ici.")}</p></article>` : ""}
+            </div>
+          </div>
+        </div>
+      `;
+
+  const challengeMarkup = (challenge, incoming) => `
+    <article class="social-offer-card">
+      <div class="friends-summary-head">
+        <div>
+          <p class="eyebrow">${incoming ? localText("Eingehend", "Incoming", "Entrant") : localText("Ausgehend", "Outgoing", "Sortant")}</p>
+          <h4>${escapeHtml((incoming ? challenge.from : challenge.to) || "")}</h4>
+        </div>
+        <span class="status-pill turn">${escapeHtml(challenge.deckName || localText("Deck", "Deck", "Deck"))}</span>
+      </div>
+      <p class="mini-note">${escapeHtml(localText("Deck", "Deck", "Deck"))}: ${escapeHtml(challenge.deckName || localText("Unbenannt", "Unnamed", "Sans nom"))} · ${escapeHtml(localText("Karten", "Cards", "Cartes"))}: ${(challenge.deckCards || []).length}</p>
+      <div class="social-action-row">
+        ${incoming
+          ? `
+            <button class="primary-button social-action-button" type="button" data-challenge-action="accept" data-challenge-id="${escapeHtml(challenge.id)}"${matchLocked ? " disabled" : ""}>${localText("Duell starten", "Start duel", "Lancer le duel")}</button>
+            <button class="secondary-button social-action-button" type="button" data-challenge-action="decline" data-challenge-id="${escapeHtml(challenge.id)}">${localText("Ablehnen", "Decline", "Refuser")}</button>
+          `
+          : `<button class="secondary-button social-action-button" type="button" data-challenge-action="cancel" data-challenge-id="${escapeHtml(challenge.id)}">${localText("Zurückziehen", "Cancel", "Annuler")}</button>`}
+      </div>
+    </article>
+  `;
+
+  const duelMarkup = !networkReady
+    ? `<article class="empty-state-card"><h4 class="subheading">${localText("Server notwendig", "Server required", "Serveur requis")}</h4><p class="mini-note">${localText("Freundesduelle brauchen Serverdaten für Deck und Gegnerstatus.", "Friend duels need server data for decks and opponent state.", "Les duels amicaux ont besoin des données serveur pour le deck et l'état adverse.")}</p></article>`
+    : !social.friends.length
+      ? `<article class="empty-state-card"><h4 class="subheading">${localText("Noch kein Duel-Partner", "No duel partner yet", "Pas encore de partenaire de duel")}</h4><p class="mini-note">${localText("Bestätigte Freunde können direkt mit deinem aktiven Deck herausgefordert werden.", "Confirmed friends can be challenged directly with your active deck.", "Les amis confirmés peuvent être défiés directement avec ton deck actif.")}</p></article>`
+      : `
+        <div class="trade-grid">
+          <div class="duel-builder">
+            <p class="eyebrow">${localText("Freundesduell", "Friend duel", "Duel amical")}</p>
+            <h3>${localText("Herausforderung senden", "Send challenge", "Envoyer un défi")}</h3>
+            <p class="mini-note">${duelValidation.valid
+              ? localText(`Aktives Deck: ${activeDeck.name}`, `Active deck: ${activeDeck.name}`, `Deck actif : ${activeDeck.name}`)
+              : duelValidation.messages[0] || getUiText("messages.matchNotPlayable")}</p>
+            <form class="profile-form" id="friendChallengeForm">
+              <label>
+                <span>${localText("Freund", "Friend", "Ami")}</span>
+                <select name="challengeFriend">${social.friends.map((username) => `<option value="${escapeHtml(username)}"${canonicalizeUsername(username) === canonicalizeUsername(challengeTarget) ? " selected" : ""}>${escapeHtml(username)}</option>`).join("")}</select>
+              </label>
+              <div class="form-actions">
+                <button class="primary-button" type="submit"${!duelValidation.valid || matchLocked || uiState.friendChallengeBusy ? " disabled" : ""}>${localText("Herausfordern", "Challenge", "Défier")}</button>
+              </div>
+            </form>
+            ${matchLocked ? `<p class="mini-note arena-lock-note">${localText("Während eines laufenden Matches kannst du kein neues Freundesduell starten.", "You cannot start a new friend duel during an active match.", "Tu ne peux pas lancer un nouveau duel amical pendant un match en cours.")}</p>` : ""}
+          </div>
+          <div class="social-stack">
+            <p class="eyebrow">${localText("Offene Duelle", "Open duels", "Duels ouverts")}</p>
+            <div class="offer-list">
+              ${incomingChallenges.map((challenge) => challengeMarkup(challenge, true)).join("")}
+              ${outgoingChallenges.map((challenge) => challengeMarkup(challenge, false)).join("")}
+              ${!incomingChallenges.length && !outgoingChallenges.length ? `<article class="empty-state-card"><h4 class="subheading">${localText("Noch keine Herausforderungen", "No challenges yet", "Pas encore de défis")}</h4><p class="mini-note">${localText("Eingehende und ausgehende Freundesduelle erscheinen hier.", "Incoming and outgoing friend duels appear here.", "Les duels amicaux entrants et sortants apparaissent ici.")}</p></article>` : ""}
+            </div>
+          </div>
+        </div>
+      `;
+
+  elements.friendsSummary.innerHTML = `
+    <div class="friends-summary-head">
+      <div>
+        <p class="eyebrow">${localText("Netzwerk", "Network", "Réseau")}</p>
+        <h3>${escapeHtml(localText(`Freundescode ${getFriendCode(currentAccount)}`, `Friend code ${getFriendCode(currentAccount)}`, `Code ami ${getFriendCode(currentAccount)}`))}</h3>
+        <p class="mini-note">${networkReady
+          ? localText("Suche Konten, baue Kontakte auf und starte sichere Server-Duelle direkt aus diesem Bereich.", "Search accounts, build contacts and launch secure server duels from this hub.", "Recherche des comptes, crée des contacts et lance des duels serveur sécurisés depuis ce hub.")
+          : localText("Der Bereich ist sichtbar, aber Suche, Handel und Duelle werden erst im Servermodus aktiv.", "The area is visible, but search, trading and duels activate only in server mode.", "La zone est visible, mais la recherche, les échanges et les duels ne s'activent qu'en mode serveur.")}</p>
+      </div>
+      <span class="status-pill ${networkReady ? "ok" : "warn"}">${networkReady ? localText("Live", "Live", "Live") : localText("Lokal", "Local", "Local")}</span>
+    </div>
+    <div class="friends-stat-grid">
+      <article class="profile-stat-card"><span>${localText("Freunde", "Friends", "Amis")}</span><strong>${social.friends.length}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Anfragen", "Requests", "Demandes")}</span><strong>${social.incoming.length + social.outgoing.length}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Handelsangebote", "Trade offers", "Offres d'échange")}</span><strong>${incomingOffers.length + outgoingOffers.length}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Freundesduelle", "Friend duels", "Duels amicaux")}</span><strong>${incomingChallenges.length + outgoingChallenges.length}</strong></article>
+    </div>
+    <form class="friend-search-form" id="friendSearchForm">
+      <label class="wide-field">
+        <span>${localText("Spieler suchen", "Search players", "Rechercher des joueurs")}</span>
+        <input type="search" name="friendSearch" value="${escapeHtml(uiState.friendSearchQuery || "")}" placeholder="${escapeHtml(localText("Spielername oder Freundescode", "Player name or friend code", "Nom du joueur ou code ami"))}"${networkReady ? "" : " disabled"}>
+      </label>
+      <button class="primary-button" type="submit"${networkReady ? "" : " disabled"}>${localText("Suchen", "Search", "Rechercher")}</button>
+    </form>
+    ${searchMarkup}
+  `;
+
+  elements.friendsListPanel.innerHTML = `
+    <p class="eyebrow">${localText("Freundesliste", "Friend list", "Liste d'amis")}</p>
+    <h3>${localText("Bestätigte Kontakte", "Confirmed contacts", "Contacts confirmés")}</h3>
+    ${friendCardsMarkup}
+  `;
+
+  elements.friendsPendingPanel.innerHTML = `
+    <p class="eyebrow">${localText("Anfragen und Moderation", "Requests and moderation", "Demandes et modération")}</p>
+    <h3>${localText("Offene Signale im Netzwerk", "Open network signals", "Signaux ouverts du réseau")}</h3>
+    <div class="social-stack">${pendingMarkup}</div>
+  `;
+
+  elements.friendsTradePanel.innerHTML = `
+    <p class="eyebrow">${localText("Handel", "Trading", "Échange")}</p>
+    <h3>${localText("Karten sicher tauschen", "Trade cards safely", "Échanger des cartes en sécurité")}</h3>
+    ${tradeMarkup}
+  `;
+
+  elements.friendsDuelPanel.innerHTML = `
+    <p class="eyebrow">${localText("Duelle", "Duels", "Duels")}</p>
+    <h3>${localText("Gegen Freunde antreten", "Play against friends", "Affronter des amis")}</h3>
+    ${duelMarkup}
+  `;
+
+  bindFriendsPanelEvents();
+}
+
+function renderShop() {
+  if (!currentAccount) {
+    return;
+  }
+
+  const activeTabId = getShopTabId(getSave().shopTab);
+  const activeTab = SHOP_TAB_DEFINITIONS[activeTabId];
+  const boosterDefinitions = Object.values(PACK_DEFINITIONS);
+  const bundleDefinitions = Object.values(SHOP_BUNDLE_DEFINITIONS);
+  const cosmeticEntries = ["avatars", "frames", "titles"].flatMap((type) => (COSMETIC_DEFINITIONS[type] || []).map((item) => ({ type, item })));
+  const boosterPrices = boosterDefinitions.map((pack) => pack.price);
+  const bundlePrices = bundleDefinitions.map((bundle) => bundle.price);
+  const guaranteedCounts = bundleDefinitions.map((bundle) => bundle.guaranteedCards.reduce((sum, entry) => sum + Number(entry.amount || 0), 0));
+  const includedBoosterCounts = bundleDefinitions.map((bundle) => bundle.includedBoosters.reduce((sum, entry) => sum + Number(entry.amount || 0), 0));
+  const cosmeticPrices = cosmeticEntries.map((entry) => entry.item.price);
+  const ownedCosmetics = cosmeticEntries.filter(({ type, item }) => (getCosmeticInventory()[type] || []).includes(item.id)).length;
+
+  elements.shopTabRow.innerHTML = "";
+  elements.shopPackGrid.innerHTML = "";
+  elements.shopBundleGrid.innerHTML = "";
+  elements.shopCosmeticGrid.innerHTML = "";
+  elements.futureShopGrid.innerHTML = "";
+
+  Object.values(SHOP_TAB_DEFINITIONS).forEach((tab) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `shop-tab-button${tab.id === activeTabId ? " active" : ""}`;
+    button.innerHTML = `
+      <strong>${getUiText(`shop.tabs.${tab.id}`)}</strong>
+      <span>${getUiText(`shop.teasers.${tab.id}`)}</span>
+    `;
+    button.addEventListener("click", () => {
+      if (getSave().shopTab === tab.id) {
+        return;
+      }
+      getSave().shopTab = tab.id;
+      persistCurrentAccount();
+      renderShop();
+    });
+    elements.shopTabRow.append(button);
+  });
+
+  elements.shopCatalogHeading.textContent = getUiText(activeTab.headingKey);
+  elements.shopCatalogNote.textContent = getUiText(activeTab.noteKey);
+  elements.shopPackGrid.classList.toggle("hidden", activeTabId !== "boosters");
+  elements.shopBundleGrid.classList.toggle("hidden", activeTabId !== "packs");
+  elements.shopCosmeticGrid.classList.toggle("hidden", activeTabId !== "cosmetics");
+
+  if (activeTabId === "boosters") {
+    boosterDefinitions.forEach((pack) => {
+      elements.shopPackGrid.append(createPackCard(pack.id, "shop"));
+    });
+  } else if (activeTabId === "packs") {
+    bundleDefinitions.forEach((bundle) => {
+      elements.shopBundleGrid.append(createShopBundleCard(bundle.id));
+    });
+  } else {
+    cosmeticEntries.forEach(({ type, item }) => {
+      elements.shopCosmeticGrid.append(createCosmeticShopCard(type, item.id));
+    });
+  }
+
+  const summaryCards = activeTabId === "boosters"
+    ? [
+      {
+        title: getUiText("shop.summaryOffers"),
+        value: `${boosterDefinitions.length}`,
+        text: localText("Booster-Stufen", "Booster tiers", "Paliers de boosters"),
+      },
+      {
+        title: getUiText("shop.summaryGuaranteed"),
+        value: `${getRarityLabel(PACK_DEFINITIONS.starter.guaranteed)} → ${getRarityLabel(PACK_DEFINITIONS.astral.guaranteed)}`,
+        text: localText("Garantierte Mindestseltenheit steigt pro Stufe", "Rarity floor rises with each tier", "Le palier minimum monte avec chaque niveau"),
+      },
+      {
+        title: getUiText("shop.summaryBoosters"),
+        value: "5",
+        text: localText("Karten pro Booster", "Cards per booster", "Cartes par booster"),
+      },
+      {
+        title: getUiText("shop.summaryPricing"),
+        value: `${Math.min(...boosterPrices)}–${Math.max(...boosterPrices)}`,
+        text: getCurrencyLabel(),
+      },
+    ]
+    : activeTabId === "packs"
+      ? [
+        {
+          title: getUiText("shop.summaryOffers"),
+          value: `${bundleDefinitions.length}`,
+          text: localText("fertige Themen-Packs", "ready-made themed packs", "packs thématiques prêts"),
+        },
+        {
+          title: getUiText("shop.summaryGuaranteed"),
+          value: `${Math.min(...guaranteedCounts)}–${Math.max(...guaranteedCounts)}`,
+          text: localText("feste garantierte Karten", "fixed guaranteed cards", "cartes garanties fixes"),
+        },
+        {
+          title: getUiText("shop.summaryBoosters"),
+          value: `${Math.min(...includedBoosterCounts)}–${Math.max(...includedBoosterCounts)}`,
+          text: localText("Booster enthalten", "boosters included", "boosters inclus"),
+        },
+        {
+          title: getUiText("shop.summaryPricing"),
+          value: `${Math.min(...bundlePrices)}–${Math.max(...bundlePrices)}`,
+          text: getCurrencyLabel(),
+        },
+      ]
+      : [
+        {
+          title: getUiText("shop.summaryOffers"),
+          value: `${cosmeticEntries.length}`,
+          text: localText("Profilelemente", "profile items", "éléments de profil"),
+        },
+        {
+          title: localText("Freigeschaltet", "Unlocked", "Débloqué"),
+          value: `${ownedCosmetics}`,
+          text: localText("bereits in deinem Besitz", "already in your inventory", "déjà dans ton inventaire"),
+        },
+        {
+          title: localText("Kategorien", "Categories", "Catégories"),
+          value: "3",
+          text: `${getCosmeticGroupLabel("avatars")} · ${getCosmeticGroupLabel("frames")} · ${getCosmeticGroupLabel("titles")}`,
+        },
+        {
+          title: getUiText("shop.summaryPricing"),
+          value: `${Math.min(...cosmeticPrices)}–${Math.max(...cosmeticPrices)}`,
+          text: getCurrencyLabel(),
+        },
+      ];
+
+  const summaryTitle = activeTabId === "boosters"
+    ? getUiText("shop.tabHeadingBoosters")
+    : activeTabId === "packs"
+      ? getUiText("shop.tabHeadingPacks")
+      : getUiText("shop.tabHeadingCosmetics");
+
+  elements.shopSummaryPanel.innerHTML = `
+    <p class="eyebrow">${getUiText(activeTab.summaryTitleKey)}</p>
+    <h3>${summaryTitle}</h3>
+    <p class="mini-note">${activeTabId === "cosmetics"
+      ? localText("Profilobjekte greifen direkt in Topbar, Profil und Freundesliste ein.", "Profile items feed directly into the top bar, profile and friend list.", "Les objets de profil alimentent directement la barre supérieure, le profil et la liste d'amis.")
+      : getUiText("shop.summaryModuleNote")}</p>
+    <div class="shop-summary-grid">
+      ${summaryCards.map((card) => `
+        <article class="shop-summary-card">
+          <p class="eyebrow">${card.title}</p>
+          <strong>${card.value}</strong>
+          <span>${card.text}</span>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  elements.shopFutureHeading.textContent = activeTabId === "cosmetics"
+    ? localText("Kollektionen im Fokus", "Featured collections", "Collections en vedette")
+    : localText("Shop-Kompass", "Shop guide", "Guide de la boutique");
+
+  const spotlightCards = activeTabId === "boosters"
+    ? [
+      { title: localText("Einstieg", "Entry", "Entrée"), copy: localText("Starter- und Markt-Booster decken die frühe Sammlung am effizientesten ab.", "Starter and Market boosters cover early collection growth most efficiently.", "Les boosters starter et marché couvrent le début de collection le plus efficacement.") },
+      { title: localText("Jagd nach Seltenheit", "Rare chase", "Chasse aux raretés"), copy: localText("Relikt- und Astral-Booster bündeln die beste Chance auf die höchsten Seltenheiten.", "Relic and Astral boosters carry the strongest odds for top rarities.", "Les boosters relique et astral offrent les meilleures chances sur les raretés élevées.") },
+      { title: localText("Öffnen-Tab", "Open tab", "Ouvrir"), copy: localText("Gekaufte Booster landen sofort im Öffnen-Bereich und können dort nacheinander geöffnet werden.", "Purchased boosters go straight into the opening area and can be opened there one by one.", "Les boosters achetés arrivent directement dans la zone d'ouverture et peuvent être ouverts un par un.") },
+    ]
+    : activeTabId === "packs"
+      ? [
+        { title: localText("Garantien", "Guarantees", "Garanties"), copy: localText("Packs kombinieren feste Karten mit Bonus-Boostern und sparen dir langes Suchen nach Kernkarten.", "Packs combine fixed cards with bonus boosters and save you from hunting for core cards too long.", "Les packs combinent cartes fixes et boosters bonus pour t'éviter de trop chasser les cartes clés.") },
+        { title: localText("Fraktionsfokus", "Faction focus", "Focus faction"), copy: localText("Jedes Pack baut gezielt eine Fraktion aus und ergänzt sie mit passenden Zufallspulls.", "Each pack focuses on one faction and backs it up with matching random pulls.", "Chaque pack renforce une faction précise et la complète avec des tirages adaptés.") },
+        { title: localText("Direkte Lieferung", "Direct delivery", "Livraison directe"), copy: localText("Garantierte Karten gehen sofort in deine Sammlung, Booster direkt in dein Inventar.", "Guaranteed cards go straight into your collection, boosters directly into your inventory.", "Les cartes garanties vont directement dans ta collection, les boosters dans ton inventaire.") },
+      ]
+      : [
+        { title: getCosmeticGroupLabel("avatars"), copy: localText("Profilbilder sind dein schnellster Wiedererkennungspunkt in Topbar und Freundenetz.", "Avatars are your fastest recognition layer in the top bar and friend network.", "Les avatars sont ton repère visuel le plus rapide dans la barre supérieure et le réseau d'amis.") },
+        { title: getCosmeticGroupLabel("frames"), copy: localText("Rahmen definieren die Stimmung deines Profils und geben der Vorschau ihren Look.", "Frames define your profile mood and shape the preview look.", "Les cadres définissent l'ambiance de ton profil et le style de l'aperçu.") },
+        { title: getCosmeticGroupLabel("titles"), copy: localText("Titel liefern auf einen Blick einen Rollenton für Sammlung, Handel und Duelle.", "Titles give your collection, trading and duel profile an instant role tone.", "Les titres donnent immédiatement une tonalité à ton profil de collection, d'échange et de duel.") },
+      ];
+
+  spotlightCards.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "future-card";
+    card.innerHTML = `<h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.copy)}</p>`;
+    elements.futureShopGrid.append(card);
+  });
+}
+
+function sanitizeSavedMatchState(match) {
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+
+  const player = sanitizeMatchSide(match.player);
+  const enemy = sanitizeMatchSide(match.enemy);
+  if (!player || !enemy) {
+    return null;
+  }
+
+  const statuses = new Set(["active", "won", "lost"]);
+  const phases = new Set(["player", "enemy"]);
+  const mode = match.mode === "friend" ? "friend" : "arena";
+  const difficultyId = getArenaDifficultyId(match.difficultyId);
+  const difficulty = getArenaDifficulty(difficultyId);
+  const log = Array.isArray(match.log)
+    ? match.log
+      .slice(-120)
+      .map((entry) => ({
+        turn: String(entry?.turn || "").slice(0, 40) || `Runde ${sanitizeFiniteInteger(match.turn, 0, 0, 999)}`,
+        text: String(entry?.text || "").slice(0, 240),
+      }))
+      .filter((entry) => entry.text)
+    : [];
+  const highestUid = Math.max(
+    0,
+    ...player.board.map((unit) => unit.uid || 0),
+    ...enemy.board.map((unit) => unit.uid || 0),
+  );
+  let status = statuses.has(match.status) ? match.status : "active";
+
+  if (status === "active" && (player.hero <= 0 || enemy.hero <= 0)) {
+    status = player.hero <= 0 ? "lost" : "won";
+  }
+
+  return {
+    difficultyId,
+    recommendedDifficultyId: mode === "friend" ? difficultyId : getArenaDifficultyId(match.recommendedDifficultyId || match.difficultyId),
+    antiFarmGap: mode === "friend" ? 0 : sanitizeFiniteInteger(match.antiFarmGap, 0, 0, 3),
+    antiFarmActive: mode === "friend" ? false : Boolean(match.antiFarmActive),
+    rewardWin: sanitizeFiniteInteger(match.rewardWin, mode === "friend" ? 0 : difficulty.rewardWin, 0, SECURITY_LIMITS.maxGold),
+    rewardLoss: sanitizeFiniteInteger(match.rewardLoss, mode === "friend" ? 0 : difficulty.rewardLoss, 0, SECURITY_LIMITS.maxGold),
+    forfeitPenalty: sanitizeFiniteInteger(match.forfeitPenalty, mode === "friend" ? 0 : difficulty.forfeitPenalty, 0, SECURITY_LIMITS.maxGold),
+    mode,
+    opponentLabel: String(match.opponentLabel || "").slice(0, 32),
+    opponentDeckName: String(match.opponentDeckName || "").slice(0, 48),
+    turn: sanitizeFiniteInteger(match.turn, 0, 0, 999),
+    phase: phases.has(match.phase) ? match.phase : "player",
+    status,
+    statusMessage: String(match.statusMessage || "").slice(0, 240),
+    log,
+    uidCounter: sanitizeFiniteInteger(match.uidCounter, highestUid, highestUid, 99999),
+    player,
+    enemy,
+  };
+}
+
+function clearMatch() {
+  const match = uiState.match;
+  if (match?.status === "active") {
+    if (match.mode === "friend") {
+      if (!requestActionConfirmation(localText("Freundesduell wirklich verlassen?", "Leave the friend duel?", "Quitter ce duel amical ?"))) {
+        return;
+      }
+      uiState.modalCardId = null;
+      uiState.match = null;
+      persistCurrentAccount();
+      renderAll();
+      showToast(localText("Freundesduell beendet.", "Friend duel closed.", "Duel amical fermé."));
+      return;
+    }
+
+    const difficulty = getArenaDifficulty(match.difficultyId);
+    const plannedPenalty = sanitizeFiniteInteger(match.forfeitPenalty, difficulty.forfeitPenalty, 0, SECURITY_LIMITS.maxGold);
+    if (!requestActionConfirmation(getUiText("messages.matchForfeitConfirm", {
+      difficulty: getArenaDifficultyLabel(difficulty.id),
+      gold: plannedPenalty,
+    }))) {
+      return;
+    }
+
+    const deductedGold = Math.min(getSave().gold, plannedPenalty);
+    getSave().gold = Math.max(0, getSave().gold - deductedGold);
+    uiState.modalCardId = null;
+    uiState.match = null;
+    persistCurrentAccount();
+    renderAll();
+    showToast(getUiText("messages.matchForfeitPaid", { gold: deductedGold }));
+    return;
+  }
+
+  uiState.modalCardId = null;
+  uiState.match = null;
+  persistCurrentAccount();
+  renderAll();
+}
+
+function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSave().arenaDifficulty), options = {}) {
+  const friendMode = options.mode === "friend";
+  const playerDeckProfile = analyzeDeck(playerDeckCards);
+  const difficulty = friendMode
+    ? {
+      ...getArenaDifficulty(getArenaDifficultyId(difficultyId)),
+      id: getArenaDifficultyId(difficultyId),
+      recommendedDifficultyId: getArenaDifficultyId(difficultyId),
+      antiFarmGap: 0,
+      antiFarmActive: false,
+      rewardWin: sanitizeFiniteInteger(options.rewardWin, 0, 0, SECURITY_LIMITS.maxGold),
+      rewardLoss: sanitizeFiniteInteger(options.rewardLoss, 0, 0, SECURITY_LIMITS.maxGold),
+      forfeitPenalty: sanitizeFiniteInteger(options.forfeitPenalty, 0, 0, SECURITY_LIMITS.maxGold),
+      enemyHeroBonus: 0,
+      enemyBarrier: 0,
+      enemyStartingManaBonus: 0,
+      enemyOpeningHandDelta: 0,
+    }
+    : createArenaMatchConfig(playerDeckProfile, difficultyId);
+  const enemyDeckCards = friendMode && Array.isArray(options.enemyDeckCards)
+    ? options.enemyDeckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+    : generateEnemyDeck(difficulty.id);
+  const match = {
+    difficultyId: difficulty.id,
+    recommendedDifficultyId: difficulty.recommendedDifficultyId,
+    antiFarmGap: difficulty.antiFarmGap,
+    antiFarmActive: difficulty.antiFarmActive,
+    rewardWin: difficulty.rewardWin,
+    rewardLoss: difficulty.rewardLoss,
+    forfeitPenalty: difficulty.forfeitPenalty,
+    mode: friendMode ? "friend" : "arena",
+    opponentLabel: friendMode ? String(options.opponentLabel || localText("Freund", "Friend", "Ami")).slice(0, 32) : "",
+    opponentDeckName: friendMode ? String(options.opponentDeckName || "").slice(0, 48) : "",
+    turn: 0,
+    phase: "player",
+    status: "active",
+    statusMessage: friendMode ? localText("Freundesduell gestartet.", "Friend duel started.", "Duel amical lancé.") : getUiText("messages.matchStartStatus"),
+    log: [],
+    uidCounter: 0,
+    player: createSideState(playerDeckCards),
+    enemy: createSideState(enemyDeckCards),
+  };
+
+  if (!friendMode) {
+    match.enemy.hero = Math.max(1, match.enemy.hero + difficulty.enemyHeroBonus);
+    match.enemy.heroBarrier = Math.max(0, difficulty.enemyBarrier);
+    match.enemy.maxMana = clamp(0, APP_CONFIG.maxMana, difficulty.enemyStartingManaBonus);
+    match.enemy.mana = match.enemy.maxMana;
+  }
+
+  match.player.deckProfile = playerDeckProfile;
+  drawOpeningHands(match, difficulty);
+  return match;
+}
+
+function finishMatch(status, message) {
+  const save = getSave();
+  const match = uiState.match;
+  if (!match) {
+    return;
+  }
+
+  const difficulty = getArenaDifficulty(match.difficultyId);
+  const rewardWin = sanitizeFiniteInteger(match.rewardWin, difficulty.rewardWin, 0, SECURITY_LIMITS.maxGold);
+  const rewardLoss = sanitizeFiniteInteger(match.rewardLoss, difficulty.rewardLoss, 0, SECURITY_LIMITS.maxGold);
+  const friendMode = match.mode === "friend";
+
+  match.status = status;
+  match.statusMessage = message;
+  addLog(message);
+
+  if (!friendMode) {
+    if (status === "won") {
+      save.gold += rewardWin;
+      addLog(getUiText("messages.matchRewardWin", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardWin }));
+    } else {
+      save.gold += rewardLoss;
+      addLog(getUiText("messages.matchRewardLoss", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardLoss }));
+    }
+  } else {
+    addLog(status === "won"
+      ? localText("Du gewinnst das Freundesduell.", "You win the friend duel.", "Tu gagnes le duel amical.")
+      : localText("Das Freundesduell geht verloren.", "The friend duel is lost.", "Le duel amical est perdu."));
+  }
+
+  persistCurrentAccount();
+}
+
+function renderArena() {
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck);
+  const hasMatch = Boolean(uiState.match);
+  const match = uiState.match;
+  const isFriendMatch = Boolean(hasMatch && match.mode === "friend");
+  const matchFinished = Boolean(match && (match.status === "won" || match.status === "lost"));
+  const difficultyId = hasMatch ? getArenaDifficultyId(match.difficultyId) : getArenaDifficultyId(getSave().arenaDifficulty);
+  const previewDeckProfile = activeDeck ? analyzeDeck(activeDeck.cards) : null;
+  const difficulty = hasMatch
+    ? {
+      ...getArenaDifficulty(difficultyId),
+      rewardWin: sanitizeFiniteInteger(match.rewardWin, getArenaDifficulty(difficultyId).rewardWin, 0, SECURITY_LIMITS.maxGold),
+      rewardLoss: sanitizeFiniteInteger(match.rewardLoss, getArenaDifficulty(difficultyId).rewardLoss, 0, SECURITY_LIMITS.maxGold),
+      forfeitPenalty: sanitizeFiniteInteger(match.forfeitPenalty, getArenaDifficulty(difficultyId).forfeitPenalty, 0, SECURITY_LIMITS.maxGold),
+      recommendedDifficultyId: getArenaDifficultyId(match.recommendedDifficultyId || match.difficultyId),
+      antiFarmActive: Boolean(match.antiFarmActive),
+      antiFarmGap: sanitizeFiniteInteger(match.antiFarmGap, 0, 0, 3),
+      powerScore: sanitizeFiniteNumber(match.player?.deckProfile?.powerScore, 0, 0, 999, 1),
+    }
+    : (previewDeckProfile ? createArenaMatchConfig(previewDeckProfile, difficultyId) : {
+      ...getArenaDifficulty(difficultyId),
+      recommendedDifficultyId: difficultyId,
+      antiFarmActive: false,
+      antiFarmGap: 0,
+      powerScore: 0,
+    });
+  const boardDelta = hasMatch ? formatArenaDelta(match.player.board.length, match.enemy.board.length) : "0";
+  const handDelta = hasMatch ? formatArenaDelta(match.player.hand.length, match.enemy.hand.length) : "0";
+  const lifeDelta = hasMatch ? formatArenaDelta(match.player.hero, match.enemy.hero) : "0";
+  const latestLog = hasMatch ? (match.log[match.log.length - 1]?.text || match.statusMessage) : getUiText("arena.startMatchHint");
+  const statusTone = !hasMatch
+    ? (validation.valid ? "ok" : "warn")
+    : matchFinished
+      ? (match.status === "won" ? "ok" : "warn")
+      : "turn";
+  const statusLabel = !hasMatch
+    ? (validation.valid ? getUiText("common.ready") : getUiText("arena.notReady"))
+    : matchFinished
+      ? (match.status === "won" ? getUiText("arena.victory") : getUiText("arena.defeat"))
+      : (match.phase === "player" ? getUiText("arena.yourTurn") : getUiText("arena.enemyTurn"));
+  const statusTitle = hasMatch
+    ? (matchFinished ? match.statusMessage : isFriendMatch ? localText("Freundesduell live", "Friend duel live", "Duel amical en cours") : getUiText("arena.focusMode"))
+    : getUiText("arena.noMatch");
+  const difficultyNote = isFriendMatch
+    ? localText("Dieses Match läuft ohne Arena-Belohnung und ohne Aufgabegebühr.", "This match runs without arena rewards or forfeit fee.", "Ce match se joue sans récompense d'arène ni pénalité d'abandon.")
+    : difficulty.antiFarmActive
+      ? `${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}. ${getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss })}`
+      : `${getArenaDifficultyDescription(difficultyId)} ${getUiText("arena.difficultyHint")}`;
+  const statusNote = hasMatch
+    ? (matchFinished ? latestLog : isFriendMatch ? localText("Das Duell nutzt das gespeicherte Deck deines Freundes als Gegnerseite.", "The duel uses your friend's stored deck as the opponent side.", "Le duel utilise le deck enregistré de ton ami comme côté adverse.") : getUiText("arena.focusNote"))
+    : (validation.valid ? `${difficultyNote} ${getUiText("arena.readyStart")}` : `${difficultyNote} ${validation.messages.join(" ")}`);
+  const previewSideState = {
+    hero: APP_CONFIG.heroHealth,
+    heroBarrier: 0,
+    mana: 0,
+    maxMana: APP_CONFIG.maxMana,
+    hand: [],
+    board: [],
+    deck: new Array(APP_CONFIG.deckSize).fill(null),
+  };
+  const opponentLabel = isFriendMatch
+    ? (match.opponentLabel || localText("Freund", "Friend", "Ami"))
+    : getUiText("arena.opponent");
+
+  persistCurrentMatchIfNeeded(hasMatch);
+  fillSelect(elements.arenaDifficultySelect, Object.values(ARENA_DIFFICULTIES).map((entry) => ({
+    value: entry.id,
+    label: getArenaDifficultyLabel(entry.id),
+  })));
+  elements.arenaDifficultySelect.value = difficultyId;
+  elements.arenaDifficultySelect.disabled = hasMatch;
+
+  elements.arenaStatus.dataset.matchState = hasMatch ? (matchFinished ? "finished" : "live") : "idle";
+  elements.battleHeader.innerHTML = "";
+  elements.enemyHeroPanel.innerHTML = "";
+  elements.playerHeroPanel.innerHTML = "";
+  elements.enemyBoard.innerHTML = "";
+  elements.playerBoard.innerHTML = "";
+  elements.battleLog.innerHTML = "";
+  elements.playerHand.innerHTML = "";
+  elements.endTurnButton.disabled = true;
+  elements.startMatchButton.disabled = !validation.valid || hasMatch;
+  elements.resetMatchButton.disabled = !hasMatch;
+
+  const statusChips = [
+    `<span class="meta-chip">${hasMatch ? getUiText("arena.round", { turn: match.turn }) : getUiText("arena.noMatch")}</span>`,
+    `<span class="meta-chip">${hasMatch ? getUiText("arena.mana", { current: match.player.mana, max: match.player.maxMana }) : getUiText("arena.noHandTitle")}</span>`,
+    `<span class="meta-chip">${isFriendMatch ? localText("Freundesduell", "Friend duel", "Duel amical") : getArenaDifficultyLabel(difficultyId)}</span>`,
+  ];
+  if (isFriendMatch && match?.opponentDeckName) {
+    statusChips.push(`<span class="meta-chip">${escapeHtml(match.opponentDeckName)}</span>`);
+  }
+  if (!isFriendMatch) {
+    statusChips.push(
+      `<span class="meta-chip">${getUiText("arena.rewardWin", { gold: difficulty.rewardWin })}</span>`,
+      `<span class="meta-chip">${getUiText("arena.rewardLoss", { gold: difficulty.rewardLoss })}</span>`,
+      `<span class="meta-chip">${getUiText("arena.forfeitPenalty", { gold: difficulty.forfeitPenalty })}</span>`,
+    );
+    if (difficulty.antiFarmActive) {
+      statusChips.push(`<span class="meta-chip">${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}</span>`);
+    }
+  }
+
+  elements.arenaStatus.innerHTML = `
+    <div class="arena-status-shell">
+      <div class="arena-status-copy">
+        <span class="status-pill ${statusTone}">${statusLabel}</span>
+        <h3 class="arena-status-title">${statusTitle}</h3>
+        <p class="mini-note">${statusNote}</p>
+      </div>
+      <div class="arena-side-meta">
+        ${statusChips.join("")}
+      </div>
+    </div>
+  `;
+
+  elements.battleHeader.innerHTML = `
+    <article class="arena-insight-card">
+      <p class="eyebrow">${isFriendMatch ? localText("Modus", "Mode", "Mode") : getUiText("arena.difficulty")}</p>
+      <strong>${isFriendMatch ? localText("Freundesduell", "Friend duel", "Duel amical") : getArenaDifficultyLabel(difficultyId)}</strong>
+      <span>${difficultyNote}</span>
+    </article>
+    <article class="arena-insight-card">
+      <p class="eyebrow">${getUiText("arena.boardControl")}</p>
+      <strong>${boardDelta}</strong>
+      <span>${getUiText("arena.you")} ${hasMatch ? match.player.board.length : 0} · ${opponentLabel} ${hasMatch ? match.enemy.board.length : 0}</span>
+    </article>
+    <article class="arena-insight-card">
+      <p class="eyebrow">${getUiText("arena.handFlow")}</p>
+      <strong>${handDelta}</strong>
+      <span>${getUiText("arena.you")} ${hasMatch ? match.player.hand.length : 0} · ${opponentLabel} ${hasMatch ? match.enemy.hand.length : 0}</span>
+    </article>
+    <article class="arena-insight-card">
+      <p class="eyebrow">${getUiText("arena.heroRace")}</p>
+      <strong>${lifeDelta}</strong>
+      <span>${getUiText("arena.you")} ${hasMatch ? match.player.hero : APP_CONFIG.heroHealth} · ${opponentLabel} ${hasMatch ? match.enemy.hero : APP_CONFIG.heroHealth}</span>
+    </article>
+    <article class="arena-insight-card">
+      <p class="eyebrow">${getUiText("arena.latestLog")}</p>
+      <strong>${hasMatch ? getUiText("arena.round", { turn: match.turn }) : getUiText("common.waiting")}</strong>
+      <span>${latestLog}</span>
+    </article>
+  `;
+
+  if (!hasMatch) {
+    renderHeroPanel(elements.enemyHeroPanel, getUiText("arena.opponent"), previewSideState, false);
+    renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), previewSideState, false);
+    renderBoardState(elements.enemyBoard, [], "enemy", false, "enemy");
+    renderBoardState(elements.playerBoard, [], "player", false, "player");
+    elements.battleLog.innerHTML = `<div class="log-entry latest">${getUiText("arena.startMatchHint")}</div>`;
+    elements.playerHand.innerHTML = `<div class="info-panel"><h3 class="subheading">${getUiText("arena.noHandTitle")}</h3><p class="mini-note">${getUiText("arena.noHandText")}</p></div>`;
+    return;
+  }
+
+  renderHeroPanel(elements.enemyHeroPanel, opponentLabel, match.enemy, match.phase === "enemy");
+  renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), match.player, match.phase === "player");
+  renderBoardState(elements.enemyBoard, match.enemy.board, "enemy", matchFinished, match.phase);
+  renderBoardState(elements.playerBoard, match.player.board, "player", matchFinished, match.phase);
+
+  match.log.slice().reverse().forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = `log-entry${index === 0 ? " latest" : ""}`;
+    row.innerHTML = `<strong>${entry.turn}</strong> ${entry.text}`;
+    elements.battleLog.append(row);
+  });
+
+  if (!match.player.hand.length) {
+    elements.playerHand.innerHTML = `<div class="info-panel"><h3 class="subheading">${getUiText("arena.noHandTitle")}</h3><p class="mini-note">${getUiText("arena.detailsHint")}</p></div>`;
+  } else {
+    match.player.hand.forEach((cardId, index) => {
+      const card = getCard(cardId);
+      const playable = canPlayCard(card, index);
+      const restriction = getCardPlayRestriction(card, "player");
+      const synergyHint = getSynergyStatusText(card, "player");
+      elements.playerHand.append(renderCard(card, {
+        context: "hand",
+        buttons: [
+          {
+            label: playable ? getUiText("arena.play") : (restriction || getUiText("arena.tooExpensive")),
+            disabled: !playable,
+            handler: () => playCard(index),
+          },
+        ],
+        footer: match.phase === "player"
+          ? (restriction || synergyHint || getUiText("arena.detailsHint"))
+          : getUiText("arena.enemyTurnLocked"),
+      }));
+    });
+  }
+
+  elements.endTurnButton.disabled = match.phase !== "player" || matchFinished;
 }
 
 function describeEffect(type, effect, index) {

@@ -35,7 +35,45 @@ function createPackCatalog() {
   })));
 }
 
+const COSMETIC_CATALOG = Object.freeze({
+  avatars: Object.freeze([
+    { id: "vault-core", label: "Kernsigille", price: 0, tier: "Start" },
+    { id: "ember-mask", label: "Glutmaske", price: 180, tier: "Selten" },
+    { id: "mist-orb", label: "Nebelorb", price: 180, tier: "Selten" },
+    { id: "thorn-mark", label: "Dornenmarke", price: 180, tier: "Selten" },
+    { id: "storm-eye", label: "Sturmauge", price: 260, tier: "Episch" },
+    { id: "rune-disc", label: "Runenscheibe", price: 260, tier: "Episch" },
+    { id: "astral-iris", label: "Astraliris", price: 420, tier: "Legendär" },
+    { id: "mythic-crown", label: "Mythenkrone", price: 620, tier: "Mythisch" },
+  ]),
+  frames: Object.freeze([
+    { id: "bronze-sigil", label: "Bronzerahmen", price: 0, tier: "Start" },
+    { id: "silver-sigil", label: "Silberrahmen", price: 170, tier: "Selten" },
+    { id: "verdant-ring", label: "Wurzelring", price: 210, tier: "Selten" },
+    { id: "ember-edge", label: "Glutkante", price: 250, tier: "Episch" },
+    { id: "storm-crest", label: "Sturmkranz", price: 250, tier: "Episch" },
+    { id: "void-trace", label: "Schattenzug", price: 360, tier: "Legendär" },
+    { id: "aurora-prism", label: "Auroraprisma", price: 520, tier: "Ultra Rare" },
+    { id: "transcendent-halo", label: "Transzendenz-Halo", price: 760, tier: "Transzendent" },
+  ]),
+  titles: Object.freeze([
+    { id: "vault-initiate", label: "Tresor-Novize", price: 0, tier: "Start" },
+    { id: "market-runner", label: "Marktläufer", price: 90, tier: "Gewöhnlich" },
+    { id: "pack-hunter", label: "Siegeljäger", price: 120, tier: "Gewöhnlich" },
+    { id: "arena-scout", label: "Arenakundschafter", price: 160, tier: "Selten" },
+    { id: "ember-tactician", label: "Gluttaktiker", price: 180, tier: "Selten" },
+    { id: "mist-duelist", label: "Nebelduellant", price: 180, tier: "Selten" },
+    { id: "thorn-warden", label: "Dornenwächter", price: 240, tier: "Episch" },
+    { id: "rune-architect", label: "Runenarchitekt", price: 240, tier: "Episch" },
+    { id: "market-oracle", label: "Marktorakel", price: 300, tier: "Legendär" },
+    { id: "vault-master", label: "Projekt-Vault-Meister", price: 420, tier: "Legendär" },
+    { id: "myth-bearer", label: "Mythenträger", price: 560, tier: "Mythisch" },
+    { id: "transcendent-scion", label: "Transzendenten-Erbe", price: 780, tier: "Transzendent" },
+  ]),
+});
+
 module.exports = {
   BOOSTER_CATALOG,
   PACK_CATALOG: Object.freeze(createPackCatalog()),
+  COSMETIC_CATALOG,
 };

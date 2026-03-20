@@ -8,11 +8,13 @@ const GAME_LIMITS = Object.freeze({
   maxDeckNameLength: 32,
   maxLastOpenedCards: 8,
   maxSnapshotBytes: 850000,
+  maxSocialEntries: 120,
+  maxOfferEntries: 64,
 });
 
 const PACK_IDS = Object.freeze(["starter", "market", "champion", "relic", "astral"]);
 const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
-const SHOP_TABS = Object.freeze(["boosters", "packs"]);
+const SHOP_TABS = Object.freeze(["boosters", "packs", "cosmetics"]);
 const ARENA_DIFFICULTIES = Object.freeze(["novice", "standard", "veteran", "nightmare"]);
 
 function clamp(min, max, value) {
@@ -102,6 +104,26 @@ function createDefaultFriendState() {
     incoming: [],
     outgoing: [],
     blocked: [],
+    tradeOffersIncoming: [],
+    tradeOffersOutgoing: [],
+    duelChallengesIncoming: [],
+    duelChallengesOutgoing: [],
+  };
+}
+
+function createDefaultProfileDisplay() {
+  return {
+    avatarId: "vault-core",
+    frameId: "bronze-sigil",
+    titleId: "vault-initiate",
+  };
+}
+
+function createDefaultCosmetics() {
+  return {
+    avatars: ["vault-core"],
+    frames: ["bronze-sigil"],
+    titles: ["vault-initiate"],
   };
 }
 
@@ -124,6 +146,8 @@ function createEmptySave() {
     arenaDifficulty: "standard",
     settings: createDefaultSettings(),
     friends: createDefaultFriendState(),
+    profileDisplay: createDefaultProfileDisplay(),
+    cosmetics: createDefaultCosmetics(),
     lastOpened: {
       packId: "starter",
       cards: [],
@@ -199,11 +223,101 @@ function sanitizeSettings(settings, baseSettings) {
 }
 
 function sanitizeFriends(friends, baseFriends, sanitizeUsername) {
+  const sanitizeOfferEntry = (entry) => {
+    if (!entry || typeof entry !== "object") {
+      return null;
+    }
+
+    const from = sanitizeUsername(entry.from);
+    const to = sanitizeUsername(entry.to);
+    const offeredCardId = sanitizeId(entry.offeredCardId);
+    const requestedCardId = sanitizeId(entry.requestedCardId);
+    const id = sanitizeId(entry.id, 64);
+    if (!id || !from || !to || !offeredCardId || !requestedCardId) {
+      return null;
+    }
+
+    return {
+      id,
+      from,
+      to,
+      offeredCardId,
+      requestedCardId,
+      createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+      note: sanitizeText(entry.note, 140),
+    };
+  };
+
+  const sanitizeChallengeEntry = (entry) => {
+    if (!entry || typeof entry !== "object") {
+      return null;
+    }
+
+    const id = sanitizeId(entry.id, 64);
+    const from = sanitizeUsername(entry.from);
+    const to = sanitizeUsername(entry.to);
+    const deckName = sanitizeText(entry.deckName, 48);
+    const deckCards = sanitizeStringArray(entry.deckCards, { maxItems: 20, maxLength: 120 });
+    if (!id || !from || !to || !deckCards.length) {
+      return null;
+    }
+
+    return {
+      id,
+      from,
+      to,
+      deckName,
+      deckCards,
+      createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+    };
+  };
+
+  const sanitizeOfferList = (entries, factory) => {
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+
+    const seen = new Set();
+    return entries
+      .map(factory)
+      .filter((entry) => {
+        if (!entry || seen.has(entry.id)) {
+          return false;
+        }
+        seen.add(entry.id);
+        return true;
+      })
+      .slice(0, GAME_LIMITS.maxOfferEntries);
+  };
+
   return {
     friends: uniqueSanitizedUsernames(friends?.friends ?? baseFriends.friends, sanitizeUsername),
     incoming: uniqueSanitizedUsernames(friends?.incoming ?? baseFriends.incoming, sanitizeUsername),
     outgoing: uniqueSanitizedUsernames(friends?.outgoing ?? baseFriends.outgoing, sanitizeUsername),
     blocked: uniqueSanitizedUsernames(friends?.blocked ?? baseFriends.blocked, sanitizeUsername),
+    tradeOffersIncoming: sanitizeOfferList(friends?.tradeOffersIncoming ?? baseFriends.tradeOffersIncoming, sanitizeOfferEntry),
+    tradeOffersOutgoing: sanitizeOfferList(friends?.tradeOffersOutgoing ?? baseFriends.tradeOffersOutgoing, sanitizeOfferEntry),
+    duelChallengesIncoming: sanitizeOfferList(friends?.duelChallengesIncoming ?? baseFriends.duelChallengesIncoming, sanitizeChallengeEntry),
+    duelChallengesOutgoing: sanitizeOfferList(friends?.duelChallengesOutgoing ?? baseFriends.duelChallengesOutgoing, sanitizeChallengeEntry),
+  };
+}
+
+function sanitizeCosmetics(cosmetics, baseCosmetics) {
+  return {
+    avatars: [...new Set(sanitizeStringArray(cosmetics?.avatars ?? baseCosmetics.avatars, { maxItems: 120, maxLength: 64 }))],
+    frames: [...new Set(sanitizeStringArray(cosmetics?.frames ?? baseCosmetics.frames, { maxItems: 120, maxLength: 64 }))],
+    titles: [...new Set(sanitizeStringArray(cosmetics?.titles ?? baseCosmetics.titles, { maxItems: 120, maxLength: 64 }))],
+  };
+}
+
+function sanitizeProfileDisplay(profileDisplay, baseProfileDisplay, cosmetics) {
+  const avatarId = sanitizeId(profileDisplay?.avatarId, 64);
+  const frameId = sanitizeId(profileDisplay?.frameId, 64);
+  const titleId = sanitizeId(profileDisplay?.titleId, 64);
+  return {
+    avatarId: cosmetics.avatars.includes(avatarId) ? avatarId : baseProfileDisplay.avatarId,
+    frameId: cosmetics.frames.includes(frameId) ? frameId : baseProfileDisplay.frameId,
+    titleId: cosmetics.titles.includes(titleId) ? titleId : baseProfileDisplay.titleId,
   };
 }
 
@@ -286,6 +400,7 @@ function sanitizeSave(save, sanitizeUsername) {
   const baseSave = createEmptySave();
   const sanitizedDecks = sanitizeDecks(save?.decks);
   const activeDeckId = sanitizeText(save?.activeDeckId, 120);
+  const cosmetics = sanitizeCosmetics(save?.cosmetics, baseSave.cosmetics);
   const nextSave = {
     ...baseSave,
     gold: sanitizeFiniteInteger(save?.gold, baseSave.gold, 0, GAME_LIMITS.maxGold),
@@ -298,6 +413,8 @@ function sanitizeSave(save, sanitizeUsername) {
     arenaDifficulty: ARENA_DIFFICULTIES.includes(save?.arenaDifficulty) ? save.arenaDifficulty : baseSave.arenaDifficulty,
     settings: sanitizeSettings(save?.settings, baseSave.settings),
     friends: sanitizeFriends(save?.friends, baseSave.friends, sanitizeUsername),
+    profileDisplay: sanitizeProfileDisplay(save?.profileDisplay, baseSave.profileDisplay, cosmetics),
+    cosmetics,
     lastOpened: sanitizeLastOpened(save?.lastOpened, baseSave.lastOpened),
     activeMatch: sanitizeActiveMatch(save?.activeMatch),
     filters: sanitizeFilters(save?.filters, baseSave.filters),
@@ -370,6 +487,9 @@ function sanitizeAccountForClient(account, { includeSave = false } = {}) {
       cards: stats.totalCards,
       boosters: stats.totalBoosters,
       uniqueCards: stats.uniqueCards,
+      titleId: save.profileDisplay?.titleId || "vault-initiate",
+      avatarId: save.profileDisplay?.avatarId || "vault-core",
+      frameId: save.profileDisplay?.frameId || "bronze-sigil",
     },
     ...(includeSave ? { save: cloneJsonValue(save, createEmptySave()) } : {}),
   };

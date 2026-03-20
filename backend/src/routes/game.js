@@ -55,7 +55,10 @@ function registerGameRoutes(router) {
         return database;
       }
 
-      account.save = sanitizeSave(body.save, (value) => String(value || "").trim().replace(/\s+/g, " ").slice(0, 18));
+      account.save = sanitizeSave({
+        ...body.save,
+        friends: account.save?.friends,
+      }, (value) => String(value || "").trim().replace(/\s+/g, " ").slice(0, 18));
       return database;
     });
 

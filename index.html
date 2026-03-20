@@ -169,6 +169,7 @@
                 </div>
                 <div class="pack-grid" id="shopPackGrid"></div>
                 <div class="pack-grid hidden" id="shopBundleGrid"></div>
+                <div class="cosmetic-shop-grid hidden" id="shopCosmeticGrid"></div>
               </div>
 
               <div class="shop-side-column">
@@ -378,10 +379,11 @@
             <div class="profile-layout">
               <div class="profile-column">
                 <div class="info-panel profile-summary-panel" id="profileSummary"></div>
+                <div class="info-panel" id="profileLoadoutPanel"></div>
 
                 <div class="info-panel">
                   <h3 class="subheading">Spielernamen ändern</h3>
-                  <p class="mini-note">Der neue Name muss 3 bis 18 Zeichen lang sein und darf nicht bereits vergeben sein.</p>
+                  <p class="mini-note">Der neue Name muss 3 bis 12 Zeichen lang sein und darf nicht bereits vergeben sein.</p>
                   <form class="profile-form" id="profileRenameForm">
                     <label>
                       <span>Neuer Spielername</span>
@@ -401,6 +403,8 @@
               </div>
 
               <div class="profile-column">
+                <div class="info-panel" id="profileCosmeticsPanel"></div>
+
                 <div class="info-panel">
                   <h3 class="subheading">Passwort ändern</h3>
                   <p class="mini-note">Das aktuelle Passwort wird geprüft, bevor dein neues Passwort übernommen wird.</p>
@@ -458,6 +462,7 @@
                 <div class="info-panel" id="friendsListPanel"></div>
                 <div class="info-panel" id="friendsPendingPanel"></div>
                 <div class="info-panel" id="friendsTradePanel"></div>
+                <div class="info-panel" id="friendsDuelPanel"></div>
               </div>
             </div>
           </section>

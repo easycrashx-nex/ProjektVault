@@ -162,6 +162,70 @@ function registerProfileRoutes(router) {
 
     sendJson(res, 200, { ok: true });
   });
+
+  router.patch("/api/profile/display", async (req, res) => {
+    const token = getBearerToken(req);
+    if (!token) {
+      sendJson(res, 401, { ok: false, error: "missing_token", message: "Nicht angemeldet." });
+      return;
+    }
+
+    const body = await parseJsonBody(req);
+    const requestedDisplay = body?.display;
+
+    if (!requestedDisplay || typeof requestedDisplay !== "object") {
+      sendJson(res, 400, { ok: false, error: "invalid_display", message: "Kein gültiges Profil-Layout übergeben." });
+      return;
+    }
+
+    let responseAccount = null;
+    let invalid = false;
+    await updateDatabase((database) => {
+      const session = database.sessions[token];
+      if (!session) {
+        return database;
+      }
+
+      const currentAccount = Object.values(database.accounts).find((account) => canonicalizeUsername(account.username) === canonicalizeUsername(session.username));
+      if (!currentAccount) {
+        return database;
+      }
+
+      const cosmetics = currentAccount.save?.cosmetics || { avatars: [], frames: [], titles: [] };
+      const avatarId = String(requestedDisplay.avatarId || "").trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64);
+      const frameId = String(requestedDisplay.frameId || "").trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64);
+      const titleId = String(requestedDisplay.titleId || "").trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64);
+
+      if (
+        !cosmetics.avatars.includes(avatarId)
+        || !cosmetics.frames.includes(frameId)
+        || !cosmetics.titles.includes(titleId)
+      ) {
+        invalid = true;
+        return database;
+      }
+
+      currentAccount.save.profileDisplay = {
+        avatarId,
+        frameId,
+        titleId,
+      };
+      responseAccount = currentAccount;
+      return database;
+    });
+
+    if (invalid) {
+      sendJson(res, 400, { ok: false, error: "missing_cosmetic", message: "Mindestens ein ausgewähltes Profil-Objekt ist nicht freigeschaltet." });
+      return;
+    }
+
+    if (!responseAccount) {
+      sendJson(res, 401, { ok: false, error: "invalid_session", message: "Sitzung nicht gefunden." });
+      return;
+    }
+
+    sendJson(res, 200, { ok: true, account: sanitizeAccountForClient(responseAccount, { includeSave: true }) });
+  });
 }
 
 module.exports = { registerProfileRoutes };
