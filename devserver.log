@@ -1,0 +1,8 @@
+
+> arcane-vault@0.1.0 dev
+> node scripts/sync-frontend.mjs && node backend/src/server.js
+
+sync index.html -> frontend/public/index.html
+sync styles.css -> frontend/public/styles.css
+sync app.js -> frontend/public/app.js
+Projekt Vault server ready on http://0.0.0.0:3000

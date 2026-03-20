@@ -2994,6 +2994,7 @@ body[data-scene="settings"] .scene-core {
 .detail-stat {
   display: grid;
   gap: 6px;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -3012,6 +3013,8 @@ body[data-scene="settings"] .scene-core {
 
 .detail-stat strong {
   font-size: 1.02rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .detail-stat.highlight {

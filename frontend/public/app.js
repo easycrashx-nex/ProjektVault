@@ -97,6 +97,12 @@ const SECTION_SCENE_META = {
     text: "Gespeicherte Listen, Warnungen und verfügbare Karten sind als modulare Kommandoflächen angeordnet.",
     theme: "decks",
   },
+  wiki: {
+    eyebrow: "Wissensarchiv",
+    title: "Alle Systeme, Regeln und Symbole an einem Ort",
+    text: "Die Wiki erklärt Karten, Markt, Arena, Konto und Serverbetrieb in einer durchsuchbaren Wissenszentrale.",
+    theme: "wiki",
+  },
   profile: {
     eyebrow: "Kontoprofil",
     title: "Dein Konto bleibt ein eigener Baustein",
@@ -384,7 +390,7 @@ const PACK_TRANSLATIONS = Object.freeze({
 const UI_TEXT = Object.freeze({
   de: {
     auth: {
-      eyebrow: "Arcane Vault Online",
+      eyebrow: "Projekt Vault Online",
       title: "Dein Kartenkonto wartet schon.",
       body: "Erstelle dein Konto, starte mit fünf kostenlosen Starter-Boostern und baue dir direkt deine erste Sammlung auf.",
       points: [
@@ -414,6 +420,7 @@ const UI_TEXT = Object.freeze({
       booster: "Booster öffnen",
       collection: "Sammlung",
       decks: "Decks",
+      wiki: "Wiki",
       profile: "Profil",
       friends: "Freunde",
       settings: "Einstellungen",
@@ -426,6 +433,7 @@ const UI_TEXT = Object.freeze({
       booster: { eyebrow: "Siegelkammer", title: "Booster sollen wie kleine Rituale wirken", text: "Wähle dein Pack, entzünde die Kammer und lass die Karten mit gestaffeltem Reveal ins Gewölbe fallen." },
       collection: { eyebrow: "Archivgalerie", title: "Deine Sammlung steht im Zentrum", text: "Seltene Karten, Filter, Marktwerte und Deckstatus werden wie eine kuratierte Ausstellung präsentiert." },
       decks: { eyebrow: "Strategiekammer", title: "Deckbau soll sich wie Taktik anfühlen", text: "Gespeicherte Listen, Warnungen und verfügbare Karten sind als modulare Kommandoflächen angeordnet." },
+      wiki: { eyebrow: "Wissensarchiv", title: "Alle Systeme, Regeln und Symbole an einem Ort", text: "Die Wiki erklärt Karten, Markt, Arena, Konto und Serverbetrieb in einer durchsuchbaren Wissenszentrale." },
       profile: { eyebrow: "Kontoprofil", title: "Dein Konto bleibt ein eigener Baustein", text: "Spielername, Passwort und Sicherheitsdaten liegen bewusst getrennt von Sammlung und Matchlogik." },
       friends: { eyebrow: "Kontaktzentrum", title: "Freunde, Kontakte und Handel an einem Ort", text: "Behalte Freundescode, Kontaktlisten und den Handelszugang in einem eigenen sozialen Bereich im Blick." },
       settings: { eyebrow: "Steuerzentrale", title: "Effekte, Komfort und Sprache feinjustieren", text: "Passe Oberfläche, Klickgefühl, Booster-Inszenierung und Bestätigungen direkt für dein Konto an." },
@@ -468,6 +476,8 @@ const UI_TEXT = Object.freeze({
       collectionNote: "Karten sind anklickbar. Im Detailfenster kannst du sie prüfen und verkaufen.",
       decksTitle: "Mehrere Decks speichern und prüfen",
       decksNote: "Wenn eine Karte verkauft wurde, bleibt das Deck gespeichert, wird aber als nicht spielbar markiert.",
+      wikiTitle: "Alles zu Systemen, Karten und Regeln",
+      wikiNote: "Finde Regeln, Symbole, Booster, Deckbau, Markt und Matchsystem gebÃ¼ndelt in einer durchsuchbaren Wissenszentrale.",
       profileTitle: "Kontodaten, Sicherheit und Reset",
       profileNote: "Verwalte deinen Namen, dein Passwort und deinen Kontostand zentral über dein Spielkonto.",
       friendsTitle: "Freundesnetz und Handelshub",
@@ -577,7 +587,7 @@ const UI_TEXT = Object.freeze({
       lockedNote: "Das Administratorkonto bleibt absichtlich an die reservierten Bootstrap-Daten gebunden.",
       editableNote: "Namens- und Passwortänderungen prüfen das aktuelle Passwort und aktualisieren die laufende Sitzung direkt mit.",
       renameTitle: "Spielernamen ändern",
-      renameNote: "Der neue Name muss 3 bis 18 Zeichen lang sein und darf nicht bereits vergeben sein.",
+      renameNote: "Der neue Name muss 3 bis 12 Zeichen lang sein, darf kein Admin-Name sein und nicht bereits vergeben sein.",
       newUsername: "Neuer Spielername",
       currentPassword: "Aktuelles Passwort",
       saveUsername: "Spielernamen speichern",
@@ -739,11 +749,11 @@ const UI_TEXT = Object.freeze({
       owned: "Besitz",
       inActiveDeck: "Aktives Deck",
       vendorSell: "Händlerwert",
-      marketGross: "Markt brutto",
-      marketFee: "Gebühr (7 %)",
-      marketPayout: "Markt netto",
-      marketBuy: "Markt Ankauf",
-      hourlyMove: "Stunden-Trend",
+      marketGross: "Brutto",
+      marketFee: "Gebühr",
+      marketPayout: "Netto",
+      marketBuy: "Ankauf",
+      hourlyMove: "Trend",
       actions: "Aktionen",
       note: "Hinweis",
       deckNote: "Wenn du eine Karte verkaufst, werden gespeicherte Decks nicht automatisch geändert. Betroffene Decks werden nur als blockiert markiert.",
@@ -773,6 +783,102 @@ const UI_TEXT = Object.freeze({
   fr: {},
 });
 
+const WIKI_UI_TEXT = Object.freeze({
+  de: {
+    summaryEyebrow: "Orientierung",
+    summaryTitle: "Schnellzugriff",
+    summaryNote: "Nutze Themenfilter, Suche und einklappbare Kapitel, um Systeme, Regeln und Symbole schnell wiederzufinden.",
+    quickLinks: "Direkt zu",
+    searchTitle: "Schnell finden",
+    searchLabel: "Suche",
+    searchPlaceholder: "Thema, Effekt oder Regel suchen",
+    contentEyebrow: "Spielwissen",
+    contentTitle: "Kapitel und Systeme",
+    clearFilters: "Filter löschen",
+    noResultsTitle: "Keine passenden Kapitel",
+    noResultsText: "Passe Suche oder Themenfilter an, um andere Inhalte anzuzeigen.",
+    resultsAll: "{count} von {total} Kapiteln · alle Themen",
+    resultsTopic: "{count} von {total} Kapiteln · Thema: {topic}",
+    stats: {
+      chapters: "Kapitel",
+      factions: "Fraktionen",
+      boosters: "Booster",
+      packs: "Packs",
+    },
+    topics: {
+      all: "Alles",
+      start: "Start",
+      economy: "Shop & Gold",
+      cards: "Karten & Symbole",
+      decks: "Sammlung & Decks",
+      arena: "Arena & Markt",
+      account: "Konto & Server",
+    },
+  },
+  en: {
+    summaryEyebrow: "Orientation",
+    summaryTitle: "Quick Access",
+    summaryNote: "Use topic filters, search and collapsible chapters to find rules, systems and symbols quickly.",
+    quickLinks: "Jump to",
+    searchTitle: "Find fast",
+    searchLabel: "Search",
+    searchPlaceholder: "Search a topic, rule or effect",
+    contentEyebrow: "Game Knowledge",
+    contentTitle: "Chapters and Systems",
+    clearFilters: "Clear filters",
+    noResultsTitle: "No matching chapters",
+    noResultsText: "Adjust search or topic filters to reveal other wiki entries.",
+    resultsAll: "{count} of {total} chapters · all topics",
+    resultsTopic: "{count} of {total} chapters · topic: {topic}",
+    stats: {
+      chapters: "Chapters",
+      factions: "Factions",
+      boosters: "Boosters",
+      packs: "Packs",
+    },
+    topics: {
+      all: "All",
+      start: "Start",
+      economy: "Shop & Gold",
+      cards: "Cards & Symbols",
+      decks: "Collection & Decks",
+      arena: "Arena & Market",
+      account: "Account & Server",
+    },
+  },
+  fr: {
+    summaryEyebrow: "Orientation",
+    summaryTitle: "Accès rapide",
+    summaryNote: "Utilise les filtres, la recherche et les chapitres repliables pour retrouver rapidement les règles et systèmes.",
+    quickLinks: "Accès direct",
+    searchTitle: "Trouver vite",
+    searchLabel: "Recherche",
+    searchPlaceholder: "Chercher un thème, une règle ou un effet",
+    contentEyebrow: "Savoir du jeu",
+    contentTitle: "Chapitres et systèmes",
+    clearFilters: "Effacer les filtres",
+    noResultsTitle: "Aucun chapitre correspondant",
+    noResultsText: "Ajuste la recherche ou le filtre de thème pour afficher d'autres contenus.",
+    resultsAll: "{count} sur {total} chapitres · tous les thèmes",
+    resultsTopic: "{count} sur {total} chapitres · thème : {topic}",
+    stats: {
+      chapters: "Chapitres",
+      factions: "Factions",
+      boosters: "Boosters",
+      packs: "Packs",
+    },
+    topics: {
+      all: "Tout",
+      start: "Départ",
+      economy: "Boutique & Or",
+      cards: "Cartes & symboles",
+      decks: "Collection & decks",
+      arena: "Arène & marché",
+      account: "Compte & serveur",
+    },
+  },
+});
+
 function interpolateText(template, values = {}) {
   return String(template).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? `{${key}}`);
 }
@@ -800,6 +906,78 @@ function getUiText(path, values = {}) {
   const fallback = path.split(".").reduce((value, segment) => value?.[segment], UI_TEXT.de);
   const resolved = current ?? fallback ?? path;
   return typeof resolved === "string" ? interpolateText(resolved, values) : resolved;
+}
+
+function getWikiUiText(path, values = {}) {
+  const current = path.split(".").reduce((value, segment) => value?.[segment], WIKI_UI_TEXT[getCurrentLanguage()]);
+  const fallback = path.split(".").reduce((value, segment) => value?.[segment], WIKI_UI_TEXT.de);
+  const resolved = current ?? fallback ?? path;
+  return typeof resolved === "string" ? interpolateText(resolved, values) : resolved;
+}
+
+function normalizeWikiSearchText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function buildWikiSearchBlob(section) {
+  return [
+    section.title,
+    section.summary,
+    ...(section.tags || []),
+    ...(section.bullets || []),
+    ...((section.callouts || []).flatMap((entry) => [entry.label, entry.text])),
+  ].join(" ");
+}
+
+function jumpToWikiSection(sectionId) {
+  const target = document.getElementById(`wiki-entry-${sectionId}`);
+  if (!target) {
+    return;
+  }
+  target.open = true;
+  target.scrollIntoView({
+    behavior: getUserSettings().reducedMotion ? "auto" : "smooth",
+    block: "start",
+  });
+}
+
+function handleWikiTopicClick(event) {
+  const button = event.target.closest("[data-wiki-topic]");
+  if (!button) {
+    return;
+  }
+
+  uiState.wikiTopic = button.dataset.wikiTopic || "all";
+  renderWiki();
+}
+
+function handleWikiSummaryClick(event) {
+  const resetButton = event.target.closest("[data-wiki-reset]");
+  if (resetButton) {
+    uiState.wikiSearch = "";
+    uiState.wikiTopic = "all";
+    renderWiki();
+    return;
+  }
+
+  const jumpButton = event.target.closest("[data-wiki-jump]");
+  if (!jumpButton) {
+    return;
+  }
+
+  const targetSection = buildWikiSections().find((entry) => entry.id === jumpButton.dataset.wikiJump);
+  if (!targetSection) {
+    return;
+  }
+
+  uiState.wikiSearch = "";
+  uiState.wikiTopic = targetSection.topic;
+  renderWiki();
+  window.requestAnimationFrame(() => jumpToWikiSection(targetSection.id));
 }
 
 function getArenaDifficultyId(value) {
@@ -1540,7 +1718,7 @@ function getMotionStateLabel(reduced) {
 
 Object.assign(UI_TEXT.en, {
   auth: {
-    eyebrow: "Arcane Vault Online",
+    eyebrow: "Projekt Vault Online",
     title: "Your card account is ready.",
     body: "Create your account, start with five free starter boosters, and begin building your collection right away.",
     points: [
@@ -1570,6 +1748,7 @@ Object.assign(UI_TEXT.en, {
     booster: "Open Boosters",
     collection: "Collection",
     decks: "Decks",
+    wiki: "Wiki",
     profile: "Profile",
     friends: "Friends",
     settings: "Settings",
@@ -1582,6 +1761,7 @@ Object.assign(UI_TEXT.en, {
     booster: { eyebrow: "Seal Chamber", title: "Boosters should feel like small rituals", text: "Choose your pack, ignite the chamber and let the cards fall into the vault with a staged reveal." },
     collection: { eyebrow: "Archive Gallery", title: "Your collection takes center stage", text: "Rare cards, filters, market values and deck status are presented like a curated exhibition." },
     decks: { eyebrow: "Strategy Chamber", title: "Deckbuilding should feel tactical", text: "Saved lists, warnings and available cards are arranged as modular command surfaces." },
+    wiki: { eyebrow: "Knowledge Archive", title: "Rules, systems and symbols in one place", text: "The wiki explains cards, market flow, arena rules, account systems and server operation in one searchable hub." },
     profile: { eyebrow: "Account Profile", title: "Your account remains its own module", text: "Player name, password and security data stay deliberately separate from collection and match logic." },
     friends: { eyebrow: "Social Preparation", title: "Friends and trading get their own space", text: "Friend lists, invites and future card trading are already prepared as a dedicated module." },
     settings: { eyebrow: "Control Center", title: "Fine-tune effects, comfort and language", text: "Adjust interface behavior, click feedback, booster presentation and confirmations directly for your account." },
@@ -1624,6 +1804,8 @@ Object.assign(UI_TEXT.en, {
     collectionNote: "Cards are clickable. In the detail view you can inspect and sell them.",
     decksTitle: "Save and validate multiple decks",
     decksNote: "If a card was sold, the deck remains saved but is marked as unplayable.",
+    wikiTitle: "Everything about systems, cards and rules",
+    wikiNote: "Find rules, symbols, boosters, deckbuilding, market behavior and match systems in one searchable knowledge center.",
     profileTitle: "Manage account data and security",
     profileNote: "Manage your player name, password and account access from one central profile.",
     friendsTitle: "Prepare social features for trading and friendships",
@@ -1733,7 +1915,7 @@ Object.assign(UI_TEXT.en, {
     lockedNote: "The administrator account intentionally stays bound to the reserved bootstrap data.",
     editableNote: "Name and password changes verify the current password and update the running session immediately.",
     renameTitle: "Change player name",
-    renameNote: "The new name must be 3 to 18 characters long and must not already be taken.",
+    renameNote: "The new name must be 3 to 12 characters long, must not look like an admin name and must not already be taken.",
     newUsername: "New player name",
     currentPassword: "Current password",
     saveUsername: "Save player name",
@@ -1895,11 +2077,11 @@ Object.assign(UI_TEXT.en, {
     owned: "Owned",
     inActiveDeck: "In deck",
     vendorSell: "Vendor value",
-    marketGross: "Market gross",
-    marketFee: "Fee (7%)",
-    marketPayout: "Market net",
-    marketBuy: "Buy price",
-    hourlyMove: "Hourly trend",
+    marketGross: "Gross",
+    marketFee: "Fee",
+    marketPayout: "Net",
+    marketBuy: "Buy",
+    hourlyMove: "Trend",
     actions: "Actions",
     note: "Note",
     deckNote: "Selling a card does not automatically modify saved decks. Affected decks are only marked as blocked.",
@@ -1928,7 +2110,7 @@ Object.assign(UI_TEXT.en, {
 
 Object.assign(UI_TEXT.fr, {
   auth: {
-    eyebrow: "Préparation en ligne Arcane Vault",
+    eyebrow: "Préparation en ligne Projekt Vault",
     title: "Ton compte de cartes t'attend déjà.",
     body: "Crée ton compte, commence avec cinq boosters de départ gratuits et lance directement ta première collection.",
     points: [
@@ -1958,6 +2140,7 @@ Object.assign(UI_TEXT.fr, {
     booster: "Ouvrir des boosters",
     collection: "Collection",
     decks: "Decks",
+    wiki: "Wiki",
     profile: "Profil",
     friends: "Amis",
     settings: "Paramètres",
@@ -1970,6 +2153,7 @@ Object.assign(UI_TEXT.fr, {
     booster: { eyebrow: "Chambre des sceaux", title: "Les boosters doivent ressembler à de petits rituels", text: "Choisis ton pack, active la chambre et laisse les cartes tomber dans le coffre avec une révélation progressive." },
     collection: { eyebrow: "Galerie des archives", title: "Ta collection occupe le centre", text: "Cartes rares, filtres, valeurs du marché et état des decks sont présentés comme une exposition soignée." },
     decks: { eyebrow: "Chambre stratégique", title: "La construction de deck doit sembler tactique", text: "Listes sauvegardées, alertes et cartes disponibles sont organisées comme des surfaces de commande modulaires." },
+    wiki: { eyebrow: "Archive de savoir", title: "Règles, systèmes et symboles au même endroit", text: "La wiki explique les cartes, le marché, l'arène, le compte et le fonctionnement serveur dans un centre de savoir consultable." },
     profile: { eyebrow: "Profil du compte", title: "Ton compte reste un module à part", text: "Nom du joueur, mot de passe et données de sécurité restent volontairement séparés de la collection et des matchs." },
     friends: { eyebrow: "Préparation sociale", title: "Les amis et l'échange ont leur propre espace", text: "Listes d'amis, invitations et futur échange de cartes sont déjà préparés comme module dédié." },
     settings: { eyebrow: "Centre de contrôle", title: "Ajuster les effets, le confort et les confirmations", text: "Les paramètres locaux du compte influencent directement l'interface et pourront plus tard être synchronisés côté serveur." },
@@ -2012,6 +2196,8 @@ Object.assign(UI_TEXT.fr, {
     collectionNote: "Les cartes sont cliquables. Dans la vue détail tu peux les vérifier et les vendre.",
     decksTitle: "Sauvegarder et vérifier plusieurs decks",
     decksNote: "Si une carte est vendue, le deck reste sauvegardé mais est marqué comme non jouable.",
+    wikiTitle: "Tout sur les systèmes, les cartes et les règles",
+    wikiNote: "Retrouve les règles, symboles, boosters, deckbuilding, marché et systèmes de match dans une base de connaissance consultable.",
     profileTitle: "Gérer les données du compte et la sécurité",
     profileNote: "Le nom du joueur et le mot de passe sont modifiés localement, mais la structure est prête pour un compte serveur plus tard.",
     friendsTitle: "Préparer les fonctions sociales pour l'échange et les amitiés",
@@ -2121,7 +2307,7 @@ Object.assign(UI_TEXT.fr, {
     lockedNote: "Le compte administrateur reste volontairement lié aux données bootstrap réservées.",
     editableNote: "Les changements de nom et de mot de passe vérifient le mot de passe actuel et mettent à jour la session immédiatement.",
     renameTitle: "Changer le nom du joueur",
-    renameNote: "Le nouveau nom doit comporter entre 3 et 18 caractères et ne doit pas déjà être pris.",
+    renameNote: "Le nouveau nom doit contenir entre 3 et 12 caractères, ne doit pas ressembler à un nom admin et ne doit pas déjà être pris.",
     newUsername: "Nouveau nom du joueur",
     currentPassword: "Mot de passe actuel",
     saveUsername: "Sauvegarder le nom",
@@ -2283,11 +2469,11 @@ Object.assign(UI_TEXT.fr, {
     owned: "Stock",
     inActiveDeck: "Deck actif",
     vendorSell: "Valeur marchand",
-    marketGross: "Brut marché",
-    marketFee: "Frais (7 %)",
-    marketPayout: "Net marché",
-    marketBuy: "Prix achat",
-    hourlyMove: "Tendance horaire",
+    marketGross: "Brut",
+    marketFee: "Frais",
+    marketPayout: "Net",
+    marketBuy: "Achat",
+    hourlyMove: "Tendance",
     actions: "Actions",
     note: "Note",
     deckNote: "Vendre une carte ne modifie pas automatiquement les decks sauvegardés. Les decks concernés sont seulement marqués comme bloqués.",
@@ -2450,9 +2636,9 @@ Object.assign(UI_TEXT.de, {
   },
   messages: {
     accountNotFound: "Dieses Konto konnte nicht gefunden werden.",
-    authInvalidUsername: "Bitte verwende einen gültigen Spielernamen mit 3 bis 18 Zeichen.",
+    authInvalidUsername: "Bitte verwende einen gültigen Spielernamen mit 3 bis 12 Zeichen.",
     authPasswordMin: "Das Passwort muss mindestens 4 Zeichen lang sein.",
-    authReservedUsername: "Dieser Spielername ist reserviert.",
+    authReservedUsername: "Namen mit Admin oder adminähnlichen Varianten sind reserviert.",
     authUsernameTaken: "Dieser Spielername ist bereits vergeben.",
     authAccountCreated: "Konto {username} wurde erstellt.",
     authAccountCreateFailed: "Das Konto konnte nicht sicher erstellt werden. Bitte versuche es erneut.",
@@ -2550,9 +2736,9 @@ Object.assign(UI_TEXT.en, {
   },
   messages: {
     accountNotFound: "This account could not be found.",
-    authInvalidUsername: "Please use a valid player name with 3 to 18 characters.",
+    authInvalidUsername: "Please use a valid player name with 3 to 12 characters.",
     authPasswordMin: "The password must be at least 4 characters long.",
-    authReservedUsername: "This player name is reserved.",
+    authReservedUsername: "Names containing admin or admin-like variants are reserved.",
     authUsernameTaken: "This player name is already taken.",
     authAccountCreated: "Account {username} has been created.",
     authAccountCreateFailed: "The account could not be created securely on this device. Please try again.",
@@ -2650,9 +2836,9 @@ Object.assign(UI_TEXT.fr, {
   },
   messages: {
     accountNotFound: "Ce compte est introuvable.",
-    authInvalidUsername: "Utilise un nom de joueur valide de 3 à 18 caractères.",
+    authInvalidUsername: "Utilise un nom de joueur valide de 3 à 12 caractères.",
     authPasswordMin: "Le mot de passe doit contenir au moins 4 caractères.",
-    authReservedUsername: "Ce nom de joueur est réservé.",
+    authReservedUsername: "Les noms contenant admin ou une variante proche sont réservés.",
     authUsernameTaken: "Ce nom de joueur est déjà pris.",
     authAccountCreated: "Le compte {username} a été créé.",
     authAccountCreateFailed: "Le compte n'a pas pu être créé localement de manière sécurisée. Réessaie.",
@@ -4256,6 +4442,7 @@ const elements = {
     booster: document.getElementById("boosterSection"),
     collection: document.getElementById("collectionSection"),
     decks: document.getElementById("decksSection"),
+    wiki: document.getElementById("wikiSection"),
     profile: document.getElementById("profileSection"),
     friends: document.getElementById("friendsSection"),
     settings: document.getElementById("settingsSection"),
@@ -4309,6 +4496,15 @@ const elements = {
   activeDeckList: document.getElementById("activeDeckList"),
   savedDecksList: document.getElementById("savedDecksList"),
   deckCollectionGrid: document.getElementById("deckCollectionGrid"),
+  wikiSummary: document.getElementById("wikiSummary"),
+  wikiFindHeading: document.getElementById("wikiFindHeading"),
+  wikiSearchLabel: document.getElementById("wikiSearchLabel"),
+  wikiSearchInput: document.getElementById("wikiSearchInput"),
+  wikiTopicRow: document.getElementById("wikiTopicRow"),
+  wikiResultsMeta: document.getElementById("wikiResultsMeta"),
+  wikiContentEyebrow: document.getElementById("wikiContentEyebrow"),
+  wikiContentHeading: document.getElementById("wikiContentHeading"),
+  wikiContent: document.getElementById("wikiContent"),
   profileSummary: document.getElementById("profileSummary"),
   profileRenameForm: document.getElementById("profileRenameForm"),
   profileNameInput: document.getElementById("profileNameInput"),
@@ -4378,6 +4574,8 @@ uiState = {
     rarity: "all",
     sort: "hot",
   },
+  wikiSearch: "",
+  wikiTopic: "all",
   previewLanguage: "de",
   toastTimer: null,
 };
@@ -4434,7 +4632,7 @@ function applyStaticTranslations() {
   setStaticText(".sidebar-foot strong", getUiText("brand.saveModeValue"));
   setStaticText(".player-panel .eyebrow", getUiText("common.activeDeck") === "Aktives Deck" ? "Spielerkonto" : getCurrentLanguage() === "fr" ? "Compte joueur" : "Player Account");
 
-  ["shop", "marketplace", "booster", "collection", "decks", "profile", "friends", "settings", "admin", "arena"].forEach((section) => {
+  ["shop", "marketplace", "booster", "collection", "decks", "wiki", "profile", "friends", "settings", "admin", "arena"].forEach((section) => {
     document.querySelectorAll(`.nav-button[data-section="${section}"]`).forEach((button) => {
       const label = getUiText(`nav.${section}`);
       if (button.classList.contains("topbar-icon-button")) {
@@ -4499,6 +4697,10 @@ function applyStaticTranslations() {
   setStaticText("#decksSection .deck-column:first-child .info-panel:last-child .subheading", getUiText("decks.savedDecksTitle"));
   setStaticText("#decksSection .deck-column:last-child .subheading", getUiText("decks.addCardsTitle"));
   setStaticText("#decksSection .deck-column:last-child .mini-note", getUiText("decks.addCardsNote"));
+
+  setStaticText("#wikiSection .section-head .eyebrow", getUiText("nav.wiki"));
+  setStaticText("#wikiSection .section-head h2", getUiText("sections.wikiTitle"));
+  setStaticText("#wikiSection .section-note", getUiText("sections.wikiNote"));
 
   setStaticText("#profileSection .section-head .eyebrow", getUiText("nav.profile"));
   setStaticText("#profileSection .section-head h2", getUiText("sections.profileTitle"));
@@ -4723,6 +4925,13 @@ function overrideArcaneVaultSystems() {
     });
 
     elements.marketResetFiltersButton.addEventListener("click", resetMarketFilters);
+
+    elements.wikiSearchInput.addEventListener("input", (event) => {
+      uiState.wikiSearch = event.target.value;
+      renderWiki();
+    });
+    elements.wikiTopicRow.addEventListener("click", handleWikiTopicClick);
+    elements.wikiSummary.addEventListener("click", handleWikiSummaryClick);
 
     elements.sortFilter.addEventListener("change", (event) => updateFilter("sort", event.target.value));
     elements.rarityFilter.addEventListener("change", (event) => updateFilter("rarity", event.target.value));
@@ -5336,6 +5545,13 @@ function bindStaticEvents() {
 
   elements.marketResetFiltersButton.addEventListener("click", resetMarketFilters);
 
+  elements.wikiSearchInput.addEventListener("input", (event) => {
+    uiState.wikiSearch = event.target.value;
+    renderWiki();
+  });
+  elements.wikiTopicRow.addEventListener("click", handleWikiTopicClick);
+  elements.wikiSummary.addEventListener("click", handleWikiSummaryClick);
+
   elements.sortFilter.addEventListener("change", (event) => updateFilter("sort", event.target.value));
   elements.rarityFilter.addEventListener("change", (event) => updateFilter("rarity", event.target.value));
   elements.typeFilter.addEventListener("change", (event) => updateFilter("type", event.target.value));
@@ -5466,21 +5682,21 @@ async function handleRegister(event) {
   event.preventDefault();
   const formElement = event.currentTarget;
   const form = new FormData(formElement);
-  const username = sanitizeUsername(form.get("username"));
+  const { username, error: usernameError } = getPlayerNameValidationState(form.get("username"));
   const password = String(form.get("password") || "");
 
-  if (!username) {
+  if (usernameError === "invalid") {
     setAuthMessage(getUiText("messages.authInvalidUsername"));
+    return;
+  }
+
+  if (usernameError === "reserved") {
+    setAuthMessage(getUiText("messages.authReservedUsername"));
     return;
   }
 
   if (password.length < 4) {
     setAuthMessage(getUiText("messages.authPasswordMin"));
-    return;
-  }
-
-  if (username === ADMIN_BOOTSTRAP.username) {
-    setAuthMessage(getUiText("messages.authReservedUsername"));
     return;
   }
 
@@ -5595,16 +5811,18 @@ async function handleProfileRename(event) {
   }
 
   const form = new FormData(formElement);
-  const nextUsername = sanitizeUsername(form.get("username"));
+  const { username: nextUsername, error: usernameError } = getPlayerNameValidationState(form.get("username"), {
+    allowBootstrapAdmin: isCurrentUserAdmin(),
+  });
   const currentPassword = String(form.get("currentPassword") || "");
   const storedAccount = database.accounts[currentAccount.username];
 
-  if (!nextUsername) {
+  if (usernameError === "invalid") {
     showToast(getUiText("messages.authInvalidUsername"));
     return;
   }
 
-  if (nextUsername === ADMIN_BOOTSTRAP.username) {
+  if (usernameError === "reserved") {
     showToast(getUiText("messages.authReservedUsername"));
     return;
   }
@@ -5765,6 +5983,9 @@ async function handleProfilePasswordChange(event) {
   }
 }
 
+const PLAYER_NAME_MIN_LENGTH = 3;
+const PLAYER_NAME_MAX_LENGTH = 12;
+
 function sanitizeUsername(value) {
   const username = String(value || "").trim();
   return /^[A-Za-zÄÖÜäöüß0-9_-]{3,18}$/u.test(username) ? username : "";
@@ -5773,6 +5994,41 @@ function sanitizeUsername(value) {
 function canonicalizeUsername(value) {
   const username = sanitizeUsername(value);
   return username ? username.normalize("NFKC").toLocaleLowerCase("de") : "";
+}
+
+function normalizeReservedUsernameCheck(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[@4]/g, "a")
+    .replace(/[1!|l]/g, "i")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function isReservedPlayerName(value, { allowBootstrapAdmin = false } = {}) {
+  const username = sanitizeUsername(value);
+  if (!username) {
+    return false;
+  }
+
+  if (allowBootstrapAdmin && canonicalizeUsername(username) === canonicalizeUsername(ADMIN_BOOTSTRAP.username)) {
+    return false;
+  }
+
+  return normalizeReservedUsernameCheck(username).includes("admin");
+}
+
+function getPlayerNameValidationState(value, options = {}) {
+  const username = sanitizeUsername(value);
+  if (!username || username.length < PLAYER_NAME_MIN_LENGTH || username.length > PLAYER_NAME_MAX_LENGTH) {
+    return { username, error: "invalid" };
+  }
+
+  if (isReservedPlayerName(username, options)) {
+    return { username, error: "reserved" };
+  }
+
+  return { username, error: null };
 }
 
 function findStoredUsername(username) {
@@ -7075,6 +7331,7 @@ function renderAll() {
   elements.marketSearchInput.value = uiState.marketFilters.search;
   elements.marketRarityFilter.value = uiState.marketFilters.rarity;
   elements.marketSortSelect.value = uiState.marketFilters.sort;
+  elements.wikiSearchInput.value = uiState.wikiSearch;
   elements.rarityFilter.value = getSave().filters.rarity;
   elements.typeFilter.value = getSave().filters.type;
   elements.factionFilter.value = getSave().filters.faction;
@@ -7091,6 +7348,7 @@ function renderAll() {
   renderBoosterLab();
   renderCollection();
   renderDeckManager();
+  renderWiki();
   renderProfile();
   renderFriends();
   renderSettings();
@@ -8387,6 +8645,769 @@ function renderDeckManager() {
     });
 }
 
+function getWikiTopicTone(topic) {
+  return {
+    start: "gold",
+    economy: "aqua",
+    cards: "violet",
+    decks: "emerald",
+    arena: "danger",
+    account: "steel",
+  }[topic] || "neutral";
+}
+
+function createWikiSection(id, topic, title, summary, bullets, callouts = [], tags = []) {
+  return { id, topic, title, summary, bullets, callouts, tags };
+}
+
+function createWikiCallout(label, text, tone = "neutral") {
+  return { label, text, tone };
+}
+
+function buildGermanWikiSections() {
+  const feePct = Math.round(MARKETPLACE_FEE_RATE * 100);
+  const boosterCount = Object.keys(PACK_DEFINITIONS).length;
+  const bundleCount = Object.keys(SHOP_BUNDLE_DEFINITIONS).length;
+  const factionNames = FACTIONS.map((faction) => faction.name).join(", ");
+  const rarityLine = RARITY_ORDER.map((rarity) => getRarityLabel(rarity)).join(" → ");
+
+  return [
+    createWikiSection(
+      "start-account",
+      "start",
+      "Erste Schritte und Kontostart",
+      "So beginnt ein neues Konto und das ist der schnellste Weg in dein erstes spielbares Deck.",
+      [
+        `Neue Konten starten mit ${APP_CONFIG.baseGold} Gold, 0 Karten und 5 kostenlosen Starter-Boostern.`,
+        "Spielernamen müssen eindeutig sein, dürfen maximal 12 Zeichen lang sein und keine Admin-Varianten enthalten.",
+        "Nach Login oder Registrierung wird dein Fortschritt serverseitig gespeichert und nach einem Reload wieder geladen.",
+        `Der beste Start ist: Booster öffnen, Sammlung prüfen, ein ${APP_CONFIG.deckSize}-Karten-Deck bauen und dann in die Arena gehen.`,
+      ],
+      [
+        createWikiCallout("Startkonto", `${APP_CONFIG.baseGold} Gold · 0 Karten · 5 Starter-Booster`, "gold"),
+        createWikiCallout("Direkter Ablauf", "Booster öffnen → Sammlung prüfen → Deck speichern → Arena starten", "aqua"),
+      ],
+      ["start", "login", "registrierung", "starter", "kostenlos", "konto", "deck"]
+    ),
+    createWikiSection(
+      "game-loop",
+      "start",
+      "Die eigentliche Spielschleife",
+      "Projekt Vault dreht sich um einen klaren Kreislauf aus Ausbau, Deckbau, Match und Markt.",
+      [
+        "Im Shop kaufst du Booster oder größere Packs mit garantierten Karten.",
+        "In der Sammlung prüfst du Seltenheit, Symbole, Effekte, Marktpreise und Besitzstand jeder Karte.",
+        `Im Deckbau stellst du aus genau ${APP_CONFIG.deckSize} Karten ein spielbares Deck zusammen.`,
+        "In der Arena testest du dein Deck, bekommst Belohnungen und entscheidest danach, ob du Karten behältst, verkaufst oder am Markt handelst.",
+      ],
+      [
+        createWikiCallout("Core-Loop", "Shop und Booster liefern Karten, Decks machen sie spielbar, Arena und Marktplatz geben ihnen Wert.", "violet"),
+        createWikiCallout("Praktischer Tipp", "Öffne die 5 Starter-Booster zuerst komplett, bevor du Gold ausgibst.", "emerald"),
+      ],
+      ["spielschleife", "fortschritt", "sammlung", "deckbau", "arena", "marktplatz"]
+    ),
+    createWikiSection(
+      "shop-economy",
+      "economy",
+      "Gold, Shop, Booster und Packs",
+      "Gold ist die Hauptwährung für Käufe, Ausbau und viele Wirtschaftsentscheidungen.",
+      [
+        "Gold bekommst du vor allem über Arena-Belohnungen und später über Verkäufe.",
+        `Der Shop hat ${boosterCount} Booster-Stufen mit unterschiedlichen Preisen, Garantien und Ziehchancen.`,
+        `Zusätzlich gibt es ${bundleCount} Packs mit festen Karten plus Bonus-Boostern.`,
+        "Packs sind teurer als einzelne Booster, geben dir aber gezielt Fraktionsfortschritt und sofortige Kartensicherheit.",
+      ],
+      [
+        createWikiCallout("Booster", `${boosterCount} Stufen vom Starter-Booster bis zum Astral-Booster`, "gold"),
+        createWikiCallout("Packs", `${bundleCount} kuratierte Angebote mit garantierten Karten`, "aqua"),
+        createWikiCallout("Wirtschaft", "Gold geht nie unter 0, auch nicht bei Strafen oder Abzügen.", "steel"),
+      ],
+      ["gold", "shop", "booster", "packs", "starter", "astral", "preise", "angebote"]
+    ),
+    createWikiSection(
+      "card-basics",
+      "cards",
+      "Kartentypen, Werte und Leselogik",
+      "Jede Karte zeigt dir oben Seltenheit und Fraktion, in der Mitte den Namen und darunter die wichtigsten Funktionen.",
+      [
+        "Einheiten bleiben auf dem Feld und haben Kosten, Angriff und Leben.",
+        "Zauber lösen ihren Effekt direkt beim Ausspielen aus und haben in der Regel keine Kampfwerte.",
+        "Trainer sind Support-Karten mit sofortigem oder strategischem Effekt, aber ohne dauerhafte Feldpräsenz.",
+        "Die normale Kartenansicht ist bewusst kurz gehalten. Das Detailfenster zeigt dieselben Inhalte ausführlich und geordnet.",
+      ],
+      [
+        createWikiCallout("Einheit", "Bleibt auf dem Feld und kann über mehrere Züge angreifen oder verteidigen.", "emerald"),
+        createWikiCallout("Zauber", "Soforteffekt ohne dauerhafte Präsenz auf dem Feld.", "violet"),
+        createWikiCallout("Trainer", "Unterstützt deinen Plan mit Utility, Kartenfluss oder Tempo.", "aqua"),
+      ],
+      ["karten", "einheit", "zauber", "trainer", "kosten", "angriff", "leben", "details"]
+    ),
+    createWikiSection(
+      "rarities-factions",
+      "cards",
+      "Seltenheiten und Fraktionen",
+      "Seltenheiten steuern Wert, Decklimit und Pack-Wahrscheinlichkeit. Fraktionen geben Karten ihren Stil und ihre Effekt-Tendenz.",
+      [
+        `Die Seltenheiten laufen so: ${rarityLine}.`,
+        "Legendär, Ultra Rare, Mythisch und Transzendent dürfen nur 1× pro Deck gespielt werden. Niedrigere Seltenheiten dürfen 2× hinein.",
+        `Es gibt ${FACTIONS.length} Fraktionen: ${factionNames}.`,
+        "Fraktionen prägen Optik, Symbole, typische Effekte und viele Synergiebedingungen.",
+      ],
+      [
+        createWikiCallout("Seltenheitslinie", rarityLine, "gold"),
+        createWikiCallout("Decklimit", "Hohe Seltenheiten 1× pro Deck, niedrigere Seltenheiten 2× pro Deck", "danger"),
+        createWikiCallout("Fraktionen", factionNames, "aqua"),
+      ],
+      ["seltenheit", "fraktion", "ultra rare", "mythisch", "transzendent", "decklimit"]
+    ),
+    createWikiSection(
+      "symbols-and-effects",
+      "cards",
+      "Symbole, Schlüsselwörter, Status und Effekte",
+      "Die Symbole sollen dir sofort zeigen, was eine Karte tut, ohne dass du zuerst den kompletten Text lesen musst.",
+      [
+        "Jede Fraktion hat ein eigenes Symbol und eine eigene Farbwelt im Kartenkopf.",
+        "Schlüsselwörter sind feste Kampfeigenschaften wie Sturmangriff, Wacht, Regeneration und Lebensraub.",
+        "Status-Effekte sind temporär oder situativ und umfassen Brand, Frost, Gift und Barriere.",
+        "Effekt-Symbole decken unter anderem Mana, Kartenziehen, Beschwörung, Schwächung, Flächenschaden, Timing und Synergie ab.",
+      ],
+      [
+        createWikiCallout("Schlüsselwörter", "Sturmangriff · Wacht · Regeneration · Lebensraub", "violet"),
+        createWikiCallout("Status", "Brand · Frost · Gift · Barriere", "danger"),
+        createWikiCallout("Effekte", "Mana · Kartenziehen · Beschwörung · Schwächung · Tempo · Synergie", "gold"),
+      ],
+      ["symbole", "effekte", "status", "brand", "frost", "gift", "barriere", "sturmangriff", "wacht"]
+    ),
+    createWikiSection(
+      "collection-filters",
+      "decks",
+      "Sammlung, Filter und Kartenübersicht",
+      "Die Sammlung ist dein Archiv für Besitz, Duplikate, Preise und schnelle Kartensuche.",
+      [
+        "Du kannst nach Name, Seltenheit, Typ, Fraktion, Manabereich, Besitzstatus und Duplikaten filtern.",
+        "Die Standardsortierung zeigt zuerst häufige Karten und dann immer seltenere Karten.",
+        "Zusätzliche Sortierungen helfen dir nach Marktwert, Name, Mana oder Kopienzahl schnell das Richtige zu finden.",
+        "Ein Klick auf eine Karte öffnet das Detailfenster mit Besitz, Marktwert, Deckstatus und Aktionen.",
+      ],
+      [
+        createWikiCallout("Sammelhilfe", "Besessene Karten und Duplikate lassen sich direkt isolieren.", "emerald"),
+        createWikiCallout("Schnellzugriff", "Die Detailansicht bündelt Regeln, Markt, Besitz und Aktionen an einem Ort.", "aqua"),
+      ],
+      ["sammlung", "filter", "sortierung", "duplikate", "marktwert", "kartenfenster"]
+    ),
+    createWikiSection(
+      "deckbuilding",
+      "decks",
+      "Deckbau und gespeicherte Listen",
+      "Decks werden gespeichert, geprüft und bei fehlenden Karten automatisch als blockiert markiert statt gelöscht.",
+      [
+        `Ein spielbares Deck braucht genau ${APP_CONFIG.deckSize} Karten.`,
+        "Die Deckansicht zeigt Kartenzahl, Einheiten, Zauber und Trainer sowie Warnungen, falls etwas fehlt.",
+        "Verkaufst du eine Karte später, bleibt das Deck gespeichert, kann aber blockiert werden, wenn Kopien fehlen.",
+        "Das aktive Deck entscheidet direkt darüber, ob du Arena-Matches starten kannst und wie stark die Anti-Farm-Regeln greifen.",
+      ],
+      [
+        createWikiCallout("Pflichtgröße", `${APP_CONFIG.deckSize} Karten pro spielbarem Deck`, "gold"),
+        createWikiCallout("Sicher gespeichert", "Decks werden nicht zerstört, nur als blockiert markiert, wenn Karten fehlen.", "steel"),
+      ],
+      ["deck", "deckbau", "gespeichert", "blockiert", "aktive deck", "spielbar"]
+    ),
+    createWikiSection(
+      "arena-rules",
+      "arena",
+      "Arena, Matchfluss und Schwierigkeitsstufen",
+      "Die Arena ist absichtlich etwas langsamer gebaut, damit Status, Synergien und Board-Entscheidungen Gewicht bekommen.",
+      [
+        `Helden starten mit ${APP_CONFIG.heroHealth} Leben, deine Starthand hat ${APP_CONFIG.openingHandSize} Karten und das Feld hat ${APP_CONFIG.boardSize} Slots pro Seite.`,
+        `Mana steigt pro Runde bis maximal ${APP_CONFIG.maxMana}. Dadurch öffnen sich starke Karten erst schrittweise.`,
+        "Matches kennen Timing, Zustände, Keywords, Todeseffekte und Beschwörungen. Dadurch wirken Karten nicht nur über rohe Werte.",
+        "Es gibt die Stufen Anfänger, Standard, Veteran und Albtraum mit unterschiedlichen Gegnerprofilen, Belohnungen und Aufgabe-Strafen.",
+      ],
+      [
+        createWikiCallout("Grundwerte", `${APP_CONFIG.heroHealth} Leben · ${APP_CONFIG.openingHandSize} Starthand · ${APP_CONFIG.boardSize} Feldplätze`, "danger"),
+        createWikiCallout("Schwierigkeiten", "Anfänger · Standard · Veteran · Albtraum", "gold"),
+        createWikiCallout("Match-Schutz", "Während eines laufenden Matches sind Navigation, Verkäufe und Deckänderungen gesperrt.", "steel"),
+      ],
+      ["arena", "match", "mana", "runden", "schwierigkeit", "anfänger", "albtraum", "aufgeben"]
+    ),
+    createWikiSection(
+      "marketplace",
+      "arena",
+      "Marktplatz, Preise und Handelslogik",
+      "Der Marktplatz simuliert eine eigene Wirtschaft und ist bewusst nicht identisch mit dem normalen Händlerverkauf.",
+      [
+        "Jede Karte hat Händlerwert, Markt-Bruttowert, Markt-Nettoerlös und einen eigenen Markt-Kaufpreis.",
+        `Auf Marktverkäufe fällt eine Gebühr von ${feePct} % an. Dieser Anteil landet im Gebührenpool.`,
+        "Angebot und Nachfrage werden stündlich simuliert. Dadurch können Karten steigen oder fallen.",
+        "Marktpreise sind also bewusst dynamisch und können über oder unter dem normalen Verkaufspreis liegen.",
+      ],
+      [
+        createWikiCallout("Gebühr", `${feePct} % Gebühren pro Marktverkauf`, "danger"),
+        createWikiCallout("Runde", "Die Marktwirtschaft aktualisiert sich jede echte Stunde.", "aqua"),
+        createWikiCallout("Wichtige Werte", "Brutto · Gebühr · Netto · Kaufpreis · Stunden-Trend", "gold"),
+      ],
+      ["marktplatz", "markt", "gebühr", "brutto", "netto", "ankauf", "trend", "preisrunde"]
+    ),
+    createWikiSection(
+      "account-server",
+      "account",
+      "Profil, Freunde, Einstellungen, Admin und Serverbetrieb",
+      "Konto und Infrastruktur sind getrennt von der Kampflogik, damit dein Fortschritt sauber, sicher und erweiterbar bleibt.",
+      [
+        "Im Profil änderst du Namen und Passwort, setzt bei Bedarf dein Konto zurück und siehst deinen Freundescode.",
+        "Der Freunde-Tab ist bereits vorbereitet, damit später Freundschaften und Handel andocken können, ohne die restliche UI umzubauen.",
+        "In den Einstellungen steuerst du Sprache, Klickeffekte, Booster-Inszenierung, reduzierte Bewegung und Bestätigungsdialoge.",
+        "Serverbetrieb läuft über Backend und Coolify. Wichtige Grundlagen sind `/api/health`, persistenter Speicher und Deploys über GitHub.",
+      ],
+      [
+        createWikiCallout("Profil", "Name, Passwort, Reset und Freundescode in einem Modul", "emerald"),
+        createWikiCallout("Einstellungen", "Deutsch, English und Français sowie Komfortoptionen pro Konto", "aqua"),
+        createWikiCallout("Server", "Healthcheck: /api/health · Port 3000 · persistente Daten im Backend", "steel"),
+      ],
+      ["profil", "freunde", "einstellungen", "admin", "server", "coolify", "healthcheck", "deploy"]
+    ),
+  ];
+}
+
+function buildEnglishWikiSections() {
+  const feePct = Math.round(MARKETPLACE_FEE_RATE * 100);
+  const boosterCount = Object.keys(PACK_DEFINITIONS).length;
+  const bundleCount = Object.keys(SHOP_BUNDLE_DEFINITIONS).length;
+  const factionNames = FACTIONS.map((faction) => faction.name).join(", ");
+  const rarityLine = RARITY_ORDER.map((rarity) => getRarityLabel(rarity)).join(" → ");
+
+  return [
+    createWikiSection(
+      "start-account",
+      "start",
+      "Account start and first steps",
+      "This is how a fresh account starts and how to reach your first playable deck quickly.",
+      [
+        `New accounts begin with ${APP_CONFIG.baseGold} Gold, 0 cards and 5 free starter boosters.`,
+        "Player names must be unique, stay at 12 characters or less and may not contain admin-like variants.",
+        "After login, your progress is stored on the server and restored after a reload.",
+        `Best opening route: open boosters, review the collection, build a ${APP_CONFIG.deckSize}-card deck and enter the arena.`,
+      ],
+      [
+        createWikiCallout("Starter account", `${APP_CONFIG.baseGold} Gold · 0 cards · 5 starter boosters`, "gold"),
+        createWikiCallout("Fast route", "Open boosters → review collection → save a deck → start arena", "aqua"),
+      ],
+      ["start", "account", "register", "login", "starter", "boosters", "deck"]
+    ),
+    createWikiSection(
+      "game-loop",
+      "start",
+      "The main game loop",
+      "Projekt Vault is built around a clear cycle of acquisition, deckbuilding, matches and market decisions.",
+      [
+        "Buy boosters or curated packs in the shop.",
+        "Review rarity, symbols, effects and market values in the collection.",
+        `Build a valid deck of exactly ${APP_CONFIG.deckSize} cards.`,
+        "Play arena matches, earn rewards and decide what to keep, sell or trade on the market.",
+      ],
+      [
+        createWikiCallout("Loop", "Shop and boosters feed the collection, decks make it playable, arena and market give it value.", "violet"),
+        createWikiCallout("Tip", "Open all 5 starter boosters before spending more gold.", "emerald"),
+      ],
+      ["loop", "progression", "collection", "decks", "arena", "market"]
+    ),
+    createWikiSection(
+      "shop-economy",
+      "economy",
+      "Gold, shop, boosters and packs",
+      "Gold is the central currency for purchases, upgrades and economy decisions.",
+      [
+        "Gold mainly comes from arena rewards and later from selling cards.",
+        `The shop contains ${boosterCount} booster tiers with different prices, guarantees and odds.`,
+        `On top of that, ${bundleCount} packs provide guaranteed cards plus extra boosters.`,
+        "Packs cost more than boosters, but give targeted faction progress and fixed value immediately.",
+      ],
+      [
+        createWikiCallout("Boosters", `${boosterCount} tiers from Starter to Astral`, "gold"),
+        createWikiCallout("Packs", `${bundleCount} curated offers with guaranteed cards`, "aqua"),
+        createWikiCallout("Economy rule", "Gold never drops below 0, even with penalties.", "steel"),
+      ],
+      ["gold", "shop", "boosters", "packs", "prices", "offers"]
+    ),
+    createWikiSection(
+      "card-basics",
+      "cards",
+      "Card types, values and reading order",
+      "Cards are designed to be scannable at a glance and expandable in the detail view.",
+      [
+        "Units stay on the board and use cost, attack and health.",
+        "Spells resolve immediately and usually have no combat stats.",
+        "Trainers are support cards with utility, tempo or setup effects.",
+        "The main card view stays short while the detail modal expands the same card into structured sections.",
+      ],
+      [
+        createWikiCallout("Unit", "Stays on board and fights over multiple turns.", "emerald"),
+        createWikiCallout("Spell", "Resolves instantly with no permanent board body.", "violet"),
+        createWikiCallout("Trainer", "Supports your plan with tempo, draw or utility.", "aqua"),
+      ],
+      ["cards", "units", "spells", "trainers", "cost", "attack", "health"]
+    ),
+    createWikiSection(
+      "rarities-factions",
+      "cards",
+      "Rarities and factions",
+      "Rarity defines value and deck limits, while factions define style, symbols and effect tendencies.",
+      [
+        `Current rarity line: ${rarityLine}.`,
+        "Legendary, Ultra Rare, Mythic and Transcendent are limited to 1 copy per deck. Lower rarities can be played twice.",
+        `There are ${FACTIONS.length} factions: ${factionNames}.`,
+        "Factions shape visuals, common mechanics and many synergy conditions.",
+      ],
+      [
+        createWikiCallout("Rarity line", rarityLine, "gold"),
+        createWikiCallout("Deck limit", "High rarities 1×, lower rarities 2×", "danger"),
+        createWikiCallout("Factions", factionNames, "aqua"),
+      ],
+      ["rarity", "faction", "ultra rare", "mythic", "transcendent", "deck limit"]
+    ),
+    createWikiSection(
+      "symbols-and-effects",
+      "cards",
+      "Symbols, keywords, status effects and effect icons",
+      "Symbols are there to reduce reading time and make card roles obvious faster.",
+      [
+        "Each faction has its own symbol and color language.",
+        "Keywords are fixed combat properties such as Charge, Guard, Regeneration and Lifesteal.",
+        "Status effects cover Burn, Freeze, Poison and Barrier.",
+        "Effect icons highlight mechanics like mana gain, draw, summons, weakening, timing and synergy.",
+      ],
+      [
+        createWikiCallout("Keywords", "Charge · Guard · Regeneration · Lifesteal", "violet"),
+        createWikiCallout("States", "Burn · Freeze · Poison · Barrier", "danger"),
+        createWikiCallout("Icons", "Mana · Draw · Summon · Weaken · Tempo · Synergy", "gold"),
+      ],
+      ["symbols", "keywords", "status", "burn", "freeze", "poison", "barrier"]
+    ),
+    createWikiSection(
+      "collection-filters",
+      "decks",
+      "Collection, filters and card browsing",
+      "The collection acts as your archive for ownership, duplicates, prices and quick inspection.",
+      [
+        "You can filter by name, rarity, type, faction, mana range, ownership and duplicates.",
+        "Default sorting starts with the most common cards and moves upward into rarer cards.",
+        "Extra sorts help you surface market value, mana cost, card name or copy counts quickly.",
+        "Clicking a card opens its detail view with market values, deck status and actions.",
+      ],
+      [
+        createWikiCallout("Quick filters", "Owned-only and duplicates-only help when trimming or selling cards.", "emerald"),
+        createWikiCallout("Detail access", "The modal combines rules, ownership, prices and actions in one place.", "aqua"),
+      ],
+      ["collection", "filters", "sort", "duplicates", "prices", "details"]
+    ),
+    createWikiSection(
+      "deckbuilding",
+      "decks",
+      "Deckbuilding and saved lists",
+      "Decks are saved permanently and validated instead of being silently rewritten.",
+      [
+        `A playable deck must contain exactly ${APP_CONFIG.deckSize} cards.`,
+        "The deck manager shows card count, unit count, spell count, trainer count and validation warnings.",
+        "If you sell a card later, the deck is preserved but may become blocked until the missing copy is replaced.",
+        "Your active deck directly affects match readiness and anti-farm calculations.",
+      ],
+      [
+        createWikiCallout("Required size", `${APP_CONFIG.deckSize} cards per playable deck`, "gold"),
+        createWikiCallout("Safe saving", "Saved decks are blocked when invalid, not deleted.", "steel"),
+      ],
+      ["deck", "deckbuilding", "saved", "blocked", "active deck"]
+    ),
+    createWikiSection(
+      "arena-rules",
+      "arena",
+      "Arena flow and difficulty levels",
+      "The arena is deliberately slower and more tactical so that statuses, synergy and board control matter.",
+      [
+        `Heroes start at ${APP_CONFIG.heroHealth} health, opening hands use ${APP_CONFIG.openingHandSize} cards and each side has ${APP_CONFIG.boardSize} board slots.`,
+        `Mana grows each round up to ${APP_CONFIG.maxMana}. Stronger cards open up over time instead of deciding the match immediately.`,
+        "Matches include timing, statuses, keywords, death effects and token summons.",
+        "Difficulties are Novice, Standard, Veteran and Nightmare, each with different rewards and surrender penalties.",
+      ],
+      [
+        createWikiCallout("Core values", `${APP_CONFIG.heroHealth} health · ${APP_CONFIG.openingHandSize} opening cards · ${APP_CONFIG.boardSize} slots`, "danger"),
+        createWikiCallout("Difficulty set", "Novice · Standard · Veteran · Nightmare", "gold"),
+        createWikiCallout("Locking", "While a match runs, navigation, selling and deck edits are locked.", "steel"),
+      ],
+      ["arena", "match", "mana", "difficulty", "nightmare", "forfeit"]
+    ),
+    createWikiSection(
+      "marketplace",
+      "arena",
+      "Marketplace, prices and hourly simulation",
+      "The marketplace is a separate economy layer and intentionally not the same as simple vendor selling.",
+      [
+        "Each card has vendor value, market gross value, market payout and a separate buy price.",
+        `Marketplace sales pay a ${feePct}% fee into the fee vault.`,
+        "Supply and demand are simulated once per real hour, so prices can rise or fall over time.",
+        "Because of that, market value may sit above or below the normal sell value at any given time.",
+      ],
+      [
+        createWikiCallout("Fee", `${feePct}% fee on marketplace sales`, "danger"),
+        createWikiCallout("Update rhythm", "The market rotates once per real hour.", "aqua"),
+        createWikiCallout("Important values", "Gross · Fee · Net · Buy price · Hourly trend", "gold"),
+      ],
+      ["market", "marketplace", "fee", "gross", "net", "buy price", "trend"]
+    ),
+    createWikiSection(
+      "account-server",
+      "account",
+      "Profile, friends, settings, admin and server operation",
+      "Account handling and infrastructure are separated from match logic so progress remains clean, secure and expandable.",
+      [
+        "Profile lets you change your name and password, reset your account data and check your friend code.",
+        "The friends area is already prepared so trading and relationships can be added later without a UI rebuild.",
+        "Settings store language, click effects, pack effects, reduced motion and confirmations per account.",
+        "Server operation currently runs through the backend and Coolify. Core checks rely on `/api/health`, persistent storage and GitHub-based deploys.",
+      ],
+      [
+        createWikiCallout("Profile", "Name, password, reset and friend code in one module", "emerald"),
+        createWikiCallout("Settings", "Deutsch, English and Français plus comfort options per account", "aqua"),
+        createWikiCallout("Server", "Healthcheck: /api/health · Port 3000 · persistent backend data", "steel"),
+      ],
+      ["profile", "friends", "settings", "admin", "server", "coolify", "healthcheck", "deploy"]
+    ),
+  ];
+}
+
+function buildFrenchWikiSections() {
+  const feePct = Math.round(MARKETPLACE_FEE_RATE * 100);
+  const boosterCount = Object.keys(PACK_DEFINITIONS).length;
+  const bundleCount = Object.keys(SHOP_BUNDLE_DEFINITIONS).length;
+  const factionNames = FACTIONS.map((faction) => faction.name).join(", ");
+  const rarityLine = RARITY_ORDER.map((rarity) => getRarityLabel(rarity)).join(" → ");
+
+  return [
+    createWikiSection(
+      "start-account",
+      "start",
+      "Démarrage du compte et premiers pas",
+      "Voici comment commence un nouveau compte et comment obtenir rapidement un premier deck jouable.",
+      [
+        `Les nouveaux comptes commencent avec ${APP_CONFIG.baseGold} or, 0 carte et 5 boosters de départ gratuits.`,
+        "Les noms doivent être uniques, rester à 12 caractères maximum et ne pas contenir de variantes d'admin.",
+        "Après connexion, la progression est stockée sur le serveur et restaurée après un rechargement.",
+        `Chemin conseillé : ouvrir les boosters, consulter la collection, construire un deck de ${APP_CONFIG.deckSize} cartes puis entrer dans l'arène.`,
+      ],
+      [
+        createWikiCallout("Compte de départ", `${APP_CONFIG.baseGold} or · 0 carte · 5 boosters de départ`, "gold"),
+        createWikiCallout("Chemin rapide", "Ouvrir les boosters → vérifier la collection → sauvegarder un deck → lancer l'arène", "aqua"),
+      ],
+      ["départ", "compte", "inscription", "connexion", "booster", "deck"]
+    ),
+    createWikiSection(
+      "game-loop",
+      "start",
+      "Boucle principale du jeu",
+      "Projekt Vault repose sur une boucle claire : obtenir des cartes, construire un deck, jouer puis gérer la valeur.",
+      [
+        "Achète des boosters ou des packs thématiques dans la boutique.",
+        "Consulte rareté, symboles, effets et prix de marché dans la collection.",
+        `Construis un deck valide de exactement ${APP_CONFIG.deckSize} cartes.`,
+        "Joue en arène, gagne des récompenses puis décide quoi garder, vendre ou échanger sur le marché.",
+      ],
+      [
+        createWikiCallout("Boucle", "Boutique et boosters alimentent la collection, les decks la rendent jouable, l'arène et le marché lui donnent de la valeur.", "violet"),
+        createWikiCallout("Conseil", "Ouvre d'abord les 5 boosters de départ avant de dépenser plus d'or.", "emerald"),
+      ],
+      ["boucle", "progression", "collection", "deck", "arène", "marché"]
+    ),
+    createWikiSection(
+      "shop-economy",
+      "economy",
+      "Or, boutique, boosters et packs",
+      "L'or est la ressource centrale pour acheter, progresser et trader.",
+      [
+        "L'or provient surtout des récompenses d'arène puis de la vente des cartes.",
+        `La boutique contient ${boosterCount} niveaux de boosters avec prix, garanties et chances différentes.`,
+        `En plus, ${bundleCount} packs proposent des cartes garanties et des boosters bonus.`,
+        "Les packs coûtent plus cher, mais donnent une progression de faction plus ciblée et plus stable.",
+      ],
+      [
+        createWikiCallout("Boosters", `${boosterCount} paliers du Starter à l'Astral`, "gold"),
+        createWikiCallout("Packs", `${bundleCount} offres avec cartes garanties`, "aqua"),
+        createWikiCallout("Règle d'économie", "L'or ne descend jamais sous 0.", "steel"),
+      ],
+      ["or", "boutique", "boosters", "packs", "prix", "offres"]
+    ),
+    createWikiSection(
+      "card-basics",
+      "cards",
+      "Types de cartes, valeurs et lecture rapide",
+      "Les cartes sont organisées pour être comprises vite, puis détaillées dans la fenêtre complète.",
+      [
+        "Les unités restent sur le plateau avec coût, attaque et vie.",
+        "Les sorts appliquent leur effet immédiatement et n'ont généralement pas de stats de combat.",
+        "Les entraîneurs sont des cartes de soutien avec utilité, tempo ou préparation.",
+        "La vue normale est courte. La vue détaillée reprend les mêmes informations sous une forme plus structurée.",
+      ],
+      [
+        createWikiCallout("Unité", "Reste sur le plateau et influence plusieurs tours.", "emerald"),
+        createWikiCallout("Sort", "Résout son effet immédiatement.", "violet"),
+        createWikiCallout("Entraîneur", "Renforce ton plan avec utilité, pioche ou tempo.", "aqua"),
+      ],
+      ["cartes", "unité", "sort", "entraîneur", "coût", "attaque", "vie"]
+    ),
+    createWikiSection(
+      "rarities-factions",
+      "cards",
+      "Raretés et factions",
+      "La rareté fixe la valeur et les limites de deck, les factions fixent l'identité et les tendances d'effets.",
+      [
+        `La ligne de rareté actuelle est : ${rarityLine}.`,
+        "Légendaire, Ultra Rare, Mythique et Transcendant sont limités à 1 exemplaire par deck. Les raretés inférieures peuvent être jouées deux fois.",
+        `Il existe ${FACTIONS.length} factions : ${factionNames}.`,
+        "Les factions définissent l'apparence, les symboles et de nombreuses synergies.",
+      ],
+      [
+        createWikiCallout("Ligne de rareté", rarityLine, "gold"),
+        createWikiCallout("Limite de deck", "Raretés hautes 1×, raretés basses 2×", "danger"),
+        createWikiCallout("Factions", factionNames, "aqua"),
+      ],
+      ["rareté", "faction", "mythique", "transcendant", "limite de deck"]
+    ),
+    createWikiSection(
+      "symbols-and-effects",
+      "cards",
+      "Symboles, mots-clés, états et effets",
+      "Les symboles servent à comprendre une carte plus vite sans tout lire immédiatement.",
+      [
+        "Chaque faction possède son symbole et sa couleur dominante.",
+        "Les mots-clés sont des propriétés fixes comme Charge, Garde, Régénération et Vol de vie.",
+        "Les états couvrent Brûlure, Gel, Poison et Barrière.",
+        "Les icônes d'effet montrent mana, pioche, invocation, affaiblissement, timing, tempo et synergie.",
+      ],
+      [
+        createWikiCallout("Mots-clés", "Charge · Garde · Régénération · Vol de vie", "violet"),
+        createWikiCallout("États", "Brûlure · Gel · Poison · Barrière", "danger"),
+        createWikiCallout("Icônes", "Mana · Pioche · Invocation · Affaiblissement · Tempo · Synergie", "gold"),
+      ],
+      ["symboles", "mots-clés", "états", "brûlure", "gel", "poison", "barrière"]
+    ),
+    createWikiSection(
+      "collection-filters",
+      "decks",
+      "Collection, filtres et lecture des cartes",
+      "La collection sert d'archive pour la possession, les doublons, les prix et l'inspection rapide.",
+      [
+        "Tu peux filtrer par nom, rareté, type, faction, coût, possession et doublons.",
+        "Le tri par défaut commence par les cartes communes puis remonte vers les raretés plus hautes.",
+        "Des tris supplémentaires existent pour la valeur de marché, le nom, le mana ou le nombre de copies.",
+        "Un clic sur une carte ouvre sa fenêtre détaillée avec prix, état du deck et actions.",
+      ],
+      [
+        createWikiCallout("Filtres rapides", "Possédées seulement et doublons seulement aident pour le ménage et la vente.", "emerald"),
+        createWikiCallout("Accès direct", "La fenêtre détaillée rassemble règles, possession, marché et actions.", "aqua"),
+      ],
+      ["collection", "filtres", "tri", "doublons", "prix", "détails"]
+    ),
+    createWikiSection(
+      "deckbuilding",
+      "decks",
+      "Construction de deck et listes sauvegardées",
+      "Les decks sont enregistrés durablement et validés au lieu d'être réécrits en silence.",
+      [
+        `Un deck jouable doit contenir exactement ${APP_CONFIG.deckSize} cartes.`,
+        "Le gestionnaire de deck affiche nombre de cartes, unités, sorts, entraîneurs et avertissements.",
+        "Si tu vends une carte ensuite, le deck reste sauvegardé mais peut devenir bloqué jusqu'à remplacement.",
+        "Le deck actif influence directement l'accès à l'arène et la réduction anti-farm.",
+      ],
+      [
+        createWikiCallout("Taille obligatoire", `${APP_CONFIG.deckSize} cartes par deck jouable`, "gold"),
+        createWikiCallout("Sauvegarde sûre", "Les decks invalides sont bloqués, pas supprimés.", "steel"),
+      ],
+      ["deck", "construction", "sauvegarde", "bloqué", "deck actif"]
+    ),
+    createWikiSection(
+      "arena-rules",
+      "arena",
+      "Arène, déroulement des matchs et difficultés",
+      "L'arène est volontairement plus tactique et plus lente afin que les états, synergies et décisions de plateau comptent.",
+      [
+        `Les héros commencent à ${APP_CONFIG.heroHealth} PV, la main de départ contient ${APP_CONFIG.openingHandSize} cartes et chaque côté a ${APP_CONFIG.boardSize} emplacements.`,
+        `Le mana monte jusqu'à ${APP_CONFIG.maxMana}, ce qui retarde les cartes les plus fortes.`,
+        "Les matchs gèrent timing, états, mots-clés, effets de mort et invocations.",
+        "Les difficultés sont Novice, Standard, Vétéran et Cauchemar avec récompenses et pénalités différentes.",
+      ],
+      [
+        createWikiCallout("Valeurs de base", `${APP_CONFIG.heroHealth} PV · ${APP_CONFIG.openingHandSize} cartes · ${APP_CONFIG.boardSize} slots`, "danger"),
+        createWikiCallout("Difficultés", "Novice · Standard · Vétéran · Cauchemar", "gold"),
+        createWikiCallout("Verrouillage", "Pendant un match, navigation, vente et édition de deck sont bloquées.", "steel"),
+      ],
+      ["arène", "match", "mana", "difficulté", "cauchemar", "abandon"]
+    ),
+    createWikiSection(
+      "marketplace",
+      "arena",
+      "Marché, prix et simulation horaire",
+      "Le marché est une couche économique séparée et n'est pas identique à la vente simple au marchand.",
+      [
+        "Chaque carte possède une valeur marchand, une valeur brute au marché, un net et un prix d'achat séparé.",
+        `Chaque vente au marché paie ${feePct}% de frais vers la réserve de frais.`,
+        "L'offre et la demande sont simulées toutes les heures réelles, donc les prix montent et descendent.",
+        "Le prix du marché peut ainsi être supérieur ou inférieur à la valeur de vente normale.",
+      ],
+      [
+        createWikiCallout("Frais", `${feePct}% de frais sur les ventes du marché`, "danger"),
+        createWikiCallout("Rythme", "Le marché se met à jour toutes les heures réelles.", "aqua"),
+        createWikiCallout("Valeurs clés", "Brut · Frais · Net · Achat · Tendance horaire", "gold"),
+      ],
+      ["marché", "frais", "brut", "net", "achat", "tendance"]
+    ),
+    createWikiSection(
+      "account-server",
+      "account",
+      "Profil, amis, réglages, admin et serveur",
+      "La gestion du compte et l'infrastructure sont séparées de la logique de match pour garder une base propre et extensible.",
+      [
+        "Le profil permet de changer le nom, le mot de passe, réinitialiser le compte et consulter le code ami.",
+        "L'onglet amis est déjà préparé pour ajouter plus tard relations et échanges sans refaire l'interface.",
+        "Les réglages mémorisent la langue, les effets de clic, les effets de booster, les mouvements réduits et les confirmations.",
+        "Le fonctionnement serveur passe actuellement par le backend et Coolify. Le point de contrôle principal est `/api/health`.",
+      ],
+      [
+        createWikiCallout("Profil", "Nom, mot de passe, reset et code ami dans un seul module", "emerald"),
+        createWikiCallout("Réglages", "Deutsch, English et Français plus les options de confort", "aqua"),
+        createWikiCallout("Serveur", "Healthcheck : /api/health · Port 3000 · données persistantes backend", "steel"),
+      ],
+      ["profil", "amis", "réglages", "admin", "serveur", "coolify", "healthcheck", "deploy"]
+    ),
+  ];
+}
+
+function buildWikiSections() {
+  switch (getCurrentLanguage()) {
+    case "en":
+      return buildEnglishWikiSections();
+    case "fr":
+      return buildFrenchWikiSections();
+    default:
+      return buildGermanWikiSections();
+  }
+}
+
+function getFilteredWikiSections(sections) {
+  const normalizedQuery = normalizeWikiSearchText(uiState.wikiSearch);
+
+  return sections.filter((section) => {
+    if (uiState.wikiTopic !== "all" && section.topic !== uiState.wikiTopic) {
+      return false;
+    }
+
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    return normalizeWikiSearchText(buildWikiSearchBlob(section)).includes(normalizedQuery);
+  });
+}
+
+function renderWiki() {
+  const sections = buildWikiSections();
+  const visibleSections = getFilteredWikiSections(sections);
+  const filtered = Boolean(uiState.wikiSearch.trim()) || uiState.wikiTopic !== "all";
+  const stats = [
+    { label: getWikiUiText("stats.chapters"), value: sections.length, tone: "gold" },
+    { label: getWikiUiText("stats.factions"), value: FACTIONS.length, tone: "aqua" },
+    { label: getWikiUiText("stats.boosters"), value: Object.keys(PACK_DEFINITIONS).length, tone: "violet" },
+    { label: getWikiUiText("stats.packs"), value: Object.keys(SHOP_BUNDLE_DEFINITIONS).length, tone: "emerald" },
+  ];
+  const quickLinks = ["start-account", "shop-economy", "card-basics", "deckbuilding", "arena-rules", "marketplace"]
+    .map((id) => sections.find((section) => section.id === id))
+    .filter(Boolean);
+
+  elements.wikiFindHeading.textContent = getWikiUiText("searchTitle");
+  elements.wikiSearchLabel.textContent = getWikiUiText("searchLabel");
+  elements.wikiSearchInput.placeholder = getWikiUiText("searchPlaceholder");
+  elements.wikiContentEyebrow.textContent = getWikiUiText("contentEyebrow");
+  elements.wikiContentHeading.textContent = getWikiUiText("contentTitle");
+
+  elements.wikiSummary.innerHTML = `
+    <div class="wiki-summary-copy">
+      <p class="eyebrow">${getWikiUiText("summaryEyebrow")}</p>
+      <h3 class="subheading">${getWikiUiText("summaryTitle")}</h3>
+      <p class="mini-note">${getWikiUiText("summaryNote")}</p>
+    </div>
+    <div class="wiki-summary-grid">
+      ${stats.map((entry) => `
+        <div class="wiki-stat-card tone-${entry.tone}">
+          <span>${escapeHtml(entry.label)}</span>
+          <strong>${escapeHtml(entry.value)}</strong>
+        </div>
+      `).join("")}
+    </div>
+    <div class="wiki-links-block">
+      <div class="wiki-links-head">
+        <h4>${getWikiUiText("quickLinks")}</h4>
+        ${filtered ? `<button class="secondary-button wiki-clear-button" type="button" data-wiki-reset="true">${getWikiUiText("clearFilters")}</button>` : ""}
+      </div>
+      <div class="wiki-link-grid">
+        ${quickLinks.map((section) => `
+          <button class="wiki-link-button tone-${getWikiTopicTone(section.topic)}" type="button" data-wiki-jump="${section.id}">
+            <span class="wiki-link-title">${escapeHtml(section.title)}</span>
+            <span class="wiki-link-copy">${escapeHtml(section.summary)}</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+
+  elements.wikiTopicRow.innerHTML = Object.entries(getWikiUiText("topics")).map(([topicId, label]) => `
+    <button class="wiki-topic-button ${uiState.wikiTopic === topicId ? "active" : ""}" type="button" data-wiki-topic="${topicId}">
+      ${escapeHtml(label)}
+    </button>
+  `).join("");
+
+  elements.wikiResultsMeta.textContent = uiState.wikiTopic === "all"
+    ? getWikiUiText("resultsAll", { count: visibleSections.length, total: sections.length })
+    : getWikiUiText("resultsTopic", {
+      count: visibleSections.length,
+      total: sections.length,
+      topic: getWikiUiText(`topics.${uiState.wikiTopic}`),
+    });
+
+  if (!visibleSections.length) {
+    elements.wikiContent.innerHTML = `
+      <div class="wiki-empty-state">
+        <h4>${getWikiUiText("noResultsTitle")}</h4>
+        <p>${getWikiUiText("noResultsText")}</p>
+      </div>
+    `;
+    return;
+  }
+
+  const expandAll = Boolean(uiState.wikiSearch.trim()) || uiState.wikiTopic !== "all";
+  elements.wikiContent.innerHTML = visibleSections.map((section, index) => `
+    <details class="wiki-entry tone-${getWikiTopicTone(section.topic)}" id="wiki-entry-${section.id}" ${expandAll || index === 0 ? "open" : ""}>
+      <summary>
+        <span class="wiki-entry-marker tone-${getWikiTopicTone(section.topic)}">${String(index + 1).padStart(2, "0")}</span>
+        <div class="wiki-entry-head">
+          <span class="meta-chip wiki-entry-topic">${escapeHtml(getWikiUiText(`topics.${section.topic}`))}</span>
+          <strong>${escapeHtml(section.title)}</strong>
+          <p>${escapeHtml(section.summary)}</p>
+        </div>
+      </summary>
+      <div class="wiki-entry-body">
+        <div class="wiki-callout-grid">
+          ${section.callouts.map((entry) => `
+            <div class="wiki-callout-card tone-${entry.tone || getWikiTopicTone(section.topic)}">
+              <span>${escapeHtml(entry.label)}</span>
+              <p>${escapeHtml(entry.text)}</p>
+            </div>
+          `).join("")}
+        </div>
+        <ul class="wiki-bullet-list">
+          ${section.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}
+        </ul>
+      </div>
+    </details>
+  `).join("");
+}
+
 function formatArenaDelta(playerValue, enemyValue) {
   const delta = playerValue - enemyValue;
   return delta > 0 ? `+${delta}` : `${delta}`;
@@ -8782,77 +9803,6 @@ function renderCardModal() {
     createActionButton(getUiText("card.sellAll"), () => sellCard(card.id, owned), managementLocked || owned < 1),
     createActionButton(getUiText("card.toDeck"), () => addCardToActiveDeck(card.id), managementLocked || !canAddCardToActiveDeck(card.id)),
   );
-
-  elements.cardModalContent.append(preview, details);
-  return;
-
-  details.innerHTML = `
-    <div class="detail-block">
-      <p class="eyebrow">Karteninfo</p>
-      <h3>${card.name}</h3>
-      <div class="deck-meta">
-        <span class="meta-chip">${RarityLabel(card.rarity)}</span>
-        <span class="meta-chip">${TYPE_LABELS[card.type]}</span>
-        <span class="meta-chip">${getFaction(card.faction).name}</span>
-      </div>
-      ${card.keywords?.length ? `<div class="card-keywords">${buildKeywordMarkup(card.keywords)}</div>` : ""}
-      ${card.keywords?.length ? `<p class="mini-note">${buildKeywordDetailText(card.keywords)}</p>` : ""}
-      ${card.synergy ? `<p class="mini-note"><strong>Synergie:</strong> ${describeSynergyCondition(card.synergy.condition)}. ${synergyReady ? "Das aktive Deck erfüllt diese Bedingung bereits." : "Das aktive Deck erfüllt diese Bedingung aktuell noch nicht."}</p>` : ""}
-      ${card.timing ? `<p class="mini-note"><strong>Timing:</strong> ${describeTiming(card.timing)}.</p>` : ""}
-      <p class="mini-note">${card.description}</p>
-    </div>
-    <div class="detail-block">
-      <h4>Besitz und Decks</h4>
-      <p>Im Besitz: <strong>${owned}</strong></p>
-      <p>Im aktiven Deck: <strong>${inActiveDeck}</strong></p>
-      <div class="price-stack">
-        <div class="price-line">
-          <span>Händler-Verkaufswert</span>
-          <strong>${RARITY_META[card.rarity].sellValue} Gold</strong>
-        </div>
-        <div class="price-line">
-          <span>Marktplatz-Bruttowert</span>
-          <strong>${marketSaleQuote.gross} Gold</strong>
-        </div>
-        <div class="price-line accent">
-          <span>Marktplatzgebühr (7 %)</span>
-          <strong>${marketSaleQuote.fee} Gold</strong>
-        </div>
-        <div class="price-line success">
-          <span>Auszahlung am Marktplatz</span>
-          <strong>${marketSaleQuote.net} Gold</strong>
-        </div>
-        <div class="price-line">
-          <span>Marktplatz-Kaufpreis</span>
-          <strong>${marketEntry.buyPrice} Gold</strong>
-        </div>
-        <div class="price-line">
-          <span>Stündliche Bewegung</span>
-          <strong>${formatDelta(marketEntry.lastDeltaPct)}</strong>
-        </div>
-      </div>
-    </div>
-    <div class="detail-block">
-      <h4>Aktionen</h4>
-    </div>
-    <div class="detail-block">
-      <h4>Hinweis</h4>
-      <p>Wenn du eine Karte verkaufst, werden gespeicherte Decks nicht automatisch geändert. Betroffene Decks werden nur als blockiert markiert.</p>
-    </div>
-  `;
-
-  const actionBlock = details.querySelectorAll(".detail-block")[2];
-  const actionRow = document.createElement("div");
-  actionRow.className = "card-actions";
-  actionRow.append(
-    createActionButton("1 verkaufen", () => sellCard(card.id, 1), owned < 1),
-    createActionButton("Duplikate verkaufen", () => sellCard(card.id, Math.max(0, owned - 1)), owned <= 1),
-    createActionButton(`1 am Markt verkaufen (${marketSaleQuote.net}G netto)`, () => sellCardOnMarket(card.id, 1), owned < 1),
-    createActionButton("1 am Markt kaufen", () => buyCardOnMarket(card.id), getSave().gold < marketEntry.buyPrice),
-    createActionButton("Alles verkaufen", () => sellCard(card.id, owned), owned < 1),
-    createActionButton("Zum aktiven Deck", () => addCardToActiveDeck(card.id), !canAddCardToActiveDeck(card.id)),
-  );
-  actionBlock.append(actionRow);
 
   elements.cardModalContent.append(preview, details);
 }

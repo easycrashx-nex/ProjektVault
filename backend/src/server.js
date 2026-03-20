@@ -77,7 +77,7 @@ if (require.main === module) {
   createAppServer()
     .then((server) => {
       server.listen(PORT, HOST, () => {
-        console.log(`Arcane Vault server ready on http://${HOST}:${PORT}`);
+        console.log(`Projekt Vault server ready on http://${HOST}:${PORT}`);
       });
     })
     .catch((error) => {

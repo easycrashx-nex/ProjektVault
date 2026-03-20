@@ -6,6 +6,7 @@ const {
   verifyPassword,
   createSession,
   getBearerToken,
+  getPlayerUsernameValidation,
 } = require("../lib/security");
 const { createEmptySave } = require("../lib/game-state");
 const {
@@ -15,11 +16,12 @@ const {
 } = require("../lib/store");
 
 function validateCredentials(username, password) {
-  if (!username || username.length < 3 || username.length > 18) {
-    return "Bitte einen Spielernamen mit 3 bis 18 Zeichen verwenden.";
+  const usernameValidation = getPlayerUsernameValidation(username);
+  if (usernameValidation) {
+    return usernameValidation;
   }
   if (!password || password.length < 4) {
-    return "Das Passwort muss mindestens 4 Zeichen lang sein.";
+    return { code: "invalid_password", message: "Das Passwort muss mindestens 4 Zeichen lang sein." };
   }
   return null;
 }
@@ -32,7 +34,7 @@ function registerAuthRoutes(router) {
     const error = validateCredentials(username, password);
 
     if (error) {
-      sendJson(res, 400, { ok: false, error: "invalid_input", message: error });
+      sendJson(res, 400, { ok: false, error: error.code || "invalid_input", message: error.message });
       return;
     }
 

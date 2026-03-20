@@ -2,7 +2,7 @@
   "name": "arcane-vault",
   "version": "0.1.0",
   "private": true,
-  "description": "Arcane Vault with local browser mode and a server-ready backend scaffold.",
+  "description": "Projekt Vault with local browser mode and a server-ready backend scaffold.",
   "scripts": {
     "sync:frontend": "node scripts/sync-frontend.mjs",
     "dev": "node scripts/sync-frontend.mjs && node backend/src/server.js",

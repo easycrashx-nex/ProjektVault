@@ -5,6 +5,7 @@ const {
   canonicalizeUsername,
   verifyPassword,
   createPasswordHash,
+  getPlayerUsernameValidation,
 } = require("../lib/security");
 const { updateDatabase, sanitizeAccountForClient } = require("../lib/store");
 
@@ -41,14 +42,10 @@ function registerProfileRoutes(router) {
     }
 
     const body = await parseJsonBody(req);
-    const requestedUsername = sanitizeUsername(body.username);
-    if (!requestedUsername) {
-      sendJson(res, 400, { ok: false, error: "invalid_username", message: "Kein gültiger Spielername angegeben." });
-      return;
-    }
-
     let responseAccount = null;
     let conflict = false;
+    let validationError = null;
+    let lockedAdmin = false;
 
     await updateDatabase((database) => {
       const session = database.sessions[token];
@@ -58,6 +55,23 @@ function registerProfileRoutes(router) {
 
       const currentAccount = Object.values(database.accounts).find((account) => canonicalizeUsername(account.username) === canonicalizeUsername(session.username));
       if (!currentAccount) {
+        return database;
+      }
+
+      const requestedUsername = sanitizeUsername(body.username);
+      if (!requestedUsername) {
+        validationError = { error: "invalid_username", message: "Kein gültiger Spielername angegeben." };
+        return database;
+      }
+
+      if (Array.isArray(currentAccount.roles) && currentAccount.roles.includes("admin") && requestedUsername !== currentAccount.username) {
+        lockedAdmin = true;
+        return database;
+      }
+
+      const usernameValidation = getPlayerUsernameValidation(requestedUsername);
+      if (usernameValidation) {
+        validationError = { error: usernameValidation.code, message: usernameValidation.message };
         return database;
       }
 
@@ -75,6 +89,16 @@ function registerProfileRoutes(router) {
       responseAccount = currentAccount;
       return database;
     });
+
+    if (lockedAdmin) {
+      sendJson(res, 403, { ok: false, error: "admin_name_locked", message: "Das Administratorkonto bleibt auf den reservierten Namen fixiert." });
+      return;
+    }
+
+    if (validationError) {
+      sendJson(res, 400, { ok: false, error: validationError.error, message: validationError.message });
+      return;
+    }
 
     if (conflict) {
       sendJson(res, 409, { ok: false, error: "username_taken", message: "Dieser Spielername ist bereits vergeben." });

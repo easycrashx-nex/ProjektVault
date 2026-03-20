@@ -1,6 +1,6 @@
-# Arcane Vault
+# Projekt Vault
 
-Arcane Vault kann weiter direkt lokal aus den Root-Dateien gestartet werden, hat aber jetzt auch einen serverfähigen Pfad mit Backend, persistentem Spielstand und Deploy-Setup für Hetzner/Coolify.
+Projekt Vault kann weiter direkt lokal aus den Root-Dateien gestartet werden, hat aber jetzt auch einen serverfähigen Pfad mit Backend, persistentem Spielstand und Deploy-Setup für Hetzner/Coolify.
 
 ## Struktur
 

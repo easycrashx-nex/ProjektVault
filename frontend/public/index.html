@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arcane Vault</title>
+  <title>Projekt Vault</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
     <section class="auth-screen" id="authScreen">
       <div class="auth-card">
         <div class="auth-copy">
-          <p class="eyebrow">Arcane Vault Online</p>
+          <p class="eyebrow">Projekt Vault Online</p>
           <h1>Dein Kartenkonto wartet schon.</h1>
           <p>
             Erstelle dein Konto, starte mit fünf kostenlosen Starter-Boostern und baue dir direkt deine erste Sammlung auf.
@@ -53,7 +53,7 @@
           <form id="registerForm" class="auth-form hidden">
             <label>
               <span>Spielername</span>
-              <input type="text" name="username" autocomplete="username" minlength="3" maxlength="18" required>
+              <input type="text" name="username" autocomplete="username" minlength="3" maxlength="12" required>
             </label>
             <label>
               <span>Passwort</span>
@@ -71,7 +71,7 @@
       <aside class="sidebar">
         <div class="brand-card">
           <p class="eyebrow">Strategie-Sammelkartenspiel</p>
-          <h2>Arcane Vault</h2>
+          <h2>Projekt Vault</h2>
           <p class="brand-text">
             Öffne Booster, sammle Karten, baue mehrere Decks und teste sie in rundenbasierten Duellen.
           </p>
@@ -83,6 +83,7 @@
           <button class="nav-button" data-section="booster">Booster öffnen</button>
           <button class="nav-button" data-section="collection">Sammlung</button>
           <button class="nav-button" data-section="decks">Decks</button>
+          <button class="nav-button" data-section="wiki">Wiki</button>
           <button class="nav-button hidden" data-section="admin" data-admin-only="true">Admin</button>
           <button class="nav-button" data-section="arena">Arena</button>
         </nav>
@@ -133,7 +134,7 @@
 
         <section class="scene-banner" id="sceneBanner">
           <div class="scene-banner-copy">
-            <p class="eyebrow" id="sceneBannerEyebrow">Arcane Vault</p>
+            <p class="eyebrow" id="sceneBannerEyebrow">Projekt Vault</p>
             <h1 id="sceneBannerTitle">Die Gewölbe öffnen sich</h1>
             <p class="scene-banner-text" id="sceneBannerText">Sammle Karten, beobachte Marktbewegungen und baue aus deinem Pool immer stärkere Strategien.</p>
           </div>
@@ -384,7 +385,7 @@
                   <form class="profile-form" id="profileRenameForm">
                     <label>
                       <span>Neuer Spielername</span>
-                      <input type="text" id="profileNameInput" name="username" maxlength="18" placeholder="Neuer Name" autocomplete="username">
+                      <input type="text" id="profileNameInput" name="username" maxlength="12" placeholder="Neuer Name" autocomplete="username">
                     </label>
 
                     <label>
@@ -457,6 +458,40 @@
                 <div class="info-panel" id="friendsListPanel"></div>
                 <div class="info-panel" id="friendsPendingPanel"></div>
                 <div class="info-panel" id="friendsTradePanel"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="wikiSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Wiki</p>
+                <h2>Alles zu Systemen, Karten und Regeln</h2>
+              </div>
+              <p class="section-note">Finde Regeln, Symbole, Booster, Deckbau, Markt und Matchsystem gebündelt in einer durchsuchbaren Wissenszentrale.</p>
+            </div>
+
+            <div class="wiki-layout">
+              <div class="wiki-sidebar">
+                <div class="info-panel wiki-summary-panel" id="wikiSummary"></div>
+
+                <div class="info-panel wiki-search-panel">
+                  <h3 class="subheading" id="wikiFindHeading">Schnell finden</h3>
+                  <label class="wiki-search-field">
+                    <span id="wikiSearchLabel">Suche</span>
+                    <input type="search" id="wikiSearchInput" placeholder="Thema oder Begriff suchen">
+                  </label>
+                  <div class="wiki-topic-row" id="wikiTopicRow"></div>
+                  <p class="mini-note" id="wikiResultsMeta"></p>
+                </div>
+              </div>
+
+              <div class="info-panel wiki-content-panel">
+                <div class="wiki-content-head">
+                  <p class="eyebrow" id="wikiContentEyebrow">Spielwissen</p>
+                  <h3 class="subheading" id="wikiContentHeading">Kapitel und Systeme</h3>
+                </div>
+                <div class="wiki-content" id="wikiContent"></div>
               </div>
             </div>
           </section>

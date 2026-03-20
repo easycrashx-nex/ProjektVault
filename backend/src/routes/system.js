@@ -12,7 +12,7 @@ function registerSystemRoutes(router) {
   router.get("/api/meta", async (_req, res) => {
     sendJson(res, 200, {
       ok: true,
-      app: "Arcane Vault",
+      app: "Projekt Vault",
       storage: "json-file",
       frontend: "frontend/public",
       apiBase: "/api",
