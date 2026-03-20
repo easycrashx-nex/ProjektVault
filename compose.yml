@@ -10,4 +10,4 @@ services:
     env_file:
       - .env
     volumes:
-      - ./backend/data:/app/backend/data
+      - ./backend/data:/data/projekt-vault

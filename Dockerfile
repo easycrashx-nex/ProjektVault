@@ -15,6 +15,9 @@ RUN node scripts/sync-frontend.mjs
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV DATA_DIR=/data/projekt-vault
+
+VOLUME ["/data/projekt-vault"]
 
 EXPOSE 3000
 

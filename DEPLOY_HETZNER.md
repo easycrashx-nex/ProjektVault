@@ -70,8 +70,11 @@ Wenn du `Coolify` als Server-App wählst:
 4. in Coolify dein GitHub-Repo verbinden
 5. Deployment-Typ über `Dockerfile`
 6. Port `3000`
-7. Domain hinzufügen
-8. Deploy auslösen
+7. als Persistenz in Coolify einen `Directory Mount` setzen:
+   - Server-Pfad: `/data/projekt-vault`
+   - Container-Pfad: `/data/projekt-vault`
+8. Domain hinzufügen
+9. Deploy auslösen
 
 Dann reicht später meistens:
 
@@ -98,6 +101,12 @@ git clone https://github.com/DEINNAME/arcane-vault.git
 cd arcane-vault
 cp .env.example .env
 ```
+
+Wichtig:
+
+- `DATA_DIR` sollte auf `/data/projekt-vault` bleiben
+- dort liegen die Nutzerdaten und Marktstände bewusst außerhalb des austauschbaren App-Codes
+- zusätzlich wird vor jedem Schreibvorgang eine Backup-Datei `local-database.backup.json` im selben Ordner gepflegt
 
 ### 3. Container starten
 

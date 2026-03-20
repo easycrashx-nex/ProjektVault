@@ -11,3 +11,7 @@ Original prompt: wenn du damit fertig bist baue bitte den freundes bereich kompl
 TODO
 - Social-/Profilbereiche noch einmal auf dem live deployten Server visuell gegen echte Daten prÃ¼fen.
 - Bei Bedarf Freundesduelle spÃ¤ter vollstÃ¤ndig serverautoritativ machen statt den Kampf lokal im Frontend abzuwickeln.
+
+- 2026-03-20: Detail-Stat-Karten im Kartenfenster gegen überlange Label gehärtet; Titel umbrechen jetzt sauber und kollidieren nicht mehr mit Nachbarkarten.
+
+- 2026-03-20: Server-Datenspeicher für Redeploys gehärtet: Persistenzpfad /data/projekt-vault, automatische Migration vom alten Pfad und Backup-Datei vor Schreibvorgängen eingebaut.

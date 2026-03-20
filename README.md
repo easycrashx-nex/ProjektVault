@@ -11,7 +11,9 @@ Projekt Vault kann weiter direkt lokal aus den Root-Dateien gestartet werden, ha
 - `backend/src/`
   API-Server für Auth, Profil, Spielstand, Markt, Freunde, Admin und Match-Snapshots.
 - `backend/data/`
-  Laufzeitdaten für den JSON-Store.
+  Lokaler Entwicklungsordner für den JSON-Store.
+- `/data/projekt-vault`
+  Empfohlener Server-Pfad für persistente Nutzerdaten, Marktstände und Backups bei Docker/Coolify.
 - `scripts/sync-frontend.mjs`
   Spiegelt die Root-Dateien nach `frontend/public/`.
 - `Dockerfile`
@@ -79,8 +81,16 @@ Wichtige Env-Variablen:
 
 - `HOST=0.0.0.0`
 - `PORT=3000`
+- `DATA_DIR=/data/projekt-vault`
 - `ADMIN_USERNAME=obsidian_admin`
 - `ADMIN_PASSWORD=<eigenes starkes Passwort>`
+
+Wichtig für Serverbetrieb:
+
+- Nutzerdaten sollen nicht im App-Code-Pfad liegen.
+- Der Server schreibt standardmäßig nach `/data/projekt-vault/local-database.json`.
+- Vor jedem Schreibvorgang wird zusätzlich `/data/projekt-vault/local-database.backup.json` aktualisiert.
+- In Coolify sollte der Persistenz-Mount deshalb genau auf `/data/projekt-vault` zeigen.
 
 ## Nächste sinnvolle Schritte
 

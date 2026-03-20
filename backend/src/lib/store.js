@@ -1,6 +1,12 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { DATA_FILE, ADMIN_USERNAME, ADMIN_PASSWORD } = require("../config");
+const {
+  DATA_FILE,
+  DATA_BACKUP_FILE,
+  LEGACY_DATA_DIR,
+  ADMIN_USERNAME,
+  ADMIN_PASSWORD,
+} = require("../config");
 const {
   canonicalizeUsername,
   sanitizeUsername,
@@ -30,7 +36,23 @@ async function ensureDataFile() {
   try {
     await fs.access(DATA_FILE);
   } catch {
-    await fs.writeFile(DATA_FILE, JSON.stringify(createEmptyDatabase(), null, 2), "utf8");
+    const legacyFile = path.join(LEGACY_DATA_DIR, "local-database.json");
+    try {
+      if (path.resolve(legacyFile) !== path.resolve(DATA_FILE)) {
+        await fs.access(legacyFile);
+        const legacyRaw = await fs.readFile(legacyFile, "utf8");
+        const migrated = normalizeDatabase(JSON.parse(legacyRaw));
+        await fs.writeFile(DATA_FILE, JSON.stringify(migrated, null, 2), "utf8");
+        await fs.writeFile(DATA_BACKUP_FILE, JSON.stringify(migrated, null, 2), "utf8");
+        return;
+      }
+    } catch {
+      // Fallback to creating a fresh database below.
+    }
+
+    const emptyDatabase = createEmptyDatabase();
+    await fs.writeFile(DATA_FILE, JSON.stringify(emptyDatabase, null, 2), "utf8");
+    await fs.writeFile(DATA_BACKUP_FILE, JSON.stringify(emptyDatabase, null, 2), "utf8");
   }
 }
 
@@ -143,6 +165,13 @@ async function readDatabase() {
 async function writeDatabase(database) {
   await ensureDataFile();
   const normalized = normalizeDatabase(database);
+  await fs.mkdir(path.dirname(DATA_BACKUP_FILE), { recursive: true });
+  try {
+    const existingRaw = await fs.readFile(DATA_FILE, "utf8");
+    await fs.writeFile(DATA_BACKUP_FILE, existingRaw, "utf8");
+  } catch {
+    // Ignore backup refresh issues and still try to write the live database.
+  }
   await fs.writeFile(DATA_FILE, JSON.stringify(normalized, null, 2), "utf8");
 }
 

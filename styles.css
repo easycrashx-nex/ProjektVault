@@ -3364,24 +3364,34 @@ body[data-scene="settings"] .scene-core {
   gap: 6px;
   min-width: 0;
   padding: 12px 14px;
+  align-content: start;
+  overflow: hidden;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(255, 255, 255, 0.035);
 }
 
 .detail-stat span {
+  display: block;
+  max-width: 100%;
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
   overflow-wrap: anywhere;
   hyphens: auto;
 }
 
 .detail-stat strong {
+  display: block;
+  max-width: 100%;
   font-size: 1.02rem;
   line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
   overflow-wrap: anywhere;
 }
 
