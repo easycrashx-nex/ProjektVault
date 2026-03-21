@@ -599,6 +599,24 @@ p {
 
 .player-panel h2 {
   font-size: 1.8rem;
+  line-height: 0.96;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.player-panel[data-name-size="md"] h2,
+#playerName[data-size="md"] {
+  font-size: 1.58rem;
+}
+
+.player-panel[data-name-size="sm"] h2,
+#playerName[data-size="sm"] {
+  font-size: 1.32rem;
+}
+
+.player-panel[data-name-size="xs"] h2,
+#playerName[data-size="xs"] {
+  font-size: 1.12rem;
 }
 
 .home-trigger:hover,
@@ -665,7 +683,7 @@ p {
 .menu-arena-card {
   display: grid;
   gap: var(--space-xl);
-  min-height: 420px;
+  min-height: 348px;
   padding: clamp(28px, 3vw, 40px);
   border-radius: 32px;
   border: 1px solid rgba(255, 210, 122, 0.24);
@@ -681,34 +699,34 @@ p {
 
 .menu-arena-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
-  gap: var(--space-xl);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
+  gap: var(--space-lg);
+  align-items: center;
 }
 
 .menu-arena-copy {
   display: grid;
   align-content: start;
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .menu-arena-heading {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .menu-arena-card strong {
   max-width: 9ch;
   font-family: "Cinzel", serif;
-  font-size: clamp(3rem, 5vw, 4.9rem);
-  line-height: 0.92;
+  font-size: clamp(2.9rem, 4.2vw, 4.35rem);
+  line-height: 0.9;
 }
 
 .menu-arena-card p {
-  max-width: 30rem;
+  max-width: 34rem;
   color: var(--text-soft);
-  font-size: 1.04rem;
-  line-height: 1.7;
+  font-size: 1.02rem;
+  line-height: 1.58;
 }
 
 .menu-card-kicker,
@@ -730,13 +748,14 @@ p {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--compact-gap);
+  max-width: 640px;
 }
 
 .menu-arena-stat {
   display: grid;
   gap: var(--space-xs);
-  min-height: 112px;
-  padding: var(--space-lg);
+  min-height: 104px;
+  padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -764,14 +783,17 @@ p {
   overflow: hidden;
   display: grid;
   place-items: center;
-  min-height: 100%;
+  min-height: 250px;
   min-width: 0;
+  max-width: 300px;
+  width: 100%;
+  justify-self: end;
   border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 210, 122, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 50%, rgba(121, 217, 255, 0.12), transparent 42%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.9), rgba(9, 14, 23, 0.92));
+    radial-gradient(circle at 50% 42%, rgba(255, 210, 122, 0.16), transparent 24%),
+    radial-gradient(circle at 50% 50%, rgba(121, 217, 255, 0.12), transparent 40%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(9, 14, 23, 0.78));
 }
 
 .menu-arena-ring,
@@ -786,18 +808,18 @@ p {
 }
 
 .menu-arena-ring-a {
-  width: 64%;
+  width: 60%;
   aspect-ratio: 1;
 }
 
 .menu-arena-ring-b {
-  width: 42%;
+  width: 38%;
   aspect-ratio: 1;
   border-color: rgba(255, 210, 122, 0.14);
 }
 
 .menu-arena-orb {
-  width: 104px;
+  width: 88px;
   aspect-ratio: 1;
   background:
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.96), rgba(255, 227, 143, 0.88) 28%, rgba(255, 156, 95, 0.1) 62%, transparent 72%);
@@ -810,10 +832,10 @@ p {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: var(--space-xs);
+  gap: 6px;
   justify-items: center;
   text-align: center;
-  padding-top: 180px;
+  padding-top: 138px;
 }
 
 .menu-arena-visual-copy span {
@@ -826,14 +848,14 @@ p {
 .menu-arena-visual-copy strong {
   max-width: none;
   font-family: "Cinzel", serif;
-  font-size: 1.7rem;
+  font-size: 1.42rem;
   line-height: 1;
 }
 
 .menu-arena-footer {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-md);
   align-items: center;
 }
@@ -4238,11 +4260,13 @@ body[data-scene="settings"] .scene-core {
   }
 
   .menu-arena-visual {
-    min-height: 260px;
+    min-height: 220px;
+    max-width: none;
+    justify-self: stretch;
   }
 
   .menu-arena-visual-copy {
-    padding-top: 156px;
+    padding-top: 124px;
   }
 
   .topbar-icon-nav .topbar-icon-button {

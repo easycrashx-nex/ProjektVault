@@ -8780,6 +8780,19 @@ function summarizeSave(save) {
   };
 }
 
+function applyPlayerNameScale(name) {
+  if (!elements.playerName) {
+    return;
+  }
+
+  const length = String(name || "").length;
+  const size = length >= 12 ? "xs" : length >= 10 ? "sm" : length >= 8 ? "md" : "lg";
+  elements.playerName.dataset.size = size;
+  if (elements.playerName.parentElement) {
+    elements.playerName.parentElement.dataset.nameSize = size;
+  }
+}
+
 function renderMainMenu() {
   if (!elements.menuSummaryGrid) {
     return;
@@ -8981,6 +8994,7 @@ function renderAll() {
   uiState.previewLanguage = getUserSettings().language;
   populateFilterControls();
   elements.playerName.textContent = currentAccount.username;
+  applyPlayerNameScale(currentAccount.username);
   elements.searchInput.value = getSave().filters.search;
   elements.sortFilter.value = getSave().filters.sort;
   elements.marketSearchInput.value = uiState.marketFilters.search;
