@@ -89,6 +89,12 @@ const SECURITY_LIMITS = {
 };
 
 const SECTION_SCENE_META = {
+  menu: {
+    eyebrow: "Hauptmenü",
+    title: "Der schnellste Weg zurück in die Arena",
+    text: "Von hier aus springst du direkt in Kämpfe, Karten, Shop und Markt, ohne dass das Spiel wie ein Verwaltungsmenü wirkt.",
+    theme: "arena",
+  },
   shop: {
     eyebrow: "Kuratorenmarkt",
     title: "Neue Macht wartet hinter jedem Siegel",
@@ -466,6 +472,7 @@ const UI_TEXT = Object.freeze({
       saveModeValue: "Server-Speicher aktiv",
     },
     nav: {
+      menu: "Hauptmenü",
       shop: "Shop",
       marketplace: "Marktplatz",
       booster: "Booster öffnen",
@@ -479,6 +486,7 @@ const UI_TEXT = Object.freeze({
       arena: "Arena",
     },
     scene: {
+      menu: { eyebrow: "Hauptmenü", title: "Der schnellste Weg zurück in die Arena", text: "Von hier aus springst du direkt in Kämpfe, Karten, Shop und Markt, ohne dass das Spiel wie ein Verwaltungsmenü wirkt." },
       shop: { eyebrow: "Kuratorenmarkt", title: "Neue Macht wartet hinter jedem Siegel", text: "Shop, Booster und kommende Inhalte liegen wie Auslagen in einer leuchtenden Gewölbehalle vor dir." },
       marketplace: { eyebrow: "Freier Handel", title: "Werte steigen, fallen und kippen jede Stunde", text: "Der Marktplatz soll sich wie eine lebendige Börse anfühlen statt wie eine bloße Verkaufsliste." },
       booster: { eyebrow: "Siegelkammer", title: "Booster sollen wie kleine Rituale wirken", text: "Wähle dein Pack, entzünde die Kammer und lass die Karten mit gestaffeltem Reveal ins Gewölbe fallen." },
@@ -2872,6 +2880,7 @@ Object.assign(UI_TEXT.en, {
     saveModeValue: "Server storage active",
   },
   nav: {
+    menu: "Main Menu",
     shop: "Shop",
     marketplace: "Marketplace",
     booster: "Open Boosters",
@@ -2885,6 +2894,8 @@ Object.assign(UI_TEXT.en, {
     arena: "Arena",
   },
   scene: {
+    menu: { eyebrow: "Menu principal", title: "Le chemin le plus rapide vers l'arène", text: "Passe directement aux combats, aux cartes, à la boutique et au marché depuis un hub clair au lieu d'un tableau de gestion." },
+    menu: { eyebrow: "Main Menu", title: "The fastest route back into the arena", text: "Jump straight into battles, cards, shop and market from one clear hub instead of an admin-style dashboard." },
     shop: { eyebrow: "Curated Market", title: "New power waits behind every seal", text: "Shop items, boosters and future content are displayed like wares inside a glowing vault hall." },
     marketplace: { eyebrow: "Open Trade", title: "Values rise, fall and swing every hour", text: "The marketplace should feel like a living exchange instead of a plain sell list." },
     booster: { eyebrow: "Seal Chamber", title: "Boosters should feel like small rituals", text: "Choose your pack, ignite the chamber and let the cards fall into the vault with a staged reveal." },
@@ -3272,6 +3283,7 @@ Object.assign(UI_TEXT.fr, {
     saveModeValue: "Stockage serveur actif",
   },
   nav: {
+    menu: "Menu principal",
     shop: "Boutique",
     marketplace: "Marché",
     booster: "Ouvrir des boosters",
@@ -5736,6 +5748,7 @@ const elements = {
   authMessage: document.getElementById("authMessage"),
   navButtons: [...document.querySelectorAll(".nav-button")],
   sections: {
+    menu: document.getElementById("menuSection"),
     shop: document.getElementById("shopSection"),
     marketplace: document.getElementById("marketplaceSection"),
     booster: document.getElementById("boosterSection"),
@@ -5750,6 +5763,7 @@ const elements = {
   },
   playerName: document.getElementById("playerName"),
   resourceBar: document.getElementById("resourceBar"),
+  menuSummaryGrid: document.getElementById("menuSummaryGrid"),
   resetLocalDataButton: document.getElementById("resetLocalDataButton"),
   logoutButton: document.getElementById("logoutButton"),
   shopTabRow: document.getElementById("shopTabRow"),
@@ -5869,7 +5883,7 @@ const elements = {
 
 uiState = {
   authMode: "login",
-  section: "shop",
+  section: "menu",
   modalCardId: null,
   adminSelectedUser: null,
   adminCacheDirty: true,
@@ -5951,6 +5965,8 @@ function applyStaticTranslations() {
   setStaticText(".sidebar-foot .sidebar-label", getUiText("brand.saveModeLabel"));
   setStaticText(".sidebar-foot strong", getUiText("brand.saveModeValue"));
   setStaticText(".player-panel .eyebrow", getUiText("common.activeDeck") === "Aktives Deck" ? "Spielerkonto" : getCurrentLanguage() === "fr" ? "Compte joueur" : "Player Account");
+  setStaticAttribute(".home-trigger", "title", getUiText("nav.menu"));
+  setStaticAttribute(".home-trigger", "aria-label", getUiText("nav.menu"));
 
   ["shop", "marketplace", "booster", "collection", "decks", "wiki", "profile", "friends", "settings", "admin", "arena"].forEach((section) => {
     document.querySelectorAll(`.nav-button[data-section="${section}"]`).forEach((button) => {
@@ -5962,7 +5978,7 @@ function applyStaticTranslations() {
         if (iconText) {
           iconText.textContent = label;
         }
-      } else {
+      } else if (!button.classList.contains("menu-link-card") && !button.classList.contains("menu-arena-card")) {
         button.textContent = label;
       }
     });
@@ -8764,6 +8780,134 @@ function summarizeSave(save) {
   };
 }
 
+function renderMainMenu() {
+  if (!elements.menuSummaryGrid) {
+    return;
+  }
+
+  const save = getSave();
+  const summary = summarizeSave(save);
+  const arenaDifficultyId = getArenaDifficultyId(save.arenaDifficulty);
+  const arenaDeckMode = getDeckModeForDifficulty(arenaDifficultyId);
+  const arenaDeck = getDeckByMode(arenaDeckMode);
+  const validation = validateDeck(arenaDeck, arenaDeckMode);
+  const menuTexts = {
+    eyebrow: localText("Hauptmenü", "Main Menu", "Menu principal"),
+    title: localText("Alles Wichtige startet in der Arena", "Everything important starts in the arena", "L'essentiel commence dans l'arène"),
+    note: localText(
+      "Kämpfe bringen Gold. Gold bringt Booster. Booster bringen neue Karten.",
+      "Battles bring gold. Gold brings boosters. Boosters bring new cards.",
+      "Les combats donnent de l'or. L'or donne des boosters. Les boosters donnent de nouvelles cartes."
+    ),
+  };
+
+  const summaryCards = [
+    { label: localText("Gold", "Gold", "Or"), value: save.gold },
+    { label: localText("Karten", "Cards", "Cartes"), value: summary.totalCards },
+    { label: localText("Einzigartig", "Unique", "Uniques"), value: summary.uniqueCards },
+    { label: localText("Booster", "Boosters", "Boosters"), value: summary.totalBoosters },
+  ];
+
+  document.getElementById("menuEyebrow").textContent = menuTexts.eyebrow;
+  document.getElementById("menuTitle").textContent = menuTexts.title;
+  document.getElementById("menuNote").textContent = menuTexts.note;
+
+  elements.menuSummaryGrid.innerHTML = summaryCards
+    .map(
+      (entry) => `
+        <article class="menu-summary-card">
+          <span>${entry.label}</span>
+          <strong>${entry.value}</strong>
+        </article>
+      `
+    )
+    .join("");
+
+  document.getElementById("menuArenaKicker").textContent = localText("Hauptmodus", "Main mode", "Mode principal");
+  document.getElementById("menuArenaTitle").textContent = getUiText("nav.arena");
+  document.getElementById("menuArenaText").textContent = localText(
+    "Spiele Matches, gewinne Gold und halte deinen Fortschritt am Laufen.",
+    "Play matches, earn gold and keep your progress moving.",
+    "Joue des matchs, gagne de l'or et fais progresser ta collection."
+  );
+  document.getElementById("menuArenaMeta").innerHTML = [
+    getArenaDifficultyLabel(arenaDifficultyId),
+    getDeckModeTitle(arenaDeckMode),
+    validation.valid ? getUiText("decks.playable") : getUiText("arena.notReady"),
+  ]
+    .map((entry) => `<span class="meta-chip">${entry}</span>`)
+    .join("");
+
+  const menuCards = [
+    {
+      ids: ["menuBoosterKicker", "menuBoosterTitle", "menuBoosterText", "menuBoosterMeta"],
+      kicker: localText("Booster", "Boosters", "Boosters"),
+      title: getUiText("nav.booster"),
+      text: localText("Öffne Booster und erweitere deine Sammlung sofort.", "Open boosters and expand your collection right away.", "Ouvre des boosters et agrandis ta collection tout de suite."),
+      meta: localText(`${summary.totalBoosters} im Besitz`, `${summary.totalBoosters} owned`, `${summary.totalBoosters} en stock`),
+    },
+    {
+      ids: ["menuCollectionKicker", "menuCollectionTitle", "menuCollectionText", "menuCollectionMeta"],
+      kicker: localText("Sammlung", "Collection", "Collection"),
+      title: getUiText("nav.collection"),
+      text: localText("Suche Karten, lies Effekte und vergleiche Werte.", "Search cards, read effects and compare values.", "Cherche des cartes, lis les effets et compare les valeurs."),
+      meta: localText(`${summary.uniqueCards} einzigartige Karten`, `${summary.uniqueCards} unique cards`, `${summary.uniqueCards} cartes uniques`),
+    },
+    {
+      ids: ["menuDecksKicker", "menuDecksTitle", "menuDecksText", "menuDecksMeta"],
+      kicker: localText("Deckbau", "Deckbuilding", "Construction"),
+      title: getUiText("nav.decks"),
+      text: localText("Baue Standard- und Hardcore-Decks gezielt auf.", "Build standard and hardcore decks with intent.", "Construis tes decks standard et hardcore avec précision."),
+      meta: validation.valid
+        ? localText(`${getDeckModeTitle(arenaDeckMode)} bereit`, `${getDeckModeTitle(arenaDeckMode)} ready`, `${getDeckModeTitle(arenaDeckMode)} prêt`)
+        : localText("Arena-Deck noch nicht spielbereit", "Arena deck not ready yet", "Le deck d'arène n'est pas encore prêt"),
+    },
+    {
+      ids: ["menuShopKicker", "menuShopTitle", "menuShopText", "menuShopMeta"],
+      kicker: localText("Shop", "Shop", "Boutique"),
+      title: getUiText("nav.shop"),
+      text: localText("Kaufe Booster, Packs und Freischaltungen.", "Buy boosters, packs and unlocks.", "Achète des boosters, des packs et des déblocages."),
+      meta: localText(`${save.gold} Gold verfügbar`, `${save.gold} gold available`, `${save.gold} or disponible`),
+    },
+    {
+      ids: ["menuMarketKicker", "menuMarketTitle", "menuMarketText", "menuMarketMeta"],
+      kicker: localText("Markt", "Market", "Marché"),
+      title: getUiText("nav.marketplace"),
+      text: localText("Beobachte Trends und handle Karten clever.", "Track trends and trade cards smartly.", "Observe les tendances et échange les cartes intelligemment."),
+      meta: localText(`Nächste Runde in ${getNextMarketUpdateLabel()}`, `Next round in ${getNextMarketUpdateLabel()}`, `Prochaine ronde dans ${getNextMarketUpdateLabel()}`),
+    },
+    {
+      ids: ["menuWikiKicker", "menuWikiTitle", "menuWikiText", "menuWikiMeta"],
+      kicker: localText("Wiki", "Wiki", "Wiki"),
+      title: getUiText("nav.wiki"),
+      text: localText("Finde Symbole, Systeme und Begriffe schnell.", "Find symbols, systems and terms quickly.", "Retrouve rapidement les symboles, systèmes et termes."),
+      meta: localText("Regeln, Effekte und Fortschritt", "Rules, effects and progression", "Règles, effets et progression"),
+    },
+  ];
+
+  if (isCurrentUserAdmin()) {
+    menuCards.push({
+      ids: ["menuAdminKicker", "menuAdminTitle", "menuAdminText", "menuAdminMeta"],
+      kicker: localText("Admin", "Admin", "Admin"),
+      title: getUiText("nav.admin"),
+      text: localText("Greife auf Konten und Serverwerkzeuge zu.", "Access accounts and server tools.", "Accède aux comptes et aux outils serveur."),
+      meta: localText("Nur für Verwaltung", "Admin only", "Réservé à l'administration"),
+    });
+  }
+
+  menuCards.forEach((entry) => {
+    const [kickerId, titleId, textId, metaId] = entry.ids;
+    const kicker = document.getElementById(kickerId);
+    const title = document.getElementById(titleId);
+    const text = document.getElementById(textId);
+    const meta = document.getElementById(metaId);
+    if (kicker) kicker.textContent = entry.kicker;
+    if (title) title.textContent = entry.title;
+    if (text) text.textContent = entry.text;
+    if (meta) meta.textContent = entry.meta;
+  });
+}
+
 function getNextMarketUpdateLabel() {
   const now = new Date();
   const next = new Date(now);
@@ -8798,7 +8942,7 @@ function renderAll() {
   }
 
   if (!isCurrentUserAdmin() && uiState.section === "admin") {
-    uiState.section = "shop";
+    uiState.section = "menu";
   }
 
   uiState.previewLanguage = getUserSettings().language;
@@ -8821,6 +8965,7 @@ function renderAll() {
   applySceneTheme(uiState.section, true);
   renderNavigation();
   renderResources();
+  renderMainMenu();
   renderShop();
   renderMarketplace();
   renderBoosterLab();

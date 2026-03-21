@@ -68,38 +68,12 @@
     </section>
 
     <section class="game-shell hidden" id="gameShell">
-      <aside class="sidebar">
-        <div class="brand-card">
-          <p class="eyebrow">Strategie-Sammelkartenspiel</p>
-          <h2>Projekt Vault</h2>
-          <p class="brand-text">
-            Öffne Booster, sammle Karten, baue mehrere Decks und teste sie in rundenbasierten Duellen.
-          </p>
-        </div>
-
-        <nav class="nav-list" aria-label="Spielbereiche">
-          <button class="nav-button active" data-section="shop">Shop</button>
-          <button class="nav-button" data-section="marketplace">Marktplatz</button>
-          <button class="nav-button" data-section="booster">Booster öffnen</button>
-          <button class="nav-button" data-section="collection">Sammlung</button>
-          <button class="nav-button" data-section="decks">Decks</button>
-          <button class="nav-button" data-section="wiki">Wiki</button>
-          <button class="nav-button hidden" data-section="admin" data-admin-only="true">Admin</button>
-          <button class="nav-button" data-section="arena">Arena</button>
-        </nav>
-
-        <div class="sidebar-foot">
-          <p class="sidebar-label">Aktiver Speicher-Modus</p>
-          <strong>Server-Speicher aktiv</strong>
-        </div>
-      </aside>
-
       <div class="main-shell">
         <header class="topbar">
-          <div class="player-panel">
+          <button class="player-panel home-trigger nav-button" data-section="menu" type="button" aria-label="Hauptmenü" title="Hauptmenü">
             <p class="eyebrow">Spielerkonto</p>
             <h2 id="playerName">-</h2>
-          </div>
+          </button>
 
           <div class="resource-bar" id="resourceBar"></div>
 
@@ -149,7 +123,73 @@
         </section>
 
         <main class="content-shell">
-          <section class="section-panel active" id="shopSection">
+          <section class="section-panel active" id="menuSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow" id="menuEyebrow">Hauptmenü</p>
+                <h2 id="menuTitle">Alles Wichtige startet in der Arena</h2>
+              </div>
+              <p class="section-note" id="menuNote">Kämpfe bringen Gold. Gold bringt Booster. Booster bringen neue Karten.</p>
+            </div>
+
+            <div class="menu-summary-grid" id="menuSummaryGrid"></div>
+
+            <div class="menu-hub-layout">
+              <button class="menu-arena-card nav-button" data-section="arena" type="button">
+                <span class="menu-card-kicker" id="menuArenaKicker">Hauptmodus</span>
+                <strong id="menuArenaTitle">Arena</strong>
+                <p id="menuArenaText">Spiele Matches, gewinne Gold und halte deinen Kartenfortschritt am Laufen.</p>
+                <div class="menu-card-meta" id="menuArenaMeta"></div>
+              </button>
+
+              <div class="menu-link-grid">
+                <button class="menu-link-card nav-button" data-section="booster" type="button">
+                  <span class="menu-link-kicker" id="menuBoosterKicker">Booster</span>
+                  <strong id="menuBoosterTitle">Booster öffnen</strong>
+                  <p id="menuBoosterText">Öffne Booster und erweitere deine Sammlung sofort.</p>
+                  <span class="menu-link-meta" id="menuBoosterMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="collection" type="button">
+                  <span class="menu-link-kicker" id="menuCollectionKicker">Sammlung</span>
+                  <strong id="menuCollectionTitle">Karten prüfen</strong>
+                  <p id="menuCollectionText">Suche Karten, lies Effekte und vergleiche Werte.</p>
+                  <span class="menu-link-meta" id="menuCollectionMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="decks" type="button">
+                  <span class="menu-link-kicker" id="menuDecksKicker">Deckbau</span>
+                  <strong id="menuDecksTitle">Decks verwalten</strong>
+                  <p id="menuDecksText">Baue Standard- und Hardcore-Decks gezielt auf.</p>
+                  <span class="menu-link-meta" id="menuDecksMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="shop" type="button">
+                  <span class="menu-link-kicker" id="menuShopKicker">Shop</span>
+                  <strong id="menuShopTitle">Neue Angebote</strong>
+                  <p id="menuShopText">Kaufe Booster, Packs und Freischaltungen.</p>
+                  <span class="menu-link-meta" id="menuShopMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="marketplace" type="button">
+                  <span class="menu-link-kicker" id="menuMarketKicker">Markt</span>
+                  <strong id="menuMarketTitle">Handel treiben</strong>
+                  <p id="menuMarketText">Beobachte Trends und handle Karten clever.</p>
+                  <span class="menu-link-meta" id="menuMarketMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="wiki" type="button">
+                  <span class="menu-link-kicker" id="menuWikiKicker">Wiki</span>
+                  <strong id="menuWikiTitle">Regeln nachschlagen</strong>
+                  <p id="menuWikiText">Finde Symbole, Systeme und Begriffe schnell.</p>
+                  <span class="menu-link-meta" id="menuWikiMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button hidden" data-section="admin" data-admin-only="true" type="button">
+                  <span class="menu-link-kicker" id="menuAdminKicker">Admin</span>
+                  <strong id="menuAdminTitle">Verwaltung</strong>
+                  <p id="menuAdminText">Greife auf Konten und Serverwerkzeuge zu.</p>
+                  <span class="menu-link-meta" id="menuAdminMeta"></span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="shopSection">
             <div class="section-head">
               <div>
                 <p class="eyebrow">Shop</p>
