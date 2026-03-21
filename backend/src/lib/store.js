@@ -31,6 +31,8 @@ function createEmptyDatabase() {
   };
 }
 
+let databaseMutationQueue = Promise.resolve();
+
 async function ensureDataFile() {
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
   try {
@@ -176,11 +178,16 @@ async function writeDatabase(database) {
 }
 
 async function updateDatabase(updater) {
-  const database = await readDatabase();
-  const nextDatabase = (await updater(database)) || database;
-  const normalized = normalizeDatabase(nextDatabase);
-  await writeDatabase(normalized);
-  return normalized;
+  const operation = databaseMutationQueue.then(async () => {
+    const database = await readDatabase();
+    const nextDatabase = (await updater(database)) || database;
+    const normalized = normalizeDatabase(nextDatabase);
+    await writeDatabase(normalized);
+    return normalized;
+  });
+
+  databaseMutationQueue = operation.catch(() => undefined);
+  return operation;
 }
 
 function findAccountByUsername(database, username) {

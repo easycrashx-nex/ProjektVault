@@ -15,3 +15,7 @@ TODO
 - 2026-03-20: Detail-Stat-Karten im Kartenfenster gegen überlange Label gehärtet; Titel umbrechen jetzt sauber und kollidieren nicht mehr mit Nachbarkarten.
 
 - 2026-03-20: Server-Datenspeicher für Redeploys gehärtet: Persistenzpfad /data/projekt-vault, automatische Migration vom alten Pfad und Backup-Datei vor Schreibvorgängen eingebaut.
+
+- 2026-03-21: Backend-Store gegen Race-Conditions gehärtet: updateDatabase serialisiert jetzt den kompletten Read-Modify-Write-Zyklus, damit parallele Saves keine Accounts mehr überschreiben. Login-Route ebenfalls auf atomaren Session-Write umgestellt.
+
+- 2026-03-21: Dockerfile-Fallback-Volume entfernt, damit Coolify nicht still auf ein wegwerfbares Docker-Volume ausweicht. /api/meta zeigt jetzt den aktiven Datenpfad zur Server-Diagnose.

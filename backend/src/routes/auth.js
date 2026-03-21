@@ -108,21 +108,31 @@ function registerAuthRoutes(router) {
     const username = sanitizeUsername(body.username);
     const password = String(body.password || "");
 
-    const database = await updateDatabase((current) => current);
-    const account = findAccountByUsername(database, username);
-    if (!account || !verifyPassword(password, account.passwordHash)) {
+    let createdSessionToken = null;
+    let responseAccount = null;
+
+    await updateDatabase((database) => {
+      const account = findAccountByUsername(database, username);
+      if (!account || !verifyPassword(password, account.passwordHash)) {
+        return database;
+      }
+
+      const session = createSession(account.username);
+      database.sessions[session.token] = session;
+      createdSessionToken = session.token;
+      responseAccount = account;
+      return database;
+    });
+
+    if (!responseAccount || !createdSessionToken) {
       sendJson(res, 401, { ok: false, error: "invalid_credentials", message: "Spielername oder Passwort sind falsch." });
       return;
     }
 
-    const session = createSession(account.username);
-    database.sessions[session.token] = session;
-    await updateDatabase(() => database);
-
     sendJson(res, 200, {
       ok: true,
-      sessionToken: session.token,
-      account: sanitizeAccountForClient(account, { includeSave: true }),
+      sessionToken: createdSessionToken,
+      account: sanitizeAccountForClient(responseAccount, { includeSave: true }),
     });
   });
 

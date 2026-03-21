@@ -107,6 +107,7 @@ Wichtig:
 - `DATA_DIR` sollte auf `/data/projekt-vault` bleiben
 - dort liegen die Nutzerdaten und Marktstände bewusst außerhalb des austauschbaren App-Codes
 - zusätzlich wird vor jedem Schreibvorgang eine Backup-Datei `local-database.backup.json` im selben Ordner gepflegt
+- die Persistenz kommt ausschließlich über den expliziten Coolify-`Directory Mount`; ohne diesen Mount darf der Server nicht als sicher persistent betrachtet werden
 
 ### 3. Container starten
 

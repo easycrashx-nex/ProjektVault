@@ -1,3 +1,4 @@
+const { DATA_DIR, DATA_FILE } = require("../config");
 const { sendJson } = require("../lib/http");
 
 function registerSystemRoutes(router) {
@@ -14,6 +15,8 @@ function registerSystemRoutes(router) {
       ok: true,
       app: "Projekt Vault",
       storage: "json-file",
+      dataDir: DATA_DIR,
+      dataFile: DATA_FILE,
       frontend: "frontend/public",
       apiBase: "/api",
     });
