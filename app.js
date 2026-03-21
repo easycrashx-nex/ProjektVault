@@ -8788,8 +8788,10 @@ function renderMainMenu() {
   const save = getSave();
   const summary = summarizeSave(save);
   const arenaDifficultyId = getArenaDifficultyId(save.arenaDifficulty);
+  const arenaDifficulty = getArenaDifficulty(arenaDifficultyId);
   const arenaDeckMode = getDeckModeForDifficulty(arenaDifficultyId);
   const arenaDeck = getDeckByMode(arenaDeckMode);
+  const deckRules = getDeckRules(arenaDeckMode);
   const validation = validateDeck(arenaDeck, arenaDeckMode);
   const menuTexts = {
     eyebrow: localText("Hauptmenü", "Main Menu", "Menu principal"),
@@ -8837,6 +8839,37 @@ function renderMainMenu() {
   ]
     .map((entry) => `<span class="meta-chip">${entry}</span>`)
     .join("");
+  document.getElementById("menuArenaStats").innerHTML = [
+    {
+      label: localText("Sieg", "Win", "Victoire"),
+      value: localText(`${arenaDifficulty.rewardWin} Gold`, `${arenaDifficulty.rewardWin} Gold`, `${arenaDifficulty.rewardWin} or`),
+    },
+    {
+      label: localText("Deck", "Deck", "Deck"),
+      value: `${arenaDeck.cards.length}/${deckRules.size}`,
+    },
+    {
+      label: localText("Status", "Status", "Statut"),
+      value: validation.valid ? getUiText("decks.playable") : getUiText("arena.notReady"),
+    },
+  ]
+    .map(
+      (entry) => `
+        <article class="menu-arena-stat">
+          <span>${entry.label}</span>
+          <strong>${entry.value}</strong>
+        </article>
+      `
+    )
+    .join("");
+  document.getElementById("menuArenaVisualLabel").textContent = localText("Jetzt spielen", "Play now", "Jouer maintenant");
+  document.getElementById("menuArenaVisualValue").textContent = getArenaDifficultyLabel(arenaDifficultyId);
+  document.getElementById("menuArenaCta").textContent = localText("Arena öffnen", "Open Arena", "Ouvrir l'arène");
+  document.getElementById("menuArenaFootnote").textContent = localText(
+    "Hauptquelle für Gold und Fortschritt",
+    "Main source of gold and progression",
+    "Source principale d'or et de progression"
+  );
 
   const menuCards = [
     {

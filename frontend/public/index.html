@@ -136,10 +136,32 @@
 
             <div class="menu-hub-layout">
               <button class="menu-arena-card nav-button" data-section="arena" type="button">
-                <span class="menu-card-kicker" id="menuArenaKicker">Hauptmodus</span>
-                <strong id="menuArenaTitle">Arena</strong>
-                <p id="menuArenaText">Spiele Matches, gewinne Gold und halte deinen Kartenfortschritt am Laufen.</p>
-                <div class="menu-card-meta" id="menuArenaMeta"></div>
+                <div class="menu-arena-shell">
+                  <div class="menu-arena-copy">
+                    <span class="menu-card-kicker" id="menuArenaKicker">Hauptmodus</span>
+                    <div class="menu-arena-heading">
+                      <strong id="menuArenaTitle">Arena</strong>
+                      <p id="menuArenaText">Spiele Matches, gewinne Gold und halte deinen Kartenfortschritt am Laufen.</p>
+                    </div>
+                    <div class="menu-card-meta" id="menuArenaMeta"></div>
+                    <div class="menu-arena-stats" id="menuArenaStats"></div>
+                  </div>
+
+                  <div class="menu-arena-visual" aria-hidden="true">
+                    <span class="menu-arena-ring menu-arena-ring-a"></span>
+                    <span class="menu-arena-ring menu-arena-ring-b"></span>
+                    <span class="menu-arena-orb"></span>
+                    <div class="menu-arena-visual-copy">
+                      <span id="menuArenaVisualLabel">Jetzt spielen</span>
+                      <strong id="menuArenaVisualValue">Goldlauf</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="menu-arena-footer">
+                  <span class="menu-arena-cta" id="menuArenaCta">Zur Arena</span>
+                  <span class="menu-arena-footnote" id="menuArenaFootnote">Hauptquelle für Gold und Fortschritt</span>
+                </div>
               </button>
 
               <div class="menu-link-grid">
