@@ -330,7 +330,15 @@
 
             <div class="deck-toolbar">
               <label>
-                <span>Aktiver Deckname</span>
+                <span id="deckModeLabel">Deckmodus</span>
+                <select id="deckModeSelect">
+                  <option value="standard">Standard-Deck</option>
+                  <option value="hardcore">Hardcore-Deck</option>
+                </select>
+              </label>
+
+              <label>
+                <span id="deckNameLabel">Aktiver Deckname</span>
                 <input type="text" id="deckNameInput" maxlength="24" placeholder="Deckname">
               </label>
 
@@ -345,22 +353,22 @@
             <div class="deck-layout">
               <div class="deck-column">
                 <div class="info-panel">
-                  <h3 class="subheading">Aktives Deck</h3>
+                  <h3 class="subheading" id="activeDeckHeading">Aktives Deck</h3>
                   <div class="deck-meta" id="activeDeckMeta"></div>
                   <div class="warning-list" id="activeDeckWarnings"></div>
                   <div class="deck-list" id="activeDeckList"></div>
                 </div>
 
-                <div class="info-panel">
-                  <h3 class="subheading">Gespeicherte Decks</h3>
+                <div class="info-panel" id="savedDecksPanel">
+                  <h3 class="subheading" id="savedDecksHeading">Gespeicherte Decks</h3>
                   <div class="saved-decks" id="savedDecksList"></div>
                 </div>
               </div>
 
               <div class="deck-column">
                 <div class="info-panel">
-                  <h3 class="subheading">Karten zum Hinzufügen</h3>
-                  <p class="mini-note">Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.</p>
+                  <h3 class="subheading" id="deckAddCardsHeading">Karten zum Hinzufügen</h3>
+                  <p class="mini-note" id="deckAddCardsNote">Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.</p>
                   <div class="card-grid compact-grid" id="deckCollectionGrid"></div>
                 </div>
               </div>
@@ -590,6 +598,23 @@
                 <div class="admin-summary" id="adminSelectedSummary"></div>
 
                 <div class="admin-tools">
+                  <details class="admin-tool-group" open>
+                    <summary id="adminCreateAccountSummary">Neues Konto anlegen</summary>
+                    <div class="admin-tool-grid">
+                      <label>
+                        <span id="adminCreateUsernameLabel">Spielername</span>
+                        <input type="text" id="adminCreateUsernameInput" minlength="3" maxlength="12" autocomplete="off">
+                      </label>
+                      <label>
+                        <span id="adminCreatePasswordLabel">Passwort</span>
+                        <input type="password" id="adminCreatePasswordInput" minlength="4" autocomplete="new-password">
+                      </label>
+                      <div class="admin-tool-actions wide-row">
+                        <button class="primary-button" id="createAccountButton">Konto erstellen</button>
+                      </div>
+                    </div>
+                  </details>
+
                   <details class="admin-tool-group" open>
                     <summary>Wirtschaft</summary>
                     <div class="admin-tool-grid">

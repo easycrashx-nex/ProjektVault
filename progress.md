@@ -19,3 +19,5 @@ TODO
 - 2026-03-21: Backend-Store gegen Race-Conditions gehärtet: updateDatabase serialisiert jetzt den kompletten Read-Modify-Write-Zyklus, damit parallele Saves keine Accounts mehr überschreiben. Login-Route ebenfalls auf atomaren Session-Write umgestellt.
 
 - 2026-03-21: Dockerfile-Fallback-Volume entfernt, damit Coolify nicht still auf ein wegwerfbares Docker-Volume ausweicht. /api/meta zeigt jetzt den aktiven Datenpfad zur Server-Diagnose.
+
+- 2026-03-21: Hardcore-Modus ergänzt: eigene Schwierigkeit, eigenes 35-Karten-Spezialdeck, Verlust der Hardcore-Deckkarten bei Niederlage/Aufgabe und separate Deck-UI.\n- 2026-03-21: Decklimits erweitert: Standard-Deck maximal 6 Zauber und 4 Trainer, Hardcore-Deck maximal 10 Zauber und 6 Trainer. Arena-Gegner halten diese Limits jetzt ebenfalls ein.\n- 2026-03-21: Deck-Manager mit Deckmodus-Umschalter final überschrieben, alte Altlasten neutralisiert und Frontend-Mirror synchronisiert.\n\nTODO\n- Hardcore-Deckregeln später zusätzlich serverseitig anhand der Kartenmetadaten erzwingen, nicht nur im Frontend/UI.\n- Live im Browser noch einmal explizit Standard- und Hardcore-Deckbau gegen echte Bestandskarten durchspielen.

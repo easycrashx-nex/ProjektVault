@@ -8,6 +8,28 @@ const APP_CONFIG = {
   fatigueBaseDamage: 1,
 };
 
+const DECK_MODES = Object.freeze({
+  standard: "standard",
+  hardcore: "hardcore",
+});
+
+const DECK_RULES = Object.freeze({
+  standard: Object.freeze({
+    id: DECK_MODES.standard,
+    size: APP_CONFIG.deckSize,
+    maxSpells: 6,
+    maxTrainers: 4,
+  }),
+  hardcore: Object.freeze({
+    id: DECK_MODES.hardcore,
+    size: 35,
+    maxSpells: 10,
+    maxTrainers: 6,
+  }),
+});
+
+const MAX_DECK_SIZE = Math.max(...Object.values(DECK_RULES).map((entry) => entry.size));
+
 const MARKETPLACE_FEE_RATE = 0.07;
 const ADMIN_BOOTSTRAP = {
   username: "obsidian_admin",
@@ -218,6 +240,19 @@ const ARENA_DIFFICULTIES = Object.freeze({
     unitBias: 0.76,
     selectionBias: 0.6,
     rarityRolls: Object.freeze({ legendary: 0.94, ultra: 0.74, mythic: 0.52, transcendent: 0.2 }),
+  }),
+  hardcore: Object.freeze({
+    id: "hardcore",
+    rewardWin: 340,
+    rewardLoss: 0,
+    forfeitPenalty: 0,
+    enemyHeroBonus: 18,
+    enemyBarrier: 6,
+    enemyOpeningHandDelta: 2,
+    enemyStartingManaBonus: 2,
+    unitBias: 0.8,
+    selectionBias: 0.72,
+    rarityRolls: Object.freeze({ legendary: 0.98, ultra: 0.84, mythic: 0.68, transcendent: 0.28 }),
   }),
 });
 
@@ -574,6 +609,7 @@ const UI_TEXT = Object.freeze({
       noCardsText: "Passe deine Filter an oder öffne mehr Booster.",
     },
     decks: {
+      mode: "Deckmodus",
       activeName: "Aktiver Deckname",
       deckNamePlaceholder: "Deckname",
       saveDeckName: "Deckname speichern",
@@ -586,8 +622,10 @@ const UI_TEXT = Object.freeze({
       addCardsNote: "Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.",
       cardsMeta: "Karten {count}/{size}",
       unitsMeta: "Einheiten {count}",
-      spellsMeta: "Zauber {count}",
-      trainersMeta: "Trainer {count}",
+      spellsMeta: "Zauber {count}/{limit}",
+      trainersMeta: "Trainer {count}/{limit}",
+      standardDeck: "Standard-Deck",
+      hardcoreDeck: "Hardcore-Deck",
       playable: "Deck ist spielbar.",
       emptyDeckTitle: "Leeres Deck",
       emptyDeckText: "Füge Karten aus deiner Sammlung hinzu, damit das Deck spielbar wird.",
@@ -677,6 +715,10 @@ const UI_TEXT = Object.freeze({
       languageChanged: "Die Sprache wurde gespeichert.",
     },
     admin: {
+      createAccount: "Neues Konto anlegen",
+      createUsername: "Spielername",
+      createPassword: "Passwort",
+      createButton: "Konto erstellen",
       allAccounts: "Alle Konten",
       selectedAccount: "Ausgewähltes Konto",
       economics: "Wirtschaft",
@@ -753,6 +795,7 @@ const UI_TEXT = Object.freeze({
         standard: { label: "Standard", description: "Ausgewogene Arena-Stufe mit den normalen Goldwerten." },
         veteran: { label: "Veteran", description: "Härterer Gegner mit mehr Tempo, mehr Ausdauer und besseren Rewards." },
         nightmare: { label: "Albtraum", description: "Sehr starker Gegner mit hoher Belohnung, wenn du ihn bezwingst." },
+        hardcore: { label: "Hardcore", description: "Eigenes 35-Karten-Spezialdeck. Niederlage oder Aufgabe zerstört diese Liste." },
       },
     },
     card: {
@@ -1014,8 +1057,24 @@ function getArenaDifficultyDescription(value) {
   return getUiText(`arena.difficulties.${difficultyId}.description`);
 }
 
+function getDeckModeId(value) {
+  return Object.prototype.hasOwnProperty.call(DECK_RULES, value) ? value : DECK_MODES.standard;
+}
+
+function getDeckRules(value = DECK_MODES.standard) {
+  return DECK_RULES[getDeckModeId(value)];
+}
+
+function getDeckModeForDifficulty(value) {
+  return getArenaDifficultyId(value) === "hardcore" ? DECK_MODES.hardcore : DECK_MODES.standard;
+}
+
+function getSelectedDeckMode() {
+  return getDeckModeId(uiState.deckMode || DECK_MODES.standard);
+}
+
 function getArenaDifficultyRank(value) {
-  return ["novice", "standard", "veteran", "nightmare"].indexOf(getArenaDifficultyId(value));
+  return ["novice", "standard", "veteran", "nightmare", "hardcore"].indexOf(getArenaDifficultyId(value));
 }
 
 function getRecommendedArenaDifficultyId(profile) {
@@ -1024,6 +1083,10 @@ function getRecommendedArenaDifficultyId(profile) {
   const transcendentCount = Number(profile?.rarities?.transcendent || 0);
   const mythicCount = Number(profile?.rarities?.mythic || 0);
   const ultraCount = Number(profile?.rarities?.ultra || 0);
+
+  if (powerScore >= 380 || transcendentCount >= 4 || mythicCount >= 7 || eliteCount >= 14) {
+    return "hardcore";
+  }
 
   if (powerScore >= 280 || transcendentCount >= 2 || mythicCount >= 4 || eliteCount >= 10) {
     return "nightmare";
@@ -2952,7 +3015,8 @@ Object.assign(UI_TEXT.en, {
     noCardsText: "Adjust your filters or open more boosters.",
   },
   decks: {
-    activeName: "Active deck name",
+      mode: "Deck mode",
+      activeName: "Active deck name",
     deckNamePlaceholder: "Deck name",
     saveDeckName: "Save deck name",
     newDeck: "New deck",
@@ -2964,8 +3028,10 @@ Object.assign(UI_TEXT.en, {
     addCardsNote: "A deck needs exactly 20 cards to be playable in the arena.",
     cardsMeta: "Cards {count}/{size}",
     unitsMeta: "Units {count}",
-    spellsMeta: "Spells {count}",
-    trainersMeta: "Trainers {count}",
+      spellsMeta: "Spells {count}/{limit}",
+      trainersMeta: "Trainers {count}/{limit}",
+      standardDeck: "Standard deck",
+      hardcoreDeck: "Hardcore deck",
     playable: "Deck is playable.",
     emptyDeckTitle: "Empty deck",
     emptyDeckText: "Add cards from your collection to make the deck playable.",
@@ -3055,6 +3121,10 @@ Object.assign(UI_TEXT.en, {
     languageChanged: "Language saved.",
   },
   admin: {
+    createAccount: "Create account",
+    createUsername: "Player name",
+    createPassword: "Password",
+    createButton: "Create account",
     allAccounts: "All accounts",
     selectedAccount: "Selected account",
     economics: "Economy",
@@ -3131,6 +3201,7 @@ Object.assign(UI_TEXT.en, {
       standard: { label: "Standard", description: "Balanced arena tier with the normal gold values." },
       veteran: { label: "Veteran", description: "Tougher opponent with more tempo, more staying power and better rewards." },
       nightmare: { label: "Nightmare", description: "Very strong opponent with high rewards if you beat it." },
+      hardcore: { label: "Hardcore", description: "Dedicated 35-card special deck. Losing or forfeiting destroys that list." },
     },
   },
   card: {
@@ -3344,6 +3415,7 @@ Object.assign(UI_TEXT.fr, {
     noCardsText: "Ajuste tes filtres ou ouvre plus de boosters.",
   },
   decks: {
+    mode: "Mode du deck",
     activeName: "Nom du deck actif",
     deckNamePlaceholder: "Nom du deck",
     saveDeckName: "Sauvegarder le nom",
@@ -3356,8 +3428,10 @@ Object.assign(UI_TEXT.fr, {
     addCardsNote: "Un deck a besoin de 20 cartes exactement pour être jouable dans l'arène.",
     cardsMeta: "Cartes {count}/{size}",
     unitsMeta: "Unités {count}",
-    spellsMeta: "Sorts {count}",
-    trainersMeta: "Entraîneurs {count}",
+      spellsMeta: "Sorts {count}/{limit}",
+      trainersMeta: "Entraîneurs {count}/{limit}",
+      standardDeck: "Deck standard",
+      hardcoreDeck: "Deck hardcore",
     playable: "Le deck est jouable.",
     emptyDeckTitle: "Deck vide",
     emptyDeckText: "Ajoute des cartes depuis ta collection pour rendre le deck jouable.",
@@ -3447,6 +3521,10 @@ Object.assign(UI_TEXT.fr, {
     languageChanged: "Langue sauvegardée.",
   },
   admin: {
+    createAccount: "Créer un compte",
+    createUsername: "Nom du joueur",
+    createPassword: "Mot de passe",
+    createButton: "Créer le compte",
     allAccounts: "Tous les comptes",
     selectedAccount: "Compte sélectionné",
     economics: "Économie",
@@ -3523,6 +3601,7 @@ Object.assign(UI_TEXT.fr, {
       standard: { label: "Standard", description: "Niveau d'arène équilibré avec les valeurs d'or normales." },
       veteran: { label: "Vétéran", description: "Adversaire plus dur avec plus de tempo, plus d'endurance et de meilleures récompenses." },
       nightmare: { label: "Cauchemar", description: "Adversaire très fort avec une grosse récompense si tu le bats." },
+      hardcore: { label: "Hardcore", description: "Deck spécial dédié de 35 cartes. Une défaite ou un abandon détruit cette liste." },
     },
   },
   card: {
@@ -3742,6 +3821,8 @@ Object.assign(UI_TEXT.de, {
     deckUnavailableCard: "Das Deck enthält eine nicht mehr verfügbare Karte.",
     deckMissingOwned: "{missing}× {name} fehlen im Besitz.",
     deckLimitExceeded: "{name} überschreitet das Decklimit von {limit}.",
+    deckSpellLimit: "Zu viele Zauber im Deck: {count}/{limit}.",
+    deckTrainerLimit: "Zu viele Trainer im Deck: {count}/{limit}.",
     matchNotPlayable: "Das aktive Deck ist noch nicht spielbar.",
     matchAlreadyRunning: "Beende zuerst das laufende Match, bevor du ein neues startest.",
     matchStarted: "Neues Match gestartet.",
@@ -3763,6 +3844,9 @@ Object.assign(UI_TEXT.de, {
     fatigueFinish: "Ein Held ist an Ermüdung gefallen.",
     regenerated: "{name} regeneriert 1 Lebenspunkt.",
     adminSelectAccount: "Bitte zuerst ein Konto im Admin-Bereich auswählen.",
+    adminCreateUsernameInvalid: "Bitte einen gültigen Spielernamen mit 3 bis 12 Zeichen eingeben.",
+    adminCreatePasswordInvalid: "Bitte ein Passwort mit mindestens 4 Zeichen eingeben.",
+    adminCreated: "Das Konto {username} wurde erstellt.",
     adminGoldAmountInvalid: "Bitte eine gültige Goldmenge eingeben.",
     adminNoRemovableGold: "{username} besitzt aktuell kein abziehbares Gold.",
     adminGoldGranted: "{amount} Gold wurden {username} gutgeschrieben.",
@@ -3842,6 +3926,8 @@ Object.assign(UI_TEXT.en, {
     deckUnavailableCard: "The deck contains a card that is no longer available.",
     deckMissingOwned: "{missing}× {name} are missing from your collection.",
     deckLimitExceeded: "{name} exceeds the deck limit of {limit}.",
+    deckSpellLimit: "Too many spells in deck: {count}/{limit}.",
+    deckTrainerLimit: "Too many trainers in deck: {count}/{limit}.",
     matchNotPlayable: "The active deck is not playable yet.",
     matchAlreadyRunning: "Finish the current match before you start a new one.",
     matchStarted: "New match started.",
@@ -3863,6 +3949,9 @@ Object.assign(UI_TEXT.en, {
     fatigueFinish: "A hero has fallen to fatigue.",
     regenerated: "{name} regenerates 1 health.",
     adminSelectAccount: "Please select an account in the admin area first.",
+    adminCreateUsernameInvalid: "Please enter a valid player name with 3 to 12 characters.",
+    adminCreatePasswordInvalid: "Please enter a password with at least 4 characters.",
+    adminCreated: "The account {username} has been created.",
     adminGoldAmountInvalid: "Please enter a valid gold amount.",
     adminNoRemovableGold: "{username} currently has no removable gold.",
     adminGoldGranted: "{amount} gold have been granted to {username}.",
@@ -3942,6 +4031,8 @@ Object.assign(UI_TEXT.fr, {
     deckUnavailableCard: "Le deck contient une carte qui n'est plus disponible.",
     deckMissingOwned: "Il manque {missing}× {name} dans ta collection.",
     deckLimitExceeded: "{name} dépasse la limite de deck de {limit}.",
+    deckSpellLimit: "Trop de sorts dans le deck : {count}/{limit}.",
+    deckTrainerLimit: "Trop d'entraîneurs dans le deck : {count}/{limit}.",
     matchNotPlayable: "Le deck actif n'est pas encore jouable.",
     matchAlreadyRunning: "Termine d'abord le match en cours avant d'en lancer un autre.",
     matchStarted: "Nouveau match lancé.",
@@ -3963,6 +4054,9 @@ Object.assign(UI_TEXT.fr, {
     fatigueFinish: "Un héros est tombé à cause de la fatigue.",
     regenerated: "{name} régénère 1 point de vie.",
     adminSelectAccount: "Sélectionne d'abord un compte dans la zone admin.",
+    adminCreateUsernameInvalid: "Saisis un nom de joueur valide de 3 à 12 caractères.",
+    adminCreatePasswordInvalid: "Saisis un mot de passe d'au moins 4 caractères.",
+    adminCreated: "Le compte {username} a été créé.",
     adminGoldAmountInvalid: "Saisis une quantité d'or valide.",
     adminNoRemovableGold: "{username} n'a actuellement aucun or à retirer.",
     adminGoldGranted: "{amount} or ont été ajoutés à {username}.",
@@ -4278,6 +4372,79 @@ const EXPANDED_TRAINER_TITLES = [
   "Wegbereiter",
 ];
 
+const ASCENDANT_UNIT_TITLES = [
+  "Dornregent",
+  "Aschenklinge",
+  "Mondbanner",
+  "RisshÃ¼ter",
+  "Stahlorakel",
+  "SumpflÃ¤ufer",
+  "Lichtvogt",
+  "KnochensÃ¤nger",
+  "Glutweber",
+  "Nebelrichter",
+  "WellenhÃ¼ter",
+  "Hallenwacht",
+  "Splitterhirt",
+  "Sternenspeer",
+  "Frostpriester",
+  "DÃ¼nenbestie",
+  "Runenvikar",
+  "Schleierwolf",
+  "Hainpatriarch",
+  "Seelenankerer",
+  "Glanzkavalier",
+  "Himmelskrieger",
+  "Echoschmied",
+  "Abgrundrufer",
+  "Flammenmarschall",
+  "Schattenseneschall",
+  "Wurzelarchon",
+  "Sturmgreif",
+  "Sternenkanzler",
+  "Knochenprimarch",
+  "Wolkenorakel",
+  "Ascheinkarnation",
+  "Riftpaladin",
+  "Dornenkoloss",
+  "Runentitan",
+  "NebelfÃ¼rst",
+  "Glutarchivist",
+  "Mondrichter",
+  "WeltenhÃ¼ter",
+  "Zwielichtavatar",
+];
+
+const ASCENDANT_SPELL_TITLES = [
+  "Kreislauf",
+  "Funkenwall",
+  "Fluchsalve",
+  "Spiralsturm",
+  "Dornenruf",
+  "Zeitfessel",
+  "Scherbenregen",
+  "Spiegelpfad",
+  "Sonnenbruch",
+  "Leerenwelle",
+  "Sternenschwur",
+  "Weltenritual",
+];
+
+const ASCENDANT_TRAINER_TITLES = [
+  "Archivar",
+  "Belagerungsmeister",
+  "Kartenkurator",
+  "SchwurhÃ¼ter",
+  "Spurenseher",
+  "Feldarchitekt",
+  "Arenapriester",
+  "Siegelrichter",
+  "Ritualkommandant",
+  "Zeitmentor",
+  "Nexuslotse",
+  "GewÃ¶lbewÃ¤chter",
+];
+
 const UNIT_RARITIES = ["common", "common", "common", "common", "common", "rare", "rare", "rare", "rare", "epic", "epic", "epic", "legendary", "ultra", "mythic"];
 const SPELL_RARITIES = ["common", "rare", "rare", "epic", "legendary"];
 const TRAINER_RARITIES = ["common", "rare", "epic", "ultra", "rare"];
@@ -4291,6 +4458,17 @@ const EXPANDED_UNIT_RARITIES = [
 ];
 const EXPANDED_SPELL_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "legendary", "legendary", "ultra", "ultra", "mythic"];
 const EXPANDED_TRAINER_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "legendary", "legendary", "ultra", "ultra", "mythic"];
+const ASCENDANT_UNIT_RARITIES = [
+  "common", "common", "common", "common", "common", "common", "common", "common", "common", "common", "common",
+  "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare",
+  "epic", "epic", "epic", "epic", "epic", "epic", "epic", "epic",
+  "legendary", "legendary", "legendary", "legendary", "legendary",
+  "ultra", "ultra", "ultra",
+  "mythic", "mythic",
+  "transcendent",
+];
+const ASCENDANT_SPELL_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "epic", "legendary", "legendary", "ultra", "mythic"];
+const ASCENDANT_TRAINER_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "epic", "legendary", "legendary", "ultra", "mythic"];
 
 const PACK_DEFINITIONS = {
   starter: {
@@ -5609,6 +5787,7 @@ const elements = {
   ownedOnlyToggle: document.getElementById("ownedOnlyToggle"),
   duplicatesOnlyToggle: document.getElementById("duplicatesOnlyToggle"),
   deckNameInput: document.getElementById("deckNameInput"),
+  deckModeSelect: document.getElementById("deckModeSelect"),
   renameDeckButton: document.getElementById("renameDeckButton"),
   newDeckButton: document.getElementById("newDeckButton"),
   duplicateDeckButton: document.getElementById("duplicateDeckButton"),
@@ -5617,6 +5796,7 @@ const elements = {
   activeDeckWarnings: document.getElementById("activeDeckWarnings"),
   activeDeckList: document.getElementById("activeDeckList"),
   savedDecksList: document.getElementById("savedDecksList"),
+  savedDecksPanel: document.getElementById("savedDecksPanel"),
   deckCollectionGrid: document.getElementById("deckCollectionGrid"),
   wikiSummary: document.getElementById("wikiSummary"),
   wikiFindHeading: document.getElementById("wikiFindHeading"),
@@ -5651,6 +5831,9 @@ const elements = {
   resetSettingsButton: document.getElementById("resetSettingsButton"),
   adminAccountList: document.getElementById("adminAccountList"),
   adminSelectedSummary: document.getElementById("adminSelectedSummary"),
+  adminCreateUsernameInput: document.getElementById("adminCreateUsernameInput"),
+  adminCreatePasswordInput: document.getElementById("adminCreatePasswordInput"),
+  createAccountButton: document.getElementById("createAccountButton"),
   adminGoldAmount: document.getElementById("adminGoldAmount"),
   grantGoldButton: document.getElementById("grantGoldButton"),
   removeGoldButton: document.getElementById("removeGoldButton"),
@@ -5712,6 +5895,7 @@ uiState = {
   friendChallengeBusy: false,
   wikiSearch: "",
   wikiTopic: "all",
+  deckMode: DECK_MODES.standard,
   previewLanguage: "de",
   toastTimer: null,
 };
@@ -5823,16 +6007,17 @@ function applyStaticTranslations() {
   setStaticText("#decksSection .section-head .eyebrow", getUiText("nav.decks"));
   setStaticText("#decksSection .section-head h2", getUiText("sections.decksTitle"));
   setStaticText("#decksSection .section-note", getUiText("sections.decksNote"));
-  setStaticText("#decksSection .deck-toolbar label span", getUiText("decks.activeName"));
+  setStaticText("#deckModeLabel", getUiText("decks.mode"));
+  setStaticText("#deckNameLabel", getUiText("decks.activeName"));
   setStaticAttribute("#deckNameInput", "placeholder", getUiText("decks.deckNamePlaceholder"));
   setStaticText("#renameDeckButton", getUiText("decks.saveDeckName"));
   setStaticText("#newDeckButton", getUiText("decks.newDeck"));
   setStaticText("#duplicateDeckButton", getUiText("decks.duplicateDeck"));
   setStaticText("#deleteDeckButton", getUiText("decks.deleteDeck"));
-  setStaticText("#decksSection .deck-column:first-child .info-panel:first-child .subheading", getUiText("decks.activeDeckTitle"));
-  setStaticText("#decksSection .deck-column:first-child .info-panel:last-child .subheading", getUiText("decks.savedDecksTitle"));
-  setStaticText("#decksSection .deck-column:last-child .subheading", getUiText("decks.addCardsTitle"));
-  setStaticText("#decksSection .deck-column:last-child .mini-note", getUiText("decks.addCardsNote"));
+  setStaticText("#activeDeckHeading", getUiText("decks.activeDeckTitle"));
+  setStaticText("#savedDecksHeading", getUiText("decks.savedDecksTitle"));
+  setStaticText("#deckAddCardsHeading", getUiText("decks.addCardsTitle"));
+  setStaticText("#deckAddCardsNote", getUiText("decks.addCardsNote"));
 
   setStaticText("#wikiSection .section-head .eyebrow", getUiText("nav.wiki"));
   setStaticText("#wikiSection .section-head h2", getUiText("sections.wikiTitle"));
@@ -5886,22 +6071,26 @@ function applyStaticTranslations() {
   setStaticText("#adminSection .section-note", getUiText("sections.adminNote"));
   setStaticText("#adminSection .admin-layout > .info-panel:first-child .subheading", getUiText("admin.allAccounts"));
   setStaticText("#adminSection .admin-layout > .info-panel:last-child .subheading", getUiText("admin.selectedAccount"));
-  setStaticText('#adminSection details:nth-of-type(1) > summary', getUiText("admin.economics"));
-  setStaticText('#adminSection details:nth-of-type(2) > summary', getUiText("admin.packInventory"));
-  setStaticText('#adminSection details:nth-of-type(3) > summary', getUiText("admin.cardCollection"));
-  setStaticText('#adminSection details:nth-of-type(4) > summary', getUiText("admin.accountActions"));
-  setStaticText("#adminSection details:nth-of-type(1) label span", getUiText("admin.goldAmount"));
-  setStaticText("#adminSection details:nth-of-type(2) label:nth-of-type(1) span", getUiText("admin.packType"));
-  setStaticText("#adminSection details:nth-of-type(2) label:nth-of-type(2) span", getUiText("admin.packAmount"));
-  setStaticText("#adminSection details:nth-of-type(3) label:nth-of-type(1) span", getUiText("admin.card"));
-  setStaticText("#adminSection details:nth-of-type(3) label:nth-of-type(2) span", getUiText("admin.cardAmount"));
+  setStaticText("#adminCreateAccountSummary", getUiText("admin.createAccount"));
+  setStaticText("#adminCreateUsernameLabel", getUiText("admin.createUsername"));
+  setStaticText("#adminCreatePasswordLabel", getUiText("admin.createPassword"));
+  setStaticText('#adminSection details:nth-of-type(2) > summary', getUiText("admin.economics"));
+  setStaticText('#adminSection details:nth-of-type(3) > summary', getUiText("admin.packInventory"));
+  setStaticText('#adminSection details:nth-of-type(4) > summary', getUiText("admin.cardCollection"));
+  setStaticText('#adminSection details:nth-of-type(5) > summary', getUiText("admin.accountActions"));
+  setStaticText("#adminSection details:nth-of-type(2) label span", getUiText("admin.goldAmount"));
+  setStaticText("#adminSection details:nth-of-type(3) label:nth-of-type(1) span", getUiText("admin.packType"));
+  setStaticText("#adminSection details:nth-of-type(3) label:nth-of-type(2) span", getUiText("admin.packAmount"));
+  setStaticText("#adminSection details:nth-of-type(4) label:nth-of-type(1) span", getUiText("admin.card"));
+  setStaticText("#adminSection details:nth-of-type(4) label:nth-of-type(2) span", getUiText("admin.cardAmount"));
+  setStaticText("#createAccountButton", getUiText("admin.createButton"));
   setStaticText("#grantGoldButton", getUiText("admin.grantGold"));
   setStaticText("#removeGoldButton", getUiText("admin.removeGold"));
   setStaticText("#grantPackButton", getUiText("admin.grantPack"));
   setStaticText("#removePackButton", getUiText("admin.removePack"));
   setStaticText("#grantCardButton", getUiText("admin.grantCard"));
   setStaticText("#removeCardButton", getUiText("admin.removeCard"));
-  setStaticText("#adminSection details:nth-of-type(4) .danger-note", getUiText("admin.dangerNote"));
+  setStaticText("#adminSection details:nth-of-type(5) .danger-note", getUiText("admin.dangerNote"));
   setStaticText("#deleteAccountButton", getUiText("admin.deleteAccount"));
 
   setStaticText("#arenaSection .section-head .eyebrow", getUiText("nav.arena"));
@@ -6081,6 +6270,7 @@ function overrideArcaneVaultSystems() {
     elements.newDeckButton.addEventListener("click", createNewDeck);
     elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
     elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
+    elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
 
     Object.keys(SETTINGS_INPUT_MAP).forEach((elementKey) => {
       elements[elementKey].addEventListener("change", handleSettingsToggle);
@@ -6093,6 +6283,7 @@ function overrideArcaneVaultSystems() {
     elements.endTurnButton.addEventListener("click", endPlayerTurn);
     elements.resetMatchButton.addEventListener("click", clearMatch);
 
+    elements.createAccountButton.addEventListener("click", createAdminAccount);
     elements.grantGoldButton.addEventListener("click", grantGoldToSelectedAccount);
     elements.removeGoldButton.addEventListener("click", removeGoldFromSelectedAccount);
     elements.grantPackButton.addEventListener("click", grantPacksToSelectedAccount);
@@ -6109,13 +6300,24 @@ function overrideArcaneVaultSystems() {
     });
   };
 
-  validateDeck = function validateDeck(deck) {
+  validateDeck = function validateDeck(deck, mode = DECK_MODES.standard) {
+    const deckMode = getDeckModeId(mode);
+    const rules = getDeckRules(deckMode);
     const messages = [];
     if (!deck) {
       return { valid: false, messages: [getUiText("messages.deckMissing")] };
     }
-    if (deck.cards.length !== APP_CONFIG.deckSize) {
-      messages.push(getUiText("messages.deckSize", { count: deck.cards.length, size: APP_CONFIG.deckSize }));
+    if (deck.cards.length !== rules.size) {
+      messages.push(getUiText("messages.deckSize", { count: deck.cards.length, size: rules.size }));
+    }
+
+    const spellCount = getDeckTypeCount(deck, "spell");
+    const trainerCount = getDeckTypeCount(deck, "trainer");
+    if (spellCount > rules.maxSpells) {
+      messages.push(getUiText("messages.deckSpellLimit", { count: spellCount, limit: rules.maxSpells }));
+    }
+    if (trainerCount > rules.maxTrainers) {
+      messages.push(getUiText("messages.deckTrainerLimit", { count: trainerCount, limit: rules.maxTrainers }));
     }
 
     const required = countCards(deck.cards);
@@ -6139,11 +6341,18 @@ function overrideArcaneVaultSystems() {
   };
 
   canAddCardToActiveDeck = function canAddCardToActiveDeck(cardId) {
-    const activeDeck = getActiveDeck();
+    const deckMode = getSelectedDeckMode();
+    const activeDeck = getDeckByMode(deckMode);
+    const rules = getDeckRules(deckMode);
+    const card = getCard(cardId);
     const deckCopies = countCopiesInArray(activeDeck.cards, cardId);
-    return activeDeck.cards.length < APP_CONFIG.deckSize
+    const nextSpellCount = card?.type === "spell" ? getDeckTypeCount(activeDeck, "spell") + 1 : getDeckTypeCount(activeDeck, "spell");
+    const nextTrainerCount = card?.type === "trainer" ? getDeckTypeCount(activeDeck, "trainer") + 1 : getDeckTypeCount(activeDeck, "trainer");
+    return activeDeck.cards.length < rules.size
       && deckCopies < getOwnedCopies(cardId)
-      && deckCopies < getDeckCopyLimit(cardId);
+      && deckCopies < getDeckCopyLimit(cardId)
+      && nextSpellCount <= rules.maxSpells
+      && nextTrainerCount <= rules.maxTrainers;
   };
 
   renderHeroPanel = function renderHeroPanel(container, label, sideState, active) {
@@ -6700,6 +6909,7 @@ function bindStaticEvents() {
   elements.newDeckButton.addEventListener("click", createNewDeck);
   elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
   elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
+  elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
 
   Object.keys(SETTINGS_INPUT_MAP).forEach((elementKey) => {
     elements[elementKey].addEventListener("change", handleSettingsToggle);
@@ -6712,6 +6922,7 @@ function bindStaticEvents() {
   elements.endTurnButton.addEventListener("click", endPlayerTurn);
   elements.resetMatchButton.addEventListener("click", clearMatch);
 
+  elements.createAccountButton.addEventListener("click", createAdminAccount);
   elements.grantGoldButton.addEventListener("click", grantGoldToSelectedAccount);
   elements.removeGoldButton.addEventListener("click", removeGoldFromSelectedAccount);
   elements.grantPackButton.addEventListener("click", grantPacksToSelectedAccount);
@@ -7435,14 +7646,21 @@ function handleLanguageChange(event) {
   showToast(getUiText("settings.languageChanged"));
 }
 
+function handleDeckModeChange(event) {
+  uiState.deckMode = getDeckModeId(event.currentTarget.value);
+  renderDeckManager();
+}
+
 function handleArenaDifficultyChange(event) {
   if (!currentAccount || isMatchSessionLocked()) {
     return;
   }
 
   getSave().arenaDifficulty = getArenaDifficultyId(event.currentTarget.value);
+  uiState.deckMode = getDeckModeForDifficulty(getSave().arenaDifficulty);
   persistCurrentAccount();
   renderArena();
+  renderDeckManager();
   showToast(getUiText("messages.matchDifficultySaved"));
 }
 
@@ -7461,6 +7679,7 @@ function resetCurrentSettings() {
 
 function createEmptySave() {
   const firstDeck = createDeck("Erstes Deck");
+  const hardcoreDeck = createDeck("Hardcore-Deck");
   return {
     gold: APP_CONFIG.baseGold,
     collection: {},
@@ -7473,6 +7692,7 @@ function createEmptySave() {
     },
     decks: [firstDeck],
     activeDeckId: firstDeck.id,
+    hardcoreDeck,
     shopTab: "boosters",
     selectedPack: "starter",
     arenaDifficulty: "standard",
@@ -7705,20 +7925,23 @@ function sanitizeDeckId(value) {
     : `deck-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 }
 
-function sanitizeDecks(decks) {
+function sanitizeDeckEntries(decks, mode = DECK_MODES.standard, options = {}) {
+  const rules = getDeckRules(mode);
+  const maxDecks = options.maxDecks ?? SECURITY_LIMITS.maxDecks;
+
   if (!Array.isArray(decks) || !decks.length) {
-    return [createDeck("Erstes Deck")];
+    return [];
   }
 
   const seenIds = new Set();
   const normalized = decks
-    .slice(0, SECURITY_LIMITS.maxDecks)
+    .slice(0, maxDecks)
     .map((deck, index) => {
       const safeDeck = {
         id: sanitizeDeckId(deck?.id),
         name: sanitizeDeckName(deck?.name, index),
         cards: Array.isArray(deck?.cards)
-          ? deck.cards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+          ? deck.cards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, rules.size)
           : [],
       };
 
@@ -7729,9 +7952,19 @@ function sanitizeDecks(decks) {
       seenIds.add(safeDeck.id);
       return safeDeck;
     })
-    .filter((deck) => deck.cards.length <= APP_CONFIG.deckSize);
+    .filter((deck) => deck.cards.length <= rules.size);
 
+  return normalized;
+}
+
+function sanitizeDecks(decks) {
+  const normalized = sanitizeDeckEntries(decks, DECK_MODES.standard);
   return normalized.length ? normalized : [createDeck("Erstes Deck")];
+}
+
+function sanitizeHardcoreDeck(deck) {
+  const normalized = sanitizeDeckEntries([deck], DECK_MODES.hardcore, { maxDecks: 1 });
+  return normalized[0] || createDeck("Hardcore-Deck");
 }
 
 function sanitizeCollectionFilters(filters, baseFilters) {
@@ -7842,7 +8075,7 @@ function sanitizeMatchDeckProfile(profile) {
   const types = sanitizeMatchCountRecord(profile?.types, new Set(Object.keys(TYPE_LABELS)));
   const rarities = sanitizeMatchCountRecord(profile?.rarities, new Set(RARITY_ORDER));
   const keywords = sanitizeMatchCountRecord(profile?.keywords, new Set(Object.keys(KEYWORD_META || {})));
-  const tags = sanitizeMatchCountRecord(profile?.tags, null, APP_CONFIG.deckSize);
+  const tags = sanitizeMatchCountRecord(profile?.tags, null, MAX_DECK_SIZE);
 
   return {
     factions,
@@ -7850,11 +8083,11 @@ function sanitizeMatchDeckProfile(profile) {
     rarities,
     keywords,
     tags,
-    highCostCount: sanitizeFiniteInteger(profile?.highCostCount, 0, 0, APP_CONFIG.deckSize),
-    keywordCount: sanitizeFiniteInteger(profile?.keywordCount, 0, 0, APP_CONFIG.deckSize * 4),
-    synergyCardCount: sanitizeFiniteInteger(profile?.synergyCardCount, 0, 0, APP_CONFIG.deckSize),
-    deathEffectCount: sanitizeFiniteInteger(profile?.deathEffectCount, 0, 0, APP_CONFIG.deckSize),
-    eliteCount: sanitizeFiniteInteger(profile?.eliteCount, 0, 0, APP_CONFIG.deckSize),
+    highCostCount: sanitizeFiniteInteger(profile?.highCostCount, 0, 0, MAX_DECK_SIZE),
+    keywordCount: sanitizeFiniteInteger(profile?.keywordCount, 0, 0, MAX_DECK_SIZE * 4),
+    synergyCardCount: sanitizeFiniteInteger(profile?.synergyCardCount, 0, 0, MAX_DECK_SIZE),
+    deathEffectCount: sanitizeFiniteInteger(profile?.deathEffectCount, 0, 0, MAX_DECK_SIZE),
+    eliteCount: sanitizeFiniteInteger(profile?.eliteCount, 0, 0, MAX_DECK_SIZE),
     powerScore: sanitizeFiniteNumber(profile?.powerScore, 0, 0, 999, 1),
     recommendedDifficultyId: getArenaDifficultyId(profile?.recommendedDifficultyId),
     diverseFactionCount: Object.keys(factions).length,
@@ -7868,10 +8101,10 @@ function sanitizeMatchSide(side) {
   }
 
   const deck = Array.isArray(side.deck)
-    ? side.deck.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+    ? side.deck.filter((cardId) => CARD_MAP.has(cardId)).slice(0, MAX_DECK_SIZE)
     : [];
   const hand = Array.isArray(side.hand)
-    ? side.hand.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+    ? side.hand.filter((cardId) => CARD_MAP.has(cardId)).slice(0, MAX_DECK_SIZE)
     : [];
   const board = Array.isArray(side.board)
     ? side.board
@@ -7948,6 +8181,12 @@ function sanitizeSavedMatchState(match) {
     antiFarmActive: Boolean(match.antiFarmActive),
     rewardWin: sanitizeFiniteInteger(match.rewardWin, getArenaDifficulty(match.difficultyId).rewardWin, 0, SECURITY_LIMITS.maxGold),
     rewardLoss: sanitizeFiniteInteger(match.rewardLoss, getArenaDifficulty(match.difficultyId).rewardLoss, 0, SECURITY_LIMITS.maxGold),
+    forfeitPenalty: sanitizeFiniteInteger(match.forfeitPenalty, getArenaDifficulty(match.difficultyId).forfeitPenalty, 0, SECURITY_LIMITS.maxGold),
+    mode: match.mode === "friend" ? "friend" : "arena",
+    deckMode: getDeckModeId(match.deckMode || getDeckModeForDifficulty(match.difficultyId)),
+    opponentLabel: String(match.opponentLabel || "").slice(0, 32),
+    opponentDeckName: String(match.opponentDeckName || "").slice(0, 48),
+    stakedDeck: Array.isArray(match.stakedDeck) ? match.stakedDeck.filter((cardId) => CARD_MAP.has(cardId)).slice(0, MAX_DECK_SIZE) : [],
     turn: sanitizeFiniteInteger(match.turn, 0, 0, 999),
     phase: phases.has(match.phase) ? match.phase : "player",
     status,
@@ -7994,6 +8233,7 @@ function normalizeAccount(account) {
   const baseSave = createEmptySave();
   const save = account?.save || baseSave;
   const decks = sanitizeDecks(save.decks);
+  const hardcoreDeck = sanitizeHardcoreDeck(save.hardcoreDeck);
   const cosmetics = sanitizeCosmeticInventory(save.cosmetics, baseSave.cosmetics);
   const isAdmin = username === ADMIN_BOOTSTRAP.username && account?.isAdmin === true;
   const normalized = {
@@ -8016,6 +8256,7 @@ function normalizeAccount(account) {
       lastOpened: sanitizeLastOpened(save.lastOpened, baseSave.lastOpened),
       activeMatch: sanitizeSavedMatchState(save.activeMatch),
       decks,
+      hardcoreDeck,
       activeDeckId: typeof save.activeDeckId === "string" ? save.activeDeckId : baseSave.activeDeckId,
       shopTab: sanitizeShopTab(save.shopTab, baseSave.shopTab),
       selectedPack: PACK_DEFINITIONS[save.selectedPack] ? save.selectedPack : baseSave.selectedPack,
@@ -9677,21 +9918,52 @@ function renderCollection() {
 }
 
 function renderDeckManager() {
-  const activeDeck = getActiveDeck();
-  const validation = validateDeck(activeDeck);
+  const deckMode = getSelectedDeckMode();
+  const deckRules = getDeckRules(deckMode);
+  const activeDeck = getDeckByMode(deckMode);
+  const validation = validateDeck(activeDeck, deckMode);
+  const isHardcoreMode = deckMode === DECK_MODES.hardcore;
+  const spellCount = getDeckTypeCount(activeDeck, "spell");
+  const trainerCount = getDeckTypeCount(activeDeck, "trainer");
   elements.activeDeckMeta.innerHTML = "";
   elements.activeDeckWarnings.innerHTML = "";
   elements.activeDeckList.innerHTML = "";
   elements.savedDecksList.innerHTML = "";
   elements.deckCollectionGrid.innerHTML = "";
+  fillSelect(elements.deckModeSelect, [
+    { value: DECK_MODES.standard, label: getUiText("decks.standardDeck") },
+    { value: DECK_MODES.hardcore, label: getUiText("decks.hardcoreDeck") },
+  ]);
+  elements.deckModeSelect.value = deckMode;
 
   elements.deckNameInput.value = activeDeck?.name || "";
+  elements.newDeckButton.disabled = isHardcoreMode;
+  elements.duplicateDeckButton.disabled = isHardcoreMode;
+  elements.deleteDeckButton.disabled = isHardcoreMode;
+  elements.savedDecksPanel.classList.toggle("hidden", isHardcoreMode);
+  document.getElementById("activeDeckHeading").textContent = isHardcoreMode
+    ? localText("Hardcore-Spezialdeck", "Hardcore special deck", "Deck spÃ©cial hardcore")
+    : getUiText("decks.activeDeckTitle");
+  document.getElementById("deckAddCardsHeading").textContent = isHardcoreMode
+    ? localText("Karten fÃ¼r das Hardcore-Deck", "Cards for the hardcore deck", "Cartes pour le deck hardcore")
+    : getUiText("decks.addCardsTitle");
+  document.getElementById("deckAddCardsNote").textContent = isHardcoreMode
+    ? localText(
+      `Dieses Spezialdeck braucht genau ${deckRules.size} Karten. Maximal ${deckRules.maxSpells} Zauber und ${deckRules.maxTrainers} Trainer sind erlaubt. Bei Niederlage oder Aufgabe verlierst du alle Karten daraus.`,
+      `This special deck needs exactly ${deckRules.size} cards. At most ${deckRules.maxSpells} spells and ${deckRules.maxTrainers} trainers are allowed. If you lose or forfeit, you lose every card from it.`,
+      `Ce deck spÃ©cial a besoin de ${deckRules.size} cartes exactement. Au maximum ${deckRules.maxSpells} sorts et ${deckRules.maxTrainers} entraÃ®neurs sont autorisÃ©s. En cas de dÃ©faite ou d'abandon, tu perds toutes ses cartes.`,
+    )
+    : localText(
+      `Ein Deck braucht genau ${deckRules.size} Karten. Maximal ${deckRules.maxSpells} Zauber und ${deckRules.maxTrainers} Trainer sind erlaubt.`,
+      `A deck needs exactly ${deckRules.size} cards. At most ${deckRules.maxSpells} spells and ${deckRules.maxTrainers} trainers are allowed.`,
+      `Un deck a besoin de ${deckRules.size} cartes exactement. Au maximum ${deckRules.maxSpells} sorts et ${deckRules.maxTrainers} entraÃ®neurs sont autorisÃ©s.`,
+    );
 
   [
-    getUiText("decks.cardsMeta", { count: activeDeck.cards.length, size: APP_CONFIG.deckSize }),
+    getUiText("decks.cardsMeta", { count: activeDeck.cards.length, size: deckRules.size }),
     getUiText("decks.unitsMeta", { count: countByType(activeDeck.cards, "unit") }),
-    getUiText("decks.spellsMeta", { count: countByType(activeDeck.cards, "spell") }),
-    getUiText("decks.trainersMeta", { count: countByType(activeDeck.cards, "trainer") }),
+    getUiText("decks.spellsMeta", { count: spellCount, limit: deckRules.maxSpells }),
+    getUiText("decks.trainersMeta", { count: trainerCount, limit: deckRules.maxTrainers }),
   ].forEach((text) => {
     const chip = document.createElement("div");
     chip.className = "meta-chip";
@@ -9716,8 +9988,14 @@ function renderDeckManager() {
   if (!activeDeck.cards.length) {
     elements.activeDeckList.innerHTML = `
       <div class="info-panel empty-state-card deck-empty-state">
-        <h3 class="subheading">${getUiText("decks.emptyDeckTitle")}</h3>
-        <p class="mini-note">${getUiText("decks.emptyDeckText")}</p>
+        <h3 class="subheading">${isHardcoreMode ? localText("Hardcore-Deck leer", "Hardcore deck empty", "Deck hardcore vide") : getUiText("decks.emptyDeckTitle")}</h3>
+        <p class="mini-note">${isHardcoreMode
+          ? localText(
+            "Lege hier dein 35-Karten-Hardcore-Deck fest. Eine Niederlage oder Aufgabe zerstÃ¶rt die komplette Liste.",
+            "Build your 35-card hardcore deck here. A loss or forfeit destroys the whole list.",
+            "Construis ici ton deck hardcore de 35 cartes. Une dÃ©faite ou un abandon dÃ©truit toute la liste.",
+          )
+          : getUiText("decks.emptyDeckText")}</p>
       </div>
     `;
   } else {
@@ -9745,8 +10023,9 @@ function renderDeckManager() {
       });
   }
 
-  getSave().decks.forEach((deck) => {
-    const deckValidation = validateDeck(deck);
+  if (!isHardcoreMode) {
+    getSave().decks.forEach((deck) => {
+      const deckValidation = validateDeck(deck, DECK_MODES.standard);
     const card = document.createElement("div");
     card.className = `saved-deck-card ${deck.id === getSave().activeDeckId ? "active" : ""}`;
     card.innerHTML = `
@@ -9754,7 +10033,7 @@ function renderDeckManager() {
         <strong>${deck.name}</strong>
         <span class="status-pill ${deckValidation.valid ? "ok" : "warn"}">${deckValidation.valid ? getCurrentLanguage() === "fr" ? "Jouable" : getCurrentLanguage() === "en" ? "Playable" : "Spielbar" : getCurrentLanguage() === "fr" ? "Bloqué" : getCurrentLanguage() === "en" ? "Blocked" : "Blockiert"}</span>
       </div>
-      <p>${deck.cards.length}/${APP_CONFIG.deckSize} ${getCurrentLanguage() === "fr" ? "cartes" : getCurrentLanguage() === "en" ? "cards" : "Karten"}</p>
+      <p>${deck.cards.length}/${DECK_RULES.standard.size} ${getCurrentLanguage() === "fr" ? "cartes" : getCurrentLanguage() === "en" ? "cards" : "Karten"}</p>
     `;
     const actions = document.createElement("div");
     actions.className = "card-actions";
@@ -9763,8 +10042,16 @@ function renderDeckManager() {
       createActionButton(getCurrentLanguage() === "fr" ? "Dupliquer" : getCurrentLanguage() === "en" ? "Duplicate" : "Duplizieren", () => duplicateDeck(deck.id)),
     );
     card.append(actions);
-    elements.savedDecksList.append(card);
-  });
+      elements.savedDecksList.append(card);
+    });
+  } else {
+    elements.savedDecksList.innerHTML = `
+      <div class="info-panel empty-state-card deck-empty-state">
+        <h3 class="subheading">${localText("Nur ein Spezialdeck", "Only one special deck", "Un seul deck spécial")}</h3>
+        <p class="mini-note">${localText("Im Hardcore-Modus gibt es genau ein eigenes 35-Karten-Deck.", "Hardcore uses one dedicated 35-card deck.", "Le mode hardcore utilise un seul deck dédié de 35 cartes.")}</p>
+      </div>
+    `;
+  }
 
   CARD_POOL
     .filter((card) => getOwnedCopies(card.id) > 0)
@@ -9772,12 +10059,13 @@ function renderDeckManager() {
     .forEach((card) => {
       const usedCopies = countCopiesInArray(activeDeck.cards, card.id);
       const ownedCopies = getOwnedCopies(card.id);
+      const canAdd = canAddCardToActiveDeck(card.id);
       elements.deckCollectionGrid.append(renderCard(card, {
         context: "deckBuilder",
         buttons: [
           {
-            label: usedCopies < ownedCopies && activeDeck.cards.length < APP_CONFIG.deckSize ? getUiText("decks.add") : getUiText("decks.unavailable"),
-            disabled: usedCopies >= ownedCopies || activeDeck.cards.length >= APP_CONFIG.deckSize,
+            label: canAdd ? getUiText("decks.add") : getUiText("decks.unavailable"),
+            disabled: !canAdd,
             handler: () => addCardToActiveDeck(card.id),
           },
         ],
@@ -9881,6 +10169,167 @@ function renderDeckManager() {
           },
         ],
         footer: `Im Deck ${usedCopies}/${ownedCopies}`,
+      }));
+    });
+}
+
+function renderDeckManager() {
+  const deckMode = getSelectedDeckMode();
+  const deckRules = getDeckRules(deckMode);
+  const activeDeck = getDeckByMode(deckMode);
+  const validation = validateDeck(activeDeck, deckMode);
+  const isHardcoreMode = deckMode === DECK_MODES.hardcore;
+  const spellCount = getDeckTypeCount(activeDeck, "spell");
+  const trainerCount = getDeckTypeCount(activeDeck, "trainer");
+
+  elements.activeDeckMeta.innerHTML = "";
+  elements.activeDeckWarnings.innerHTML = "";
+  elements.activeDeckList.innerHTML = "";
+  elements.savedDecksList.innerHTML = "";
+  elements.deckCollectionGrid.innerHTML = "";
+
+  fillSelect(elements.deckModeSelect, [
+    { value: DECK_MODES.standard, label: getUiText("decks.standardDeck") },
+    { value: DECK_MODES.hardcore, label: getUiText("decks.hardcoreDeck") },
+  ]);
+  elements.deckModeSelect.value = deckMode;
+
+  elements.deckNameInput.value = activeDeck?.name || "";
+  elements.newDeckButton.disabled = isHardcoreMode;
+  elements.duplicateDeckButton.disabled = isHardcoreMode;
+  elements.deleteDeckButton.disabled = isHardcoreMode;
+  elements.savedDecksPanel.classList.toggle("hidden", isHardcoreMode);
+
+  document.getElementById("activeDeckHeading").textContent = isHardcoreMode
+    ? localText("Hardcore-Spezialdeck", "Hardcore special deck", "Deck spécial hardcore")
+    : getUiText("decks.activeDeckTitle");
+  document.getElementById("deckAddCardsHeading").textContent = isHardcoreMode
+    ? localText("Karten für das Hardcore-Deck", "Cards for the hardcore deck", "Cartes pour le deck hardcore")
+    : getUiText("decks.addCardsTitle");
+  document.getElementById("deckAddCardsNote").textContent = isHardcoreMode
+    ? localText(
+      `Dieses Spezialdeck braucht genau ${deckRules.size} Karten. Maximal ${deckRules.maxSpells} Zauber und ${deckRules.maxTrainers} Trainer sind erlaubt. Bei Niederlage oder Aufgabe verlierst du alle Karten daraus.`,
+      `This special deck needs exactly ${deckRules.size} cards. At most ${deckRules.maxSpells} spells and ${deckRules.maxTrainers} trainers are allowed. If you lose or forfeit, you lose every card from it.`,
+      `Ce deck spécial a besoin de ${deckRules.size} cartes exactement. Au maximum ${deckRules.maxSpells} sorts et ${deckRules.maxTrainers} entraîneurs sont autorisés. En cas de défaite ou d'abandon, tu perds toutes ses cartes.`,
+    )
+    : localText(
+      `Ein Deck braucht genau ${deckRules.size} Karten. Maximal ${deckRules.maxSpells} Zauber und ${deckRules.maxTrainers} Trainer sind erlaubt.`,
+      `A deck needs exactly ${deckRules.size} cards. At most ${deckRules.maxSpells} spells and ${deckRules.maxTrainers} trainers are allowed.`,
+      `Un deck a besoin de ${deckRules.size} cartes exactement. Au maximum ${deckRules.maxSpells} sorts et ${deckRules.maxTrainers} entraîneurs sont autorisés.`,
+    );
+
+  [
+    getUiText("decks.cardsMeta", { count: activeDeck.cards.length, size: deckRules.size }),
+    getUiText("decks.unitsMeta", { count: countByType(activeDeck.cards, "unit") }),
+    getUiText("decks.spellsMeta", { count: spellCount, limit: deckRules.maxSpells }),
+    getUiText("decks.trainersMeta", { count: trainerCount, limit: deckRules.maxTrainers }),
+  ].forEach((text) => {
+    const chip = document.createElement("div");
+    chip.className = "meta-chip";
+    chip.textContent = text;
+    elements.activeDeckMeta.append(chip);
+  });
+
+  if (validation.valid) {
+    const ok = document.createElement("div");
+    ok.className = "warning-item ok";
+    ok.textContent = getUiText("decks.playable");
+    elements.activeDeckWarnings.append(ok);
+  } else {
+    validation.messages.forEach((message) => {
+      const warning = document.createElement("div");
+      warning.className = "warning-item";
+      warning.textContent = message;
+      elements.activeDeckWarnings.append(warning);
+    });
+  }
+
+  if (!activeDeck.cards.length) {
+    elements.activeDeckList.innerHTML = `
+      <div class="info-panel empty-state-card deck-empty-state">
+        <h3 class="subheading">${isHardcoreMode ? localText("Hardcore-Deck leer", "Hardcore deck empty", "Deck hardcore vide") : getUiText("decks.emptyDeckTitle")}</h3>
+        <p class="mini-note">${isHardcoreMode
+          ? localText(
+            "Lege hier dein 35-Karten-Hardcore-Deck fest. Eine Niederlage oder Aufgabe zerstört die komplette Liste.",
+            "Build your 35-card hardcore deck here. A loss or forfeit destroys the whole list.",
+            "Construis ici ton deck hardcore de 35 cartes. Une défaite ou un abandon détruit toute la liste.",
+          )
+          : getUiText("decks.emptyDeckText")}</p>
+      </div>
+    `;
+  } else {
+    [...new Set(activeDeck.cards)]
+      .map((cardId) => ({ card: getCard(cardId), count: countCopiesInArray(activeDeck.cards, cardId) }))
+      .filter(({ card }) => Boolean(card))
+      .sort((left, right) => sortCardsForDisplay(left.card, right.card))
+      .forEach(({ card, count }) => {
+        const entry = document.createElement("div");
+        entry.className = "deck-entry";
+        entry.innerHTML = `
+          <div class="saved-deck-head">
+            <strong>${card.name} ×${count}</strong>
+            <span class="status-pill ${getOwnedCopies(card.id) >= count ? "ok" : "warn"}">${RarityLabel(card.rarity)}</span>
+          </div>
+          <p>${getTypeLabel(card.type)} · ${getFaction(card.faction).name}</p>
+        `;
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+        actions.append(
+          createActionButton(getCurrentLanguage() === "fr" ? "Détails" : getCurrentLanguage() === "en" ? "Details" : "Details", () => openCardModal(card.id)),
+          createActionButton(getCurrentLanguage() === "fr" ? "Retirer" : getCurrentLanguage() === "en" ? "Remove" : "Entfernen", () => removeCardFromActiveDeck(card.id)),
+        );
+        entry.append(actions);
+        elements.activeDeckList.append(entry);
+      });
+  }
+
+  if (!isHardcoreMode) {
+    getSave().decks.forEach((deck) => {
+      const deckValidation = validateDeck(deck, DECK_MODES.standard);
+      const card = document.createElement("div");
+      card.className = `saved-deck-card ${deck.id === getSave().activeDeckId ? "active" : ""}`;
+      card.innerHTML = `
+        <div class="saved-deck-head">
+          <strong>${deck.name}</strong>
+          <span class="status-pill ${deckValidation.valid ? "ok" : "warn"}">${deckValidation.valid ? getCurrentLanguage() === "fr" ? "Jouable" : getCurrentLanguage() === "en" ? "Playable" : "Spielbar" : getCurrentLanguage() === "fr" ? "Bloqué" : getCurrentLanguage() === "en" ? "Blocked" : "Blockiert"}</span>
+        </div>
+        <p>${deck.cards.length}/${DECK_RULES.standard.size} ${getCurrentLanguage() === "fr" ? "cartes" : getCurrentLanguage() === "en" ? "cards" : "Karten"}</p>
+      `;
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+      actions.append(
+        createActionButton(getCurrentLanguage() === "fr" ? "Activer" : getCurrentLanguage() === "en" ? "Activate" : "Aktivieren", () => activateDeck(deck.id)),
+        createActionButton(getCurrentLanguage() === "fr" ? "Dupliquer" : getCurrentLanguage() === "en" ? "Duplicate" : "Duplizieren", () => duplicateDeck(deck.id)),
+      );
+      card.append(actions);
+      elements.savedDecksList.append(card);
+    });
+  } else {
+    elements.savedDecksList.innerHTML = `
+      <div class="info-panel empty-state-card deck-empty-state">
+        <h3 class="subheading">${localText("Nur ein Spezialdeck", "Only one special deck", "Un seul deck spécial")}</h3>
+        <p class="mini-note">${localText("Im Hardcore-Modus gibt es genau ein eigenes 35-Karten-Deck.", "Hardcore uses one dedicated 35-card deck.", "Le mode hardcore utilise un seul deck dédié de 35 cartes.")}</p>
+      </div>
+    `;
+  }
+
+  CARD_POOL
+    .filter((card) => getOwnedCopies(card.id) > 0)
+    .sort(sortCardsForDisplay)
+    .forEach((card) => {
+      const usedCopies = countCopiesInArray(activeDeck.cards, card.id);
+      const ownedCopies = getOwnedCopies(card.id);
+      const canAdd = canAddCardToActiveDeck(card.id);
+      elements.deckCollectionGrid.append(renderCard(card, {
+        context: "deckBuilder",
+        buttons: [
+          {
+            label: canAdd ? getUiText("decks.add") : getUiText("decks.unavailable"),
+            disabled: !canAdd,
+            handler: () => addCardToActiveDeck(card.id),
+          },
+        ],
+        footer: getUiText("decks.inDeck", { used: usedCopies, owned: ownedCopies }),
       }));
     });
 }
@@ -11082,6 +11531,63 @@ function getSelectedAdminAccount() {
   return account ? normalizeAccount(account) : null;
 }
 
+async function createAdminAccount() {
+  if (!isCurrentUserAdmin()) {
+    return;
+  }
+
+  const { username, error: usernameError } = getPlayerNameValidationState(elements.adminCreateUsernameInput.value);
+  const password = String(elements.adminCreatePasswordInput.value || "");
+
+  if (usernameError) {
+    showToast(getUiText(usernameError === "reserved" ? "messages.authReservedUsername" : "messages.adminCreateUsernameInvalid"));
+    return;
+  }
+
+  if (password.length < 4) {
+    showToast(getUiText("messages.adminCreatePasswordInvalid"));
+    return;
+  }
+
+  if (isServerSessionActive()) {
+    try {
+      const response = await runServerAdminAction("createAccount", { username, password });
+      uiState.adminSelectedUser = sanitizeUsername(response?.account?.username) || username;
+      elements.adminCreateUsernameInput.value = "";
+      elements.adminCreatePasswordInput.value = "";
+      renderAll();
+      showToast(getUiText("messages.adminCreated", { username: uiState.adminSelectedUser }));
+    } catch (error) {
+      showToast(error?.payload?.message || "Admin-Aktion fehlgeschlagen.");
+    }
+    return;
+  }
+
+  if (findStoredUsername(username)) {
+    showToast(getUiText("messages.authUsernameTaken"));
+    return;
+  }
+
+  try {
+    database.accounts[username] = normalizeAccount({
+      username,
+      passwordHash: await createPasswordRecord(password),
+      isAdmin: false,
+      createdAt: new Date().toISOString(),
+      save: createEmptySave(),
+      sessionToken: null,
+    });
+    uiState.adminSelectedUser = username;
+    elements.adminCreateUsernameInput.value = "";
+    elements.adminCreatePasswordInput.value = "";
+    saveDatabase();
+    renderAll();
+    showToast(getUiText("messages.adminCreated", { username }));
+  } catch {
+    showToast(getUiText("messages.authAccountCreateFailed"));
+  }
+}
+
 async function grantGoldToSelectedAccount() {
   const selectedAccount = getSelectedAdminAccount();
   const amount = parsePositiveInteger(elements.adminGoldAmount.value);
@@ -12141,15 +12647,76 @@ function getActiveDeck() {
   return getSave().decks.find((deck) => deck.id === getSave().activeDeckId);
 }
 
-function validateDeck(deck) {
+function getHardcoreDeck() {
+  return getSave().hardcoreDeck || createDeck("Hardcore-Deck");
+}
+
+function getDeckByMode(mode = DECK_MODES.standard) {
+  return getDeckModeId(mode) === DECK_MODES.hardcore ? getHardcoreDeck() : getActiveDeck();
+}
+
+function getDeckModeTitle(mode = DECK_MODES.standard) {
+  return getDeckModeId(mode) === DECK_MODES.hardcore ? getUiText("decks.hardcoreDeck") : getUiText("decks.standardDeck");
+}
+
+function applyHardcoreDeckLoss(cardIds) {
+  const removedCounts = countCards(Array.isArray(cardIds) ? cardIds : []);
+  let lostCards = 0;
+
+  Object.entries(removedCounts).forEach(([cardId, count]) => {
+    const owned = getOwnedCopies(cardId);
+    const remaining = Math.max(0, owned - count);
+    lostCards += Math.min(owned, count);
+    if (remaining > 0) {
+      getSave().collection[cardId] = remaining;
+    } else {
+      delete getSave().collection[cardId];
+    }
+  });
+
+  if (getSave().hardcoreDeck) {
+    getSave().hardcoreDeck.cards = [];
+  }
+
+  return lostCards;
+}
+
+function getDeckTypeCount(deck, type) {
+  if (!deck || !Array.isArray(deck.cards)) {
+    return 0;
+  }
+  return deck.cards.filter((cardId) => getCard(cardId)?.type === type).length;
+}
+
+function getDeckModeWarningMessages(mode = DECK_MODES.standard) {
+  const rules = getDeckRules(mode);
+  return {
+    size: getUiText("messages.deckSize", { count: "{count}", size: rules.size }),
+    spell: getUiText("messages.deckSpellLimit", { count: "{count}", limit: rules.maxSpells }),
+    trainer: getUiText("messages.deckTrainerLimit", { count: "{count}", limit: rules.maxTrainers }),
+  };
+}
+
+function validateDeck(deck, mode = DECK_MODES.standard) {
+  const deckMode = getDeckModeId(mode);
+  const rules = getDeckRules(deckMode);
   const messages = [];
 
   if (!deck) {
     return { valid: false, messages: ["Es ist kein aktives Deck vorhanden."] };
   }
 
-  if (deck.cards.length !== APP_CONFIG.deckSize) {
-    messages.push(`Das Deck hat ${deck.cards.length}/${APP_CONFIG.deckSize} Karten.`);
+  if (deck.cards.length !== rules.size) {
+    messages.push(getUiText("messages.deckSize", { count: deck.cards.length, size: rules.size }));
+  }
+
+  const spellCount = getDeckTypeCount(deck, "spell");
+  const trainerCount = getDeckTypeCount(deck, "trainer");
+  if (spellCount > rules.maxSpells) {
+    messages.push(getUiText("messages.deckSpellLimit", { count: spellCount, limit: rules.maxSpells }));
+  }
+  if (trainerCount > rules.maxTrainers) {
+    messages.push(getUiText("messages.deckTrainerLimit", { count: trainerCount, limit: rules.maxTrainers }));
   }
 
   const required = countCards(deck.cards);
@@ -12177,7 +12744,7 @@ function validateDeck(deck) {
 }
 
 function renameActiveDeck() {
-  const activeDeck = getActiveDeck();
+  const activeDeck = getDeckByMode(getSelectedDeckMode());
   const nextName = elements.deckNameInput.value.trim();
 
   if (!nextName) {
@@ -12192,6 +12759,10 @@ function renameActiveDeck() {
 }
 
 function createNewDeck() {
+  if (getSelectedDeckMode() === DECK_MODES.hardcore) {
+    showToast(localText("Der Hardcore-Modus nutzt genau ein eigenes Spezialdeck.", "Hardcore uses one dedicated special deck.", "Le mode hardcore utilise un seul deck spÃ©cial dÃ©diÃ©."));
+    return;
+  }
   const nextIndex = getSave().decks.length + 1;
   const deck = createDeck(`Deck ${nextIndex}`);
   getSave().decks.push(deck);
@@ -12202,6 +12773,10 @@ function createNewDeck() {
 }
 
 function duplicateActiveDeck() {
+  if (getSelectedDeckMode() === DECK_MODES.hardcore) {
+    showToast(localText("Das Hardcore-Spezialdeck kann nicht dupliziert werden.", "The hardcore deck cannot be duplicated.", "Le deck hardcore ne peut pas Ãªtre dupliquÃ©."));
+    return;
+  }
   duplicateDeck(getSave().activeDeckId);
 }
 
@@ -12216,6 +12791,10 @@ function duplicateDeck(deckId) {
 }
 
 function deleteActiveDeck() {
+  if (getSelectedDeckMode() === DECK_MODES.hardcore) {
+    showToast(localText("Das Hardcore-Spezialdeck kann nicht gelÃ¶scht werden.", "The hardcore deck cannot be deleted.", "Le deck hardcore ne peut pas Ãªtre supprimÃ©."));
+    return;
+  }
   if (getSave().decks.length === 1) {
     showToast("Mindestens ein Deck muss erhalten bleiben.");
     return;
@@ -12240,11 +12819,18 @@ function activateDeck(deckId) {
 }
 
 function canAddCardToActiveDeck(cardId) {
-  const activeDeck = getActiveDeck();
+  const deckMode = getSelectedDeckMode();
+  const activeDeck = getDeckByMode(deckMode);
+  const rules = getDeckRules(deckMode);
+  const card = getCard(cardId);
   const deckCopies = countCopiesInArray(activeDeck.cards, cardId);
-  return activeDeck.cards.length < APP_CONFIG.deckSize
+  const nextSpellCount = card?.type === "spell" ? getDeckTypeCount(activeDeck, "spell") + 1 : getDeckTypeCount(activeDeck, "spell");
+  const nextTrainerCount = card?.type === "trainer" ? getDeckTypeCount(activeDeck, "trainer") + 1 : getDeckTypeCount(activeDeck, "trainer");
+  return activeDeck.cards.length < rules.size
     && deckCopies < getOwnedCopies(cardId)
-    && deckCopies < getDeckCopyLimit(cardId);
+    && deckCopies < getDeckCopyLimit(cardId)
+    && nextSpellCount <= rules.maxSpells
+    && nextTrainerCount <= rules.maxTrainers;
 }
 
 function addCardToActiveDeck(cardId) {
@@ -12258,13 +12844,13 @@ function addCardToActiveDeck(cardId) {
     return;
   }
 
-  getActiveDeck().cards.push(cardId);
+  getDeckByMode(getSelectedDeckMode()).cards.push(cardId);
   persistCurrentAccount();
   renderAll();
 }
 
 function removeCardFromActiveDeck(cardId) {
-  const deck = getActiveDeck();
+  const deck = getDeckByMode(getSelectedDeckMode());
   const index = deck.cards.findIndex((entry) => entry === cardId);
 
   if (index === -1) {
@@ -12383,18 +12969,23 @@ function startMatch() {
     return;
   }
 
-  const deck = getActiveDeck();
   const difficultyId = getArenaDifficultyId(getSave().arenaDifficulty);
-  const validation = validateDeck(deck);
+  const deckMode = getDeckModeForDifficulty(difficultyId);
+  const deck = getDeckByMode(deckMode);
+  const validation = validateDeck(deck, deckMode);
 
   if (!validation.valid) {
     uiState.section = "decks";
+    uiState.deckMode = deckMode;
     renderAll();
     showToast(getUiText("messages.matchNotPlayable"));
     return;
   }
 
-  uiState.match = createMatch(deck.cards, difficultyId);
+  uiState.match = createMatch(deck.cards, difficultyId, {
+    deckMode,
+    sourceDeckName: deck.name,
+  });
   uiState.section = "arena";
   startTurn("player");
   renderAll();
@@ -13180,8 +13771,9 @@ function pickEnemyDeckCard(pool, difficulty) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function generateEnemyDeck(difficultyId = "standard") {
+function generateEnemyDeck(difficultyId = "standard", deckSize = APP_CONFIG.deckSize) {
   const difficulty = getArenaDifficulty(difficultyId);
+  const deckRules = deckSize >= DECK_RULES.hardcore.size ? DECK_RULES.hardcore : DECK_RULES.standard;
   const weightedPool = CARD_POOL.filter((card) => {
     if (difficulty.rarityRolls[card.rarity] !== undefined) {
       return Math.random() < difficulty.rarityRolls[card.rarity];
@@ -13193,16 +13785,42 @@ function generateEnemyDeck(difficultyId = "standard") {
   const units = weightedPool.filter((card) => card.type === "unit");
   const supports = weightedPool.filter((card) => card.type !== "unit");
   const counts = {};
+  const typeCounts = {
+    spell: 0,
+    trainer: 0,
+  };
   const fallbackPool = weightedPool.length ? weightedPool : CARD_POOL;
   let attempts = 0;
 
-  while (deck.length < APP_CONFIG.deckSize && attempts < 500) {
+  while (deck.length < deckSize && attempts < 500) {
     attempts += 1;
     const preferredPool = Math.random() < difficulty.unitBias && units.length ? units : (supports.length ? supports : fallbackPool);
-    const eligiblePool = preferredPool.filter((card) => (counts[card.id] || 0) < getDeckCopyLimit(card.id));
+    const eligiblePool = preferredPool.filter((card) => {
+      if ((counts[card.id] || 0) >= getDeckCopyLimit(card.id)) {
+        return false;
+      }
+      if (card.type === "spell" && typeCounts.spell >= deckRules.maxSpells) {
+        return false;
+      }
+      if (card.type === "trainer" && typeCounts.trainer >= deckRules.maxTrainers) {
+        return false;
+      }
+      return true;
+    });
     const pool = eligiblePool.length
       ? eligiblePool
-      : fallbackPool.filter((card) => (counts[card.id] || 0) < getDeckCopyLimit(card.id));
+      : fallbackPool.filter((card) => {
+        if ((counts[card.id] || 0) >= getDeckCopyLimit(card.id)) {
+          return false;
+        }
+        if (card.type === "spell" && typeCounts.spell >= deckRules.maxSpells) {
+          return false;
+        }
+        if (card.type === "trainer" && typeCounts.trainer >= deckRules.maxTrainers) {
+          return false;
+        }
+        return true;
+      });
 
     if (!pool.length) {
       break;
@@ -13214,13 +13832,18 @@ function generateEnemyDeck(difficultyId = "standard") {
     }
     deck.push(card.id);
     counts[card.id] = (counts[card.id] || 0) + 1;
+    if (card.type === "spell") {
+      typeCounts.spell += 1;
+    } else if (card.type === "trainer") {
+      typeCounts.trainer += 1;
+    }
   }
 
   return deck;
 }
 
 function countByType(cardIds, type) {
-  return cardIds.filter((cardId) => getCard(cardId).type === type).length;
+  return cardIds.filter((cardId) => getCard(cardId)?.type === type).length;
 }
 
 function countCards(cardIds) {
@@ -13314,15 +13937,25 @@ function createLegacyCard(id, name, faction, type, rarity, cost, attack, health,
 
 function buildGeneratedCards() {
   const cards = [];
+  const expandedUnitOffset = UNIT_TITLES.length + 2;
+  const expandedSpellOffset = SPELL_TITLES.length + 3;
+  const expandedTrainerOffset = TRAINER_TITLES.length + 4;
+  const ascendantUnitOffset = expandedUnitOffset + EXPANDED_UNIT_TITLES.length + 5;
+  const ascendantSpellOffset = expandedSpellOffset + EXPANDED_SPELL_TITLES.length + 7;
+  const ascendantTrainerOffset = expandedTrainerOffset + EXPANDED_TRAINER_TITLES.length + 9;
 
   FACTIONS.forEach((faction, factionIndex) => {
     appendGeneratedUnitSet(cards, faction, factionIndex, UNIT_TITLES, UNIT_RARITIES, "einheit", 0);
     appendGeneratedSpellSet(cards, faction, SPELL_TITLES, SPELL_RARITIES, "zauber", 0);
     appendGeneratedTrainerSet(cards, faction, TRAINER_TITLES, TRAINER_RARITIES, "trainer", 0);
 
-    appendGeneratedUnitSet(cards, faction, factionIndex, EXPANDED_UNIT_TITLES, EXPANDED_UNIT_RARITIES, "einheit-erweitert", UNIT_TITLES.length + 2);
-    appendGeneratedSpellSet(cards, faction, EXPANDED_SPELL_TITLES, EXPANDED_SPELL_RARITIES, "zauber-erweitert", SPELL_TITLES.length + 3);
-    appendGeneratedTrainerSet(cards, faction, EXPANDED_TRAINER_TITLES, EXPANDED_TRAINER_RARITIES, "trainer-erweitert", TRAINER_TITLES.length + 4);
+    appendGeneratedUnitSet(cards, faction, factionIndex, EXPANDED_UNIT_TITLES, EXPANDED_UNIT_RARITIES, "einheit-erweitert", expandedUnitOffset);
+    appendGeneratedSpellSet(cards, faction, EXPANDED_SPELL_TITLES, EXPANDED_SPELL_RARITIES, "zauber-erweitert", expandedSpellOffset);
+    appendGeneratedTrainerSet(cards, faction, EXPANDED_TRAINER_TITLES, EXPANDED_TRAINER_RARITIES, "trainer-erweitert", expandedTrainerOffset);
+
+    appendGeneratedUnitSet(cards, faction, factionIndex, ASCENDANT_UNIT_TITLES, ASCENDANT_UNIT_RARITIES, "einheit-aufstieg", ascendantUnitOffset);
+    appendGeneratedSpellSet(cards, faction, ASCENDANT_SPELL_TITLES, ASCENDANT_SPELL_RARITIES, "zauber-aufstieg", ascendantSpellOffset);
+    appendGeneratedTrainerSet(cards, faction, ASCENDANT_TRAINER_TITLES, ASCENDANT_TRAINER_RARITIES, "trainer-aufstieg", ascendantTrainerOffset);
   });
 
   return cards;
@@ -14575,6 +15208,27 @@ function clearMatch() {
       return;
     }
 
+    if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
+      if (!requestActionConfirmation(localText(
+        "Wenn du das Hardcore-Match jetzt verlässt, zählt das als Niederlage und du verlierst alle Karten aus deinem Hardcore-Deck. Wirklich aufgeben?",
+        "Leaving the hardcore match counts as a defeat and destroys every card from your hardcore deck. Really forfeit?",
+        "Quitter ce match hardcore compte comme une défaite et détruit toutes les cartes de ton deck hardcore. Vraiment abandonner ?",
+      ))) {
+        return;
+      }
+
+      finishMatch(
+        "lost",
+        localText(
+          "Hardcore aufgegeben. Das Spezialdeck ist verloren.",
+          "Hardcore forfeited. The special deck is lost.",
+          "Hardcore abandonné. Le deck spécial est perdu.",
+        ),
+      );
+      renderAll();
+      return;
+    }
+
     const difficulty = getArenaDifficulty(match.difficultyId);
     const plannedPenalty = sanitizeFiniteInteger(match.forfeitPenalty, difficulty.forfeitPenalty, 0, SECURITY_LIMITS.maxGold);
     if (!requestActionConfirmation(getUiText("messages.matchForfeitConfirm", {
@@ -14602,6 +15256,8 @@ function clearMatch() {
 
 function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSave().arenaDifficulty), options = {}) {
   const friendMode = options.mode === "friend";
+  const deckMode = getDeckModeId(options.deckMode || getDeckModeForDifficulty(difficultyId));
+  const deckRules = getDeckRules(deckMode);
   const playerDeckProfile = analyzeDeck(playerDeckCards);
   const difficulty = friendMode
     ? {
@@ -14620,8 +15276,8 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
     }
     : createArenaMatchConfig(playerDeckProfile, difficultyId);
   const enemyDeckCards = friendMode && Array.isArray(options.enemyDeckCards)
-    ? options.enemyDeckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
-    : generateEnemyDeck(difficulty.id);
+    ? options.enemyDeckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, deckRules.size)
+    : generateEnemyDeck(difficulty.id, deckRules.size);
   const match = {
     difficultyId: difficulty.id,
     recommendedDifficultyId: difficulty.recommendedDifficultyId,
@@ -14631,8 +15287,11 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
     rewardLoss: difficulty.rewardLoss,
     forfeitPenalty: difficulty.forfeitPenalty,
     mode: friendMode ? "friend" : "arena",
+    deckMode,
     opponentLabel: friendMode ? String(options.opponentLabel || localText("Freund", "Friend", "Ami")).slice(0, 32) : "",
     opponentDeckName: friendMode ? String(options.opponentDeckName || "").slice(0, 48) : "",
+    sourceDeckName: String(options.sourceDeckName || "").slice(0, 48),
+    stakedDeck: [...playerDeckCards],
     turn: 0,
     phase: "player",
     status: "active",
@@ -14678,6 +15337,14 @@ function finishMatch(status, message) {
     } else {
       save.gold += rewardLoss;
       addLog(getUiText("messages.matchRewardLoss", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardLoss }));
+      if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
+        const lostCards = applyHardcoreDeckLoss(match.stakedDeck);
+        addLog(localText(
+          `Hardcore-Strafe: ${lostCards} Karten aus dem Spezialdeck wurden zerstört.`,
+          `Hardcore penalty: ${lostCards} cards from the special deck were destroyed.`,
+          `Pénalité hardcore : ${lostCards} cartes du deck spécial ont été détruites.`,
+        ));
+      }
     }
   } else {
     addLog(status === "won"
@@ -14689,14 +15356,16 @@ function finishMatch(status, message) {
 }
 
 function renderArena() {
-  const activeDeck = getActiveDeck();
-  const validation = validateDeck(activeDeck);
+  const difficultyId = getArenaDifficultyId((uiState.match?.difficultyId) || getSave().arenaDifficulty);
+  const deckMode = getDeckModeForDifficulty(difficultyId);
+  const activeDeck = getDeckByMode(deckMode);
+  const validation = validateDeck(activeDeck, deckMode);
   const hasMatch = Boolean(uiState.match);
   const match = uiState.match;
   const isFriendMatch = Boolean(hasMatch && match.mode === "friend");
   const matchFinished = Boolean(match && (match.status === "won" || match.status === "lost"));
-  const difficultyId = hasMatch ? getArenaDifficultyId(match.difficultyId) : getArenaDifficultyId(getSave().arenaDifficulty);
   const previewDeckProfile = activeDeck ? analyzeDeck(activeDeck.cards) : null;
+  const deckRules = getDeckRules(hasMatch ? getDeckModeId(match.deckMode || deckMode) : deckMode);
   const difficulty = hasMatch
     ? {
       ...getArenaDifficulty(difficultyId),
@@ -14734,6 +15403,12 @@ function renderArena() {
     : getUiText("arena.noMatch");
   const difficultyNote = isFriendMatch
     ? localText("Dieses Match läuft ohne Arena-Belohnung und ohne Aufgabegebühr.", "This match runs without arena rewards or forfeit fee.", "Ce match se joue sans récompense d'arène ni pénalité d'abandon.")
+    : difficultyId === "hardcore"
+      ? localText(
+        `Hardcore verlangt ein eigenes ${deckRules.size}-Karten-Spezialdeck. Bei Niederlage oder Aufgabe verlierst du alle Karten daraus.`,
+        `Hardcore requires its own ${deckRules.size}-card special deck. If you lose or forfeit, you lose every card in it.`,
+        `Le mode hardcore exige son propre deck spécial de ${deckRules.size} cartes. En cas de défaite ou d'abandon, tu perds toutes les cartes qu'il contient.`,
+      )
     : difficulty.antiFarmActive
       ? `${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}. ${getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss })}`
       : `${getArenaDifficultyDescription(difficultyId)} ${getUiText("arena.difficultyHint")}`;
@@ -14747,7 +15422,7 @@ function renderArena() {
     maxMana: APP_CONFIG.maxMana,
     hand: [],
     board: [],
-    deck: new Array(APP_CONFIG.deckSize).fill(null),
+    deck: new Array(deckRules.size).fill(null),
   };
   const opponentLabel = isFriendMatch
     ? (match.opponentLabel || localText("Freund", "Friend", "Ami"))
@@ -14777,6 +15452,7 @@ function renderArena() {
     `<span class="meta-chip">${hasMatch ? getUiText("arena.round", { turn: match.turn }) : getUiText("arena.noMatch")}</span>`,
     `<span class="meta-chip">${hasMatch ? getUiText("arena.mana", { current: match.player.mana, max: match.player.maxMana }) : getUiText("arena.noHandTitle")}</span>`,
     `<span class="meta-chip">${isFriendMatch ? localText("Freundesduell", "Friend duel", "Duel amical") : getArenaDifficultyLabel(difficultyId)}</span>`,
+    `<span class="meta-chip">${getDeckModeTitle(hasMatch ? getDeckModeId(match.deckMode || deckMode) : deckMode)}</span>`,
   ];
   if (isFriendMatch && match?.opponentDeckName) {
     statusChips.push(`<span class="meta-chip">${escapeHtml(match.opponentDeckName)}</span>`);

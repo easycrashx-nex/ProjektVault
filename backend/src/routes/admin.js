@@ -1,5 +1,10 @@
 const { sendJson, parseJsonBody } = require("../lib/http");
-const { getBearerToken } = require("../lib/security");
+const {
+  getBearerToken,
+  sanitizeUsername,
+  createPasswordHash,
+  getPlayerUsernameValidation,
+} = require("../lib/security");
 const {
   updateDatabase,
   getAccountBySessionToken,
@@ -7,7 +12,7 @@ const {
   hasAdminRole,
   sanitizeAccountForClient,
 } = require("../lib/store");
-const { sanitizeSave } = require("../lib/game-state");
+const { sanitizeSave, createEmptySave } = require("../lib/game-state");
 
 function resolveAdmin(database, token) {
   const account = getAccountBySessionToken(database, token);
@@ -52,12 +57,14 @@ function registerAdminRoutes(router) {
     const body = await parseJsonBody(req);
     const action = String(body?.action || "");
     const targetUsername = String(body?.username || "").trim();
+    const password = String(body?.password || "");
     const amount = Number.parseInt(String(body?.amount || "0"), 10);
     const packId = String(body?.packId || "").trim();
     const cardId = String(body?.cardId || "").trim();
 
     let updatedAccount = null;
     let admin = null;
+    let actionError = null;
 
     await updateDatabase((database) => {
       admin = resolveAdmin(database, token);
@@ -66,6 +73,34 @@ function registerAdminRoutes(router) {
       }
 
       const account = findAccountByUsername(database, targetUsername);
+      if (action === "createAccount") {
+        const username = sanitizeUsername(targetUsername);
+        const usernameError = getPlayerUsernameValidation(username);
+        if (usernameError) {
+          actionError = usernameError.message;
+          return database;
+        }
+        if (password.length < 4) {
+          actionError = "Das Passwort muss mindestens 4 Zeichen lang sein.";
+          return database;
+        }
+        if (findAccountByUsername(database, username)) {
+          actionError = "Dieser Spielername ist bereits vergeben.";
+          return database;
+        }
+
+        database.accounts[username] = {
+          username,
+          canonical: username.toLowerCase(),
+          createdAt: new Date().toISOString(),
+          roles: [],
+          passwordHash: createPasswordHash(password),
+          save: createEmptySave(),
+        };
+        updatedAccount = database.accounts[username];
+        return database;
+      }
+
       if (!account) {
         return database;
       }
@@ -136,6 +171,11 @@ function registerAdminRoutes(router) {
 
     if (!admin) {
       sendJson(res, 403, { ok: false, error: "forbidden", message: "Adminrechte erforderlich." });
+      return;
+    }
+
+    if (actionError) {
+      sendJson(res, 400, { ok: false, error: "admin_action_failed", message: actionError });
       return;
     }
 

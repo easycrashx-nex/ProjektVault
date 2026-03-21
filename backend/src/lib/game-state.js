@@ -15,7 +15,12 @@ const GAME_LIMITS = Object.freeze({
 const PACK_IDS = Object.freeze(["starter", "market", "champion", "relic", "astral"]);
 const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
 const SHOP_TABS = Object.freeze(["boosters", "packs", "cosmetics"]);
-const ARENA_DIFFICULTIES = Object.freeze(["novice", "standard", "veteran", "nightmare"]);
+const ARENA_DIFFICULTIES = Object.freeze(["novice", "standard", "veteran", "nightmare", "hardcore"]);
+const DECK_RULES = Object.freeze({
+  standard: Object.freeze({ size: 20 }),
+  hardcore: Object.freeze({ size: 35 }),
+});
+const MAX_DECK_SIZE = Math.max(...Object.values(DECK_RULES).map((entry) => entry.size));
 
 function clamp(min, max, value) {
   return Math.min(max, Math.max(min, value));
@@ -129,6 +134,7 @@ function createDefaultCosmetics() {
 
 function createEmptySave() {
   const firstDeck = createDeck("Erstes Deck");
+  const hardcoreDeck = createDeck("Hardcore-Deck");
   return {
     gold: 260,
     collection: {},
@@ -141,6 +147,7 @@ function createEmptySave() {
     },
     decks: [firstDeck],
     activeDeckId: firstDeck.id,
+    hardcoreDeck,
     shopTab: "boosters",
     selectedPack: "starter",
     arenaDifficulty: "standard",
@@ -331,19 +338,21 @@ function sanitizeDeckId(value) {
   return safeId && safeId.startsWith("deck-") ? safeId : `deck-${crypto.randomUUID()}`;
 }
 
-function sanitizeDecks(decks) {
+function sanitizeDeckEntries(decks, mode = "standard", options = {}) {
+  const size = DECK_RULES[mode]?.size || DECK_RULES.standard.size;
+  const maxDecks = options.maxDecks ?? GAME_LIMITS.maxDecks;
   if (!Array.isArray(decks) || !decks.length) {
-    return [createDeck("Erstes Deck")];
+    return [];
   }
 
   const seen = new Set();
   const normalized = decks
-    .slice(0, GAME_LIMITS.maxDecks)
+    .slice(0, maxDecks)
     .map((deck, index) => {
       const nextDeck = {
         id: sanitizeDeckId(deck?.id),
         name: sanitizeDeckName(deck?.name, index),
-        cards: sanitizeStringArray(deck?.cards, { maxItems: 20, maxLength: 120 }),
+        cards: sanitizeStringArray(deck?.cards, { maxItems: size, maxLength: 120 }),
       };
 
       while (seen.has(nextDeck.id)) {
@@ -354,7 +363,17 @@ function sanitizeDecks(decks) {
       return nextDeck;
     });
 
+  return normalized;
+}
+
+function sanitizeDecks(decks) {
+  const normalized = sanitizeDeckEntries(decks, "standard");
   return normalized.length ? normalized : [createDeck("Erstes Deck")];
+}
+
+function sanitizeHardcoreDeck(deck) {
+  const normalized = sanitizeDeckEntries([deck], "hardcore", { maxDecks: 1 });
+  return normalized[0] || createDeck("Hardcore-Deck");
 }
 
 function sanitizeFilters(filters, baseFilters) {
@@ -399,6 +418,7 @@ function sanitizeActiveMatch(match) {
 function sanitizeSave(save, sanitizeUsername) {
   const baseSave = createEmptySave();
   const sanitizedDecks = sanitizeDecks(save?.decks);
+  const hardcoreDeck = sanitizeHardcoreDeck(save?.hardcoreDeck);
   const activeDeckId = sanitizeText(save?.activeDeckId, 120);
   const cosmetics = sanitizeCosmetics(save?.cosmetics, baseSave.cosmetics);
   const nextSave = {
@@ -407,6 +427,7 @@ function sanitizeSave(save, sanitizeUsername) {
     collection: sanitizeCollection(save?.collection),
     packs: sanitizePackInventory(save?.packs, baseSave.packs),
     decks: sanitizedDecks,
+    hardcoreDeck,
     activeDeckId,
     shopTab: SHOP_TABS.includes(save?.shopTab) ? save.shopTab : baseSave.shopTab,
     selectedPack: PACK_IDS.includes(save?.selectedPack) ? save.selectedPack : baseSave.selectedPack,
