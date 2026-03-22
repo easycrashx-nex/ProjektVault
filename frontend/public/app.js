@@ -10870,7 +10870,7 @@ function renderCollection() {
   });
 }
 
-function renderDeckManager() {
+function legacyRenderDeckManager() {
   const deckMode = getSelectedDeckMode();
   const deckRules = getDeckRules(deckMode);
   const activeDeck = getDeckByMode(deckMode);
@@ -15451,7 +15451,7 @@ function handleProfileDisplaySubmit(event) {
   applyProfileDisplayChange(display);
 }
 
-function bindFriendsPanelEvents() {
+function legacyBindFriendsPanelEvents() {
   const containers = [
     elements.friendsSummary,
     elements.friendsListPanel,
@@ -15529,7 +15529,7 @@ function bindFriendsPanelEvents() {
   });
 }
 
-function renderProfile() {
+function legacyRenderProfile() {
   if (!currentAccount) {
     elements.profileSummary.innerHTML = "";
     elements.profileLoadoutPanel.innerHTML = "";
@@ -15664,7 +15664,7 @@ function renderProfile() {
   });
 }
 
-function renderFriends() {
+function legacyRenderFriends() {
   if (!currentAccount) {
     elements.friendsSummary.innerHTML = "";
     elements.friendsListPanel.innerHTML = "";
@@ -15971,7 +15971,7 @@ function renderFriends() {
   bindFriendsPanelEvents();
 }
 
-function renderShop() {
+function legacyRenderShop() {
   if (!currentAccount) {
     return;
   }
@@ -16155,7 +16155,7 @@ function renderShop() {
   });
 }
 
-function sanitizeSavedMatchState(match) {
+function legacySanitizeSavedMatchState(match) {
   if (!match || typeof match !== "object") {
     return null;
   }
@@ -16213,7 +16213,7 @@ function sanitizeSavedMatchState(match) {
   };
 }
 
-function clearMatch() {
+function legacyClearMatch() {
   const match = uiState.match;
   if (match?.status === "active") {
     if (match.mode === "friend") {
@@ -16276,7 +16276,7 @@ function clearMatch() {
   renderAll();
 }
 
-function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSave().arenaDifficulty), options = {}) {
+function legacyCreateMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSave().arenaDifficulty), options = {}) {
   const friendMode = options.mode === "friend";
   const deckMode = getDeckModeId(options.deckMode || getDeckModeForDifficulty(difficultyId));
   const deckRules = getDeckRules(deckMode);
@@ -16352,7 +16352,7 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
   return match;
 }
 
-function finishMatch(status, message) {
+function legacyFinishMatch(status, message) {
   const save = getSave();
   const match = uiState.match;
   if (!match) {
@@ -16415,7 +16415,7 @@ function finishMatch(status, message) {
   persistCurrentAccount();
 }
 
-function renderArena() {
+function legacyRenderArena() {
   const difficultyId = getArenaDifficultyId((uiState.match?.difficultyId) || getSave().arenaDifficulty);
   const deckMode = getDeckModeForDifficulty(difficultyId);
   const activeDeck = getDeckByMode(deckMode);
