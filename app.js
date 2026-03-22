@@ -53,6 +53,67 @@ const SESSION_MODES = Object.freeze({
 });
 
 const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
+const PROGRESSION_RULES = globalThis.ProjektVaultProgressionDefs || {
+  DAILY_QUEST_LIMIT: 5,
+  WEEKLY_QUEST_LIMIT: 5,
+  DAILY_QUEST_DEFS: Object.freeze([]),
+  WEEKLY_QUEST_DEFS: Object.freeze([]),
+  ACHIEVEMENT_DEFS: Object.freeze([]),
+  SNAPSHOT_STAT_KEYS: Object.freeze([
+    "arenaWins",
+    "arenaLosses",
+    "friendWins",
+    "friendLosses",
+    "boostersOpened",
+    "cardsOpened",
+    "goldEarned",
+    "tradesCompleted",
+    "marketDeals",
+    "hardcoreWins",
+    "legendaryPlusPulled",
+  ]),
+  createDefaultQuestSnapshot: () => ({
+    rankPoints: 0,
+    stats: {
+      arenaWins: 0,
+      arenaLosses: 0,
+      friendWins: 0,
+      friendLosses: 0,
+      boostersOpened: 0,
+      cardsOpened: 0,
+      goldEarned: 0,
+      tradesCompleted: 0,
+      marketDeals: 0,
+      hardcoreWins: 0,
+      legendaryPlusPulled: 0,
+    },
+    summary: { gold: 0, totalCards: 0, uniqueCards: 0, totalBoosters: 0 },
+  }),
+  createDefaultQuestWindow: () => ({ key: "", activeIds: [], snapshot: null }),
+  createDefaultQuestState: () => ({
+    dailyClaimed: [],
+    weeklyClaimed: [],
+    dailyWindow: { key: "", activeIds: [], snapshot: null },
+    weeklyWindow: { key: "", activeIds: [], snapshot: null },
+  }),
+  createProgressSnapshot: (progression, save) => ({
+    rankPoints: Number(progression?.rankPoints || 0),
+    stats: { ...(progression?.stats || {}) },
+    summary: summarizeSave(save),
+  }),
+  getCurrentDateKey: () => new Date().toISOString().slice(0, 10),
+  getCurrentWeekKey: () => {
+    const monday = new Date();
+    const day = monday.getUTCDay() || 7;
+    monday.setUTCDate(monday.getUTCDate() - (day - 1));
+    return monday.toISOString().slice(0, 10);
+  },
+  buildQuestClaimKey: (quest, periodKey) => `${periodKey}:${quest.id}`,
+  getQuestProgress: () => 0,
+  getAchievementProgress: () => 0,
+  isAchievementComplete: () => false,
+  getCurrentQuestDefinitions: () => [],
+};
 
 const SERVER_RUNTIME = {
   checked: false,
@@ -205,10 +266,7 @@ const DEFAULT_FRIEND_STATE = Object.freeze({
 const DEFAULT_PROGRESS_STATE = Object.freeze({
   rankPoints: 0,
   achievementsClaimed: Object.freeze([]),
-  quests: Object.freeze({
-    dailyClaimed: Object.freeze([]),
-    weeklyClaimed: Object.freeze([]),
-  }),
+  quests: Object.freeze(PROGRESSION_RULES.createDefaultQuestState()),
   pity: Object.freeze({}),
   stats: Object.freeze({
     arenaWins: 0,
@@ -236,7 +294,7 @@ const RANK_TIERS = Object.freeze([
   { id: "mythisch", label: Object.freeze({ de: "Mythisch", en: "Mythic", fr: "Mythique" }), min: 1220 },
 ]);
 
-const DAILY_QUEST_DEFS = Object.freeze([
+const LEGACY_DAILY_QUEST_DEFS = Object.freeze([
   {
     id: "daily-arena-wins",
     title: localText("Zwei Arenasiege", "Two arena wins", "Deux victoires d'arène"),
@@ -263,7 +321,7 @@ const DAILY_QUEST_DEFS = Object.freeze([
   },
 ]);
 
-const WEEKLY_QUEST_DEFS = Object.freeze([
+const LEGACY_WEEKLY_QUEST_DEFS = Object.freeze([
   {
     id: "weekly-rank",
     title: localText("Ligafokus", "League focus", "Focus ligue"),
@@ -293,7 +351,7 @@ const WEEKLY_QUEST_DEFS = Object.freeze([
   },
 ]);
 
-const ACHIEVEMENT_DEFS = Object.freeze([
+const LEGACY_ACHIEVEMENT_DEFS = Object.freeze([
   {
     id: "ach-first-win",
     title: localText("Erster Triumph", "First triumph", "Premier triomphe"),
@@ -332,6 +390,10 @@ const ACHIEVEMENT_DEFS = Object.freeze([
     isComplete: (progression) => progression.stats.hardcoreWins >= 1,
   },
 ]);
+
+const DAILY_QUEST_DEFS = PROGRESSION_RULES.DAILY_QUEST_DEFS;
+const WEEKLY_QUEST_DEFS = PROGRESSION_RULES.WEEKLY_QUEST_DEFS;
+const ACHIEVEMENT_DEFS = PROGRESSION_RULES.ACHIEVEMENT_DEFS;
 
 const FACTION_DECK_BONUSES = Object.freeze({
   glutorden: {
@@ -2478,6 +2540,21 @@ async function purchaseCosmeticOnServer(cosmeticType, itemId) {
       cosmeticType,
       itemId,
     },
+  });
+  mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
+  return response;
+}
+
+async function claimProgressRewardOnServer(payload = {}) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  const response = await apiRequest("/api/game/claim-reward", {
+    method: "POST",
+    token: sessionToken,
+    body: payload,
   });
   mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
   return response;
@@ -7988,15 +8065,38 @@ function createDefaultPityState() {
 }
 
 function getCurrentDateKey() {
-  return new Date().toISOString().slice(0, 10);
+  return PROGRESSION_RULES.getCurrentDateKey();
 }
 
 function getCurrentWeekKey() {
-  const now = new Date();
-  const monday = new Date(now);
-  const day = monday.getUTCDay() || 7;
-  monday.setUTCDate(monday.getUTCDate() - (day - 1));
-  return monday.toISOString().slice(0, 10);
+  return PROGRESSION_RULES.getCurrentWeekKey();
+}
+
+function sanitizeQuestSnapshotState(snapshot) {
+  const next = cloneJsonValue(PROGRESSION_RULES.createDefaultQuestSnapshot());
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  next.rankPoints = sanitizeFiniteInteger(source.rankPoints, next.rankPoints, 0, SECURITY_LIMITS.maxGold * 10);
+  PROGRESSION_RULES.SNAPSHOT_STAT_KEYS.forEach((key) => {
+    next.stats[key] = sanitizeFiniteInteger(source.stats?.[key], next.stats[key] || 0, 0, 999999);
+  });
+  next.summary = {
+    gold: sanitizeFiniteInteger(source.summary?.gold, next.summary.gold, 0, SECURITY_LIMITS.maxGold),
+    totalCards: sanitizeFiniteInteger(source.summary?.totalCards, next.summary.totalCards, 0, SECURITY_LIMITS.maxCollectionCopies * 1000),
+    uniqueCards: sanitizeFiniteInteger(source.summary?.uniqueCards, next.summary.uniqueCards, 0, CARD_POOL.length),
+    totalBoosters: sanitizeFiniteInteger(source.summary?.totalBoosters, next.summary.totalBoosters, 0, SECURITY_LIMITS.maxPackCopies * 10),
+  };
+  return next;
+}
+
+function sanitizeQuestWindowState(windowState) {
+  const next = cloneJsonValue(PROGRESSION_RULES.createDefaultQuestWindow());
+  const source = windowState && typeof windowState === "object" ? windowState : {};
+  next.key = String(source.key || "").trim().slice(0, 24);
+  next.activeIds = [...new Set((Array.isArray(source.activeIds) ? source.activeIds : [])
+    .map((entry) => String(entry || "").trim().slice(0, 64))
+    .filter(Boolean))].slice(0, 8);
+  next.snapshot = sanitizeQuestSnapshotState(source.snapshot);
+  return next;
 }
 
 function sanitizeProgressionState(progression, baseProgression = createDefaultProgression()) {
@@ -8013,6 +8113,8 @@ function sanitizeProgressionState(progression, baseProgression = createDefaultPr
     weeklyClaimed: [...new Set((Array.isArray(source.quests?.weeklyClaimed) ? source.quests.weeklyClaimed : [])
       .map((entry) => String(entry || "").trim().slice(0, 64))
       .filter(Boolean))].slice(0, 64),
+    dailyWindow: sanitizeQuestWindowState(source.quests?.dailyWindow),
+    weeklyWindow: sanitizeQuestWindowState(source.quests?.weeklyWindow),
   };
   next.pity = {};
   if (source.pity && typeof source.pity === "object") {
@@ -8184,27 +8286,100 @@ function getRankState(points = 0) {
 }
 
 function buildQuestClaimKey(quest, periodKey) {
-  return `${periodKey}:${quest.id}`;
+  return PROGRESSION_RULES.buildQuestClaimKey(quest, periodKey);
+}
+
+function getQuestWindowKeys(period) {
+  if (period === "weekly") {
+    return {
+      windowKey: "weeklyWindow",
+      claimedKey: "weeklyClaimed",
+      periodKey: getCurrentWeekKey(),
+    };
+  }
+
+  return {
+    windowKey: "dailyWindow",
+    claimedKey: "dailyClaimed",
+    periodKey: getCurrentDateKey(),
+  };
+}
+
+function ensureQuestWindowState(progression = getProgression(), save = getSave(), period = "daily") {
+  if (!progression.quests || typeof progression.quests !== "object") {
+    progression.quests = cloneJsonValue(PROGRESSION_RULES.createDefaultQuestState());
+  }
+
+  const { windowKey, claimedKey, periodKey } = getQuestWindowKeys(period);
+  const questPool = period === "weekly" ? WEEKLY_QUEST_DEFS : DAILY_QUEST_DEFS;
+  const windowState = sanitizeQuestWindowState(progression.quests[windowKey]);
+  const expectedIds = PROGRESSION_RULES.getCurrentQuestDefinitions(period, periodKey).map((entry) => entry.id);
+  let changed = false;
+
+  if (windowState.key !== periodKey) {
+    windowState.key = periodKey;
+    windowState.activeIds = [...expectedIds];
+    windowState.snapshot = PROGRESSION_RULES.createProgressSnapshot(progression, save);
+    progression.quests[claimedKey] = [];
+    changed = true;
+  } else {
+    if (!windowState.activeIds.length) {
+      windowState.activeIds = [...expectedIds];
+      changed = true;
+    }
+    if (!windowState.snapshot || typeof windowState.snapshot !== "object") {
+      windowState.snapshot = PROGRESSION_RULES.createProgressSnapshot(progression, save);
+      changed = true;
+    }
+  }
+
+  progression.quests[windowKey] = sanitizeQuestWindowState(windowState);
+  progression.quests[claimedKey] = [...new Set((Array.isArray(progression.quests[claimedKey]) ? progression.quests[claimedKey] : [])
+    .map((entry) => String(entry || "").trim())
+    .filter(Boolean))];
+  return changed;
+}
+
+function ensureQuestRotationState(progression = getProgression(), save = getSave()) {
+  const dailyChanged = ensureQuestWindowState(progression, save, "daily");
+  const weeklyChanged = ensureQuestWindowState(progression, save, "weekly");
+  return dailyChanged || weeklyChanged;
+}
+
+function getActiveQuestDefinitions(period, progression = getProgression(), save = getSave()) {
+  ensureQuestWindowState(progression, save, period);
+  const { windowKey } = getQuestWindowKeys(period);
+  const windowState = progression.quests?.[windowKey] || sanitizeQuestWindowState();
+  const questPool = period === "weekly" ? WEEKLY_QUEST_DEFS : DAILY_QUEST_DEFS;
+
+  return windowState.activeIds
+    .map((questId) => questPool.find((entry) => entry.id === questId))
+    .filter(Boolean)
+    .map((quest) => ({
+      ...quest,
+      period,
+      periodKey: windowState.key,
+    }));
 }
 
 function getCurrentDailyQuests() {
-  return DAILY_QUEST_DEFS.map((quest) => ({
-    ...quest,
-    period: "daily",
-    periodKey: getCurrentDateKey(),
-  }));
+  return getActiveQuestDefinitions("daily");
 }
 
 function getCurrentWeeklyQuests() {
-  return WEEKLY_QUEST_DEFS.map((quest) => ({
-    ...quest,
-    period: "weekly",
-    periodKey: getCurrentWeekKey(),
-  }));
+  return getActiveQuestDefinitions("weekly");
 }
 
 function getQuestProgress(progression, quest) {
-  return Math.min(quest.target, Math.max(0, Number(quest.getProgress(progression, getSave()) || 0)));
+  const save = getSave();
+  ensureQuestWindowState(progression, save, quest.period || "daily");
+  const { windowKey } = getQuestWindowKeys(quest.period || "daily");
+  const baselineSnapshot = progression.quests?.[windowKey]?.snapshot || PROGRESSION_RULES.createDefaultQuestSnapshot();
+  const currentSnapshot = PROGRESSION_RULES.createProgressSnapshot(progression, save);
+  return Math.min(
+    Number(quest.target || 0),
+    Math.max(0, Number(PROGRESSION_RULES.getQuestProgress(quest, currentSnapshot, baselineSnapshot) || 0)),
+  );
 }
 
 function isQuestClaimed(progression, quest) {
@@ -8230,7 +8405,22 @@ function grantRewardPackage({ rewardGold = 0, rewardPackId = "", source = "" } =
   }
 }
 
-function claimQuest(period, questId) {
+async function claimQuest(period, questId) {
+  if (isServerSessionActive()) {
+    try {
+      const response = await claimProgressRewardOnServer({ kind: "quest", period, questId });
+      if (response?.message) {
+        showToast(response.message);
+      }
+      renderAll();
+      return;
+    } catch (error) {
+      console.error(error);
+      showToast(error?.payload?.message || "Quest-Belohnung konnte nicht abgeholt werden.");
+      return;
+    }
+  }
+
   const progression = getProgression();
   const questPool = period === "weekly" ? getCurrentWeeklyQuests() : getCurrentDailyQuests();
   const quest = questPool.find((entry) => entry.id === questId);
@@ -8249,9 +8439,9 @@ function claimQuest(period, questId) {
     rewardGold: quest.rewardGold,
     rewardPackId: quest.rewardPackId,
     source: localText(
-      `${quest.title} abgeschlossen.`,
-      `${quest.title} completed.`,
-      `${quest.title} terminée.`,
+      `${pickLocalizedText(quest.title)} abgeschlossen.`,
+      `${pickLocalizedText(quest.title)} completed.`,
+      `${pickLocalizedText(quest.title)} terminée.`,
     ),
   });
   persistCurrentAccount();
@@ -8260,12 +8450,29 @@ function claimQuest(period, questId) {
 
 function getAchievementStatus(definition) {
   const progression = getProgression();
-  const completed = Boolean(definition.isComplete(progression, getSave()));
+  const currentSnapshot = PROGRESSION_RULES.createProgressSnapshot(progression, getSave());
+  const completed = Boolean(PROGRESSION_RULES.isAchievementComplete(definition, currentSnapshot));
   const claimed = progression.achievementsClaimed.includes(definition.id);
-  return { completed, claimed, claimable: completed && !claimed };
+  const progress = Math.min(Number(definition.target || 0), Math.max(0, Number(PROGRESSION_RULES.getAchievementProgress(definition, currentSnapshot) || 0)));
+  return { completed, claimed, claimable: completed && !claimed, progress };
 }
 
-function claimAchievement(achievementId) {
+async function claimAchievement(achievementId) {
+  if (isServerSessionActive()) {
+    try {
+      const response = await claimProgressRewardOnServer({ kind: "achievement", achievementId });
+      if (response?.message) {
+        showToast(response.message);
+      }
+      renderAll();
+      return;
+    } catch (error) {
+      console.error(error);
+      showToast(error?.payload?.message || "Errungenschaft konnte nicht eingelöst werden.");
+      return;
+    }
+  }
+
   const definition = ACHIEVEMENT_DEFS.find((entry) => entry.id === achievementId);
   if (!definition) {
     return;
@@ -8280,9 +8487,9 @@ function claimAchievement(achievementId) {
     rewardGold: definition.rewardGold,
     rewardPackId: definition.rewardPackId,
     source: localText(
-      `${definition.title} eingelöst.`,
-      `${definition.title} claimed.`,
-      `${definition.title} récupérée.`,
+      `${pickLocalizedText(definition.title)} eingelöst.`,
+      `${pickLocalizedText(definition.title)} claimed.`,
+      `${pickLocalizedText(definition.title)} récupérée.`,
     ),
   });
   persistCurrentAccount();
@@ -8390,16 +8597,18 @@ function renderProgress() {
     const progress = getQuestProgress(progression, quest);
     const claimed = isQuestClaimed(progression, quest);
     const claimable = isQuestClaimable(progression, quest);
+    const title = pickLocalizedText(quest.title);
+    const description = pickLocalizedText(quest.description);
     return `
       <article class="quest-card ${claimable ? "claimable" : ""}">
         <div class="quest-head">
           <div>
             <p class="eyebrow">${escapeHtml(quest.period === "weekly" ? localText("Wöchentlich", "Weekly", "Hebdomadaire") : localText("Täglich", "Daily", "Quotidien"))}</p>
-            <h4>${escapeHtml(quest.title)}</h4>
+            <h4>${escapeHtml(title)}</h4>
           </div>
           <span class="status-pill ${claimed ? "ok" : claimable ? "turn" : "subtle"}">${claimed ? localText("Eingelöst", "Claimed", "Réclamée") : `${progress}/${quest.target}`}</span>
         </div>
-        <p class="mini-note">${escapeHtml(quest.description)}</p>
+        <p class="mini-note">${escapeHtml(description)}</p>
         <div class="progress-meter"><span style="width:${Math.round((progress / quest.target) * 100)}%"></span></div>
         <div class="quest-reward-row">
           <span>${quest.rewardGold} ${localText("Gold", "Gold", "Or")}${quest.rewardPackId ? ` · ${getPackLabel(quest.rewardPackId)}` : ""}</span>
@@ -8425,10 +8634,11 @@ function renderProgress() {
       ${achievementCards.map(({ definition, status }) => `
         <article class="achievement-card ${status.claimable ? "claimable" : status.claimed ? "done" : ""}">
           <div class="quest-head">
-            <h4>${escapeHtml(definition.title)}</h4>
+            <h4>${escapeHtml(pickLocalizedText(definition.title))}</h4>
             <span class="status-pill ${status.claimed ? "ok" : status.claimable ? "turn" : "subtle"}">${status.claimed ? localText("Fertig", "Done", "Terminé") : status.claimable ? localText("Bereit", "Ready", "Prêt") : localText("Läuft", "In progress", "En cours")}</span>
           </div>
-          <p class="mini-note">${escapeHtml(definition.description)}</p>
+          <p class="mini-note">${escapeHtml(pickLocalizedText(definition.description))}</p>
+          <div class="progress-meter"><span style="width:${Math.round((status.progress / Math.max(1, definition.target || 1)) * 100)}%"></span></div>
           <div class="quest-reward-row">
             <span>${definition.rewardGold} ${localText("Gold", "Gold", "Or")}${definition.rewardPackId ? ` · ${getPackLabel(definition.rewardPackId)}` : ""}</span>
             <button class="secondary-button" type="button" data-achievement-claim="${escapeHtml(definition.id)}" ${status.claimable ? "" : "disabled"}>${localText("Einlösen", "Claim", "Réclamer")}</button>
@@ -8538,13 +8748,17 @@ function renderProgress() {
   `;
 
   elements.progressQuestPanel.querySelectorAll("[data-quest-claim]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
       const [period, questId] = String(button.dataset.questClaim || "").split(":");
-      claimQuest(period, questId);
+      await claimQuest(period, questId);
     });
   });
   elements.progressAchievementPanel.querySelectorAll("[data-achievement-claim]").forEach((button) => {
-    button.addEventListener("click", () => claimAchievement(button.dataset.achievementClaim));
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      await claimAchievement(button.dataset.achievementClaim);
+    });
   });
 }
 
@@ -9799,6 +10013,10 @@ function renderAll() {
   }
 
   uiState.previewLanguage = getUserSettings().language;
+  const questStateChanged = ensureQuestRotationState(getProgression(), getSave());
+  if (questStateChanged) {
+    persistCurrentAccount();
+  }
   populateFilterControls();
   elements.playerName.textContent = currentAccount.username;
   applyPlayerNameScale(currentAccount.username);

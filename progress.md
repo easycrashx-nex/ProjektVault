@@ -31,3 +31,6 @@ TODO
 
 - 2026-03-22: Freunde- und Profil-Shop-Fehler korrigiert: Die aktiven enderFriends()- und enderShop()-Funktionen waren noch Platzhalterfassungen. Sie delegieren jetzt wieder an die vollständigen finalen Varianten, sodass Freundessuche, Anfragen, Handel, Duelle und der Kosmetik-Shop wieder rendern können.
 2026-03-22: Rank ladder updated with 3-1 divisions, topbar rank chip, and arena RP-per-win display.
+2026-03-22: Main-menu arena hero enlarged again by widening the left column and scaling title, copy, and stat cards.
+2026-03-22: Quest and achievement rewards are now claimed server-side and can no longer be collected multiple times; UI claim buttons also lock immediately on click.
+- 2026-03-22: Quest-System auf rotierende Tages-/Wochenfenster mit 5 aktiven Daily- und 5 aktiven Weekly-Quests umgestellt; Shared-Definitionen eingef�hrt, 200 Quest-Definitionen und 35 Errungenschaften aktiviert, Server-Claims und periodische Resets vereinheitlicht.

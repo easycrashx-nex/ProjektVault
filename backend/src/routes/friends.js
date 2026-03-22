@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const PROGRESSION_RULES = require("../../../shared/progression-defs.js");
 const { sendJson, parseJsonBody, getRequestUrl } = require("../lib/http");
 const { getBearerToken, sanitizeUsername, canonicalizeUsername } = require("../lib/security");
 const {
@@ -181,7 +182,7 @@ function ensureProgressionState(account) {
     account.save.progression = {
       rankPoints: 0,
       achievementsClaimed: [],
-      quests: { dailyClaimed: [], weeklyClaimed: [] },
+      quests: PROGRESSION_RULES.createDefaultQuestState(),
       pity: {},
       stats: {
         arenaWins: 0,
@@ -202,6 +203,15 @@ function ensureProgressionState(account) {
   }
   if (!account.save.progression.stats || typeof account.save.progression.stats !== "object") {
     account.save.progression.stats = {};
+  }
+  if (!account.save.progression.quests || typeof account.save.progression.quests !== "object") {
+    account.save.progression.quests = PROGRESSION_RULES.createDefaultQuestState();
+  }
+  if (!account.save.progression.quests.dailyWindow || typeof account.save.progression.quests.dailyWindow !== "object") {
+    account.save.progression.quests.dailyWindow = PROGRESSION_RULES.createDefaultQuestWindow();
+  }
+  if (!account.save.progression.quests.weeklyWindow || typeof account.save.progression.quests.weeklyWindow !== "object") {
+    account.save.progression.quests.weeklyWindow = PROGRESSION_RULES.createDefaultQuestWindow();
   }
   if (!Array.isArray(account.save.progression.tradeHistory)) {
     account.save.progression.tradeHistory = [];

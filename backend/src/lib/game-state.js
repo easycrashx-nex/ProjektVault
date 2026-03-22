@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const PROGRESSION_RULES = require("../../../shared/progression-defs.js");
 
 const GAME_LIMITS = Object.freeze({
   maxGold: 10000000,
@@ -24,10 +25,7 @@ const MAX_DECK_SIZE = Math.max(...Object.values(DECK_RULES).map((entry) => entry
 const DEFAULT_PROGRESS_STATE = Object.freeze({
   rankPoints: 0,
   achievementsClaimed: [],
-  quests: {
-    dailyClaimed: [],
-    weeklyClaimed: [],
-  },
+  quests: Object.freeze(PROGRESSION_RULES.createDefaultQuestState()),
   pity: Object.freeze({
     starter: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
     market: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
@@ -166,7 +164,7 @@ function createDefaultProgression() {
   return cloneJsonValue(DEFAULT_PROGRESS_STATE, {
     rankPoints: 0,
     achievementsClaimed: [],
-    quests: { dailyClaimed: [], weeklyClaimed: [] },
+    quests: PROGRESSION_RULES.createDefaultQuestState(),
     pity: {},
     stats: {
       arenaWins: 0,
@@ -470,6 +468,31 @@ function sanitizeActiveMatch(match) {
   return snapshot;
 }
 
+function sanitizeQuestSnapshot(snapshot) {
+  const next = cloneJsonValue(PROGRESSION_RULES.createDefaultQuestSnapshot());
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+  next.rankPoints = sanitizeFiniteInteger(source.rankPoints, next.rankPoints, 0, GAME_LIMITS.maxGold * 10);
+  PROGRESSION_RULES.SNAPSHOT_STAT_KEYS.forEach((key) => {
+    next.stats[key] = sanitizeFiniteInteger(source.stats?.[key], next.stats[key] || 0, 0, 999999);
+  });
+  next.summary = {
+    gold: sanitizeFiniteInteger(source.summary?.gold, next.summary.gold, 0, GAME_LIMITS.maxGold),
+    totalCards: sanitizeFiniteInteger(source.summary?.totalCards, next.summary.totalCards, 0, GAME_LIMITS.maxCollectionCopies * 1000),
+    uniqueCards: sanitizeFiniteInteger(source.summary?.uniqueCards, next.summary.uniqueCards, 0, GAME_LIMITS.maxCollectionCopies * 1000),
+    totalBoosters: sanitizeFiniteInteger(source.summary?.totalBoosters, next.summary.totalBoosters, 0, GAME_LIMITS.maxPackCopies * 10),
+  };
+  return next;
+}
+
+function sanitizeQuestWindow(windowState) {
+  const next = cloneJsonValue(PROGRESSION_RULES.createDefaultQuestWindow());
+  const source = windowState && typeof windowState === "object" ? windowState : {};
+  next.key = sanitizeText(source.key, 24);
+  next.activeIds = [...new Set(sanitizeStringArray(source.activeIds, { maxItems: 8, maxLength: 64 }))];
+  next.snapshot = sanitizeQuestSnapshot(source.snapshot);
+  return next;
+}
+
 function sanitizeProgression(progression, baseProgression = createDefaultProgression()) {
   const next = cloneJsonValue(baseProgression, createDefaultProgression());
   const source = progression && typeof progression === "object" ? progression : {};
@@ -478,6 +501,8 @@ function sanitizeProgression(progression, baseProgression = createDefaultProgres
   next.quests = {
     dailyClaimed: [...new Set(sanitizeStringArray(source.quests?.dailyClaimed, { maxItems: 64, maxLength: 64 }))],
     weeklyClaimed: [...new Set(sanitizeStringArray(source.quests?.weeklyClaimed, { maxItems: 64, maxLength: 64 }))],
+    dailyWindow: sanitizeQuestWindow(source.quests?.dailyWindow),
+    weeklyWindow: sanitizeQuestWindow(source.quests?.weeklyWindow),
   };
   next.pity = {};
   PACK_IDS.forEach((packId) => {
