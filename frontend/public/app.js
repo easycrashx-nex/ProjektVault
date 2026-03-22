@@ -7077,9 +7077,6 @@ function playPackOpeningSequence(cards, packId) {
 function bindStaticEvents() {
   elements.authTabs.forEach((button) => {
     button.addEventListener("click", () => switchAuthMode(button.dataset.authMode));
-    if (count > copyLimit) {
-      messages.push(`${getCard(cardId).name} überschreitet das Decklimit von ${copyLimit}.`);
-    }
   });
 
   elements.loginForm.addEventListener("submit", handleLogin);
@@ -16670,3 +16667,5 @@ function describeEffect(type, effect, index) {
       return `${opener}: Löst einen ungewöhnlichen Effekt aus.`;
   }
 }
+
+
