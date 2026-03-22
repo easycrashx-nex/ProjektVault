@@ -38,7 +38,7 @@
             <button class="auth-tab" data-auth-mode="register">Konto erstellen</button>
           </div>
 
-          <form id="loginForm" class="auth-form">
+          <form id="loginForm" class="auth-form" method="post" action=".">
             <label>
               <span>Spielername</span>
               <input type="text" name="username" autocomplete="username" required>
@@ -50,7 +50,7 @@
             <button class="primary-button" type="submit">Anmelden</button>
           </form>
 
-          <form id="registerForm" class="auth-form hidden">
+          <form id="registerForm" class="auth-form hidden" method="post" action=".">
             <label>
               <span>Spielername</span>
               <input type="text" name="username" autocomplete="username" minlength="3" maxlength="12" required>

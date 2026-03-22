@@ -52,6 +52,8 @@ const SESSION_MODES = Object.freeze({
   server: "server",
 });
 
+const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
+
 const SERVER_RUNTIME = {
   checked: false,
   available: false,
@@ -478,7 +480,6 @@ const SETTINGS_INPUT_MAP = Object.freeze({
   settingsConfirmActions: "confirmActions",
 });
 
-const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
 const LANGUAGE_LOCALES = Object.freeze({
   de: "de-CH",
   en: "en-US",
