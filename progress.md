@@ -26,3 +26,5 @@ TODO
 - 2026-03-22: Login- und Register-Formulare zusätzlich auf `method="post"` gehärtet, damit Zugangsdaten auch bei einem künftigen Frontendfehler nicht mehr als Query-Parameter in der URL landen.
 - 2026-03-22: Mehrere späte Legacy-Renderfunktionen überschrieben die aktiven UI-Renderer (`renderDeckManager`, `renderArena`, `renderFriends`, `renderShop`, Match-Funktionen usw.). Die Legacy-Duplikate wurden umbenannt, damit wieder die vollständigen früheren Implementierungen aktiv sind.
 - 2026-03-22: Hauptfehler nach Login war `factionBonus is not defined` in einer überschriebenen Altversion von `renderDeckManager()`. Dieser eine Laufzeitfehler stoppte `renderAll()` und ließ spätere Bereiche wie Freunde, Fortschritt, Wiki, Admin und Arena unvollständig wirken.
+
+- 2026-03-22: Letzter Live-Blocker identifiziert: actionBonus fehlte in der aktiven enderDeckManager()-Version. Dadurch brach enderAll() im Live-Deploy weiterhin im Deckbereich ab und ließ Bereiche wie Freunde, Fortschritt, Wiki, Arena und Admin unvollständig wirken.

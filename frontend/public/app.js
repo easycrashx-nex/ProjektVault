@@ -11132,6 +11132,8 @@ function renderDeckManager() {
   const deckMode = getSelectedDeckMode();
   const deckRules = getDeckRules(deckMode);
   const activeDeck = getDeckByMode(deckMode);
+  const deckProfile = analyzeDeck(activeDeck.cards);
+  const factionBonus = getFactionDeckBonus(deckProfile, deckMode);
   const validation = validateDeck(activeDeck, deckMode);
   const isHardcoreMode = deckMode === DECK_MODES.hardcore;
   const spellCount = getDeckTypeCount(activeDeck, "spell");
