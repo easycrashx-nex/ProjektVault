@@ -6,6 +6,7 @@ COPY package.json ./
 COPY scripts ./scripts
 COPY backend ./backend
 COPY frontend ./frontend
+COPY shared ./shared
 COPY index.html ./index.html
 COPY styles.css ./styles.css
 COPY app.js ./app.js
