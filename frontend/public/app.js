@@ -530,7 +530,7 @@ const UI_TEXT = Object.freeze({
       marketNote: "Die Marktpreise aktualisieren sich jede echte Stunde. Der Marktplatzwert kann über oder unter dem normalen Händlerwert liegen.",
       marketMovers: "Top-Bewegungen",
       marketMoversNote: "Die stärksten Gewinner und Verlierer der letzten Marktrunde.",
-      boosterTitle: "Booster auswählen und öffnen",
+      boosterTitle: "Booster öffnen",
       collectionTitle: "Alle Karten und Verkaufsoptionen",
       collectionNote: "Karten sind anklickbar. Im Detailfenster kannst du sie prüfen und verkaufen.",
       decksTitle: "Mehrere Decks speichern und prüfen",
@@ -2939,7 +2939,7 @@ Object.assign(UI_TEXT.en, {
     marketNote: "Market prices update every real hour. Marketplace value can sit above or below normal vendor value.",
     marketMovers: "Top movers",
     marketMoversNote: "The strongest winners and losers from the latest market round.",
-    boosterTitle: "Choose and open boosters",
+      boosterTitle: "Open boosters",
     collectionTitle: "All cards and sell options",
     collectionNote: "Cards are clickable. In the detail view you can inspect and sell them.",
     decksTitle: "Save and validate multiple decks",
@@ -3340,7 +3340,7 @@ Object.assign(UI_TEXT.fr, {
     marketNote: "Les prix du marché se mettent à jour chaque heure réelle. La valeur du marché peut être au-dessus ou au-dessous de la valeur du marchand.",
     marketMovers: "Principaux mouvements",
     marketMoversNote: "Les plus grands gagnants et perdants du dernier cycle.",
-    boosterTitle: "Choisir et ouvrir des boosters",
+      boosterTitle: "Ouvrir des boosters",
     collectionTitle: "Toutes les cartes et options de vente",
     collectionNote: "Les cartes sont cliquables. Dans la vue détail tu peux les vérifier et les vendre.",
     decksTitle: "Sauvegarder et vérifier plusieurs decks",
@@ -5787,7 +5787,6 @@ const elements = {
   marketResetFiltersButton: document.getElementById("marketResetFiltersButton"),
   ownedPackGrid: document.getElementById("ownedPackGrid"),
   selectedPackPreview: document.getElementById("selectedPackPreview"),
-  openSelectedPackButton: document.getElementById("openSelectedPackButton"),
   openingStage: document.getElementById("openingStage"),
   openingBurst: document.getElementById("openingBurst"),
   openedCardsGrid: document.getElementById("openedCardsGrid"),
@@ -6004,7 +6003,6 @@ function applyStaticTranslations() {
 
   setStaticText("#boosterSection .section-head .eyebrow", getUiText("nav.booster"));
   setStaticText("#boosterSection .section-head h2", getUiText("sections.boosterTitle"));
-  setStaticText("#openSelectedPackButton", getUiText("booster.openSelected"));
   setStaticText("#boosterSection .inventory-panel .subheading", getUiText("booster.ownedTitle"));
 
   setStaticText("#collectionSection .section-head .eyebrow", getUiText("nav.collection"));
@@ -6242,7 +6240,6 @@ function overrideArcaneVaultSystems() {
 
     elements.logoutButton.addEventListener("click", logout);
     elements.resetLocalDataButton.addEventListener("click", resetCurrentAccount);
-    elements.openSelectedPackButton.addEventListener("click", () => openPack(getSave().selectedPack));
 
     elements.searchInput.addEventListener("input", (event) => {
       getSave().filters.search = event.target.value;
@@ -6881,7 +6878,6 @@ function bindStaticEvents() {
 
   elements.logoutButton.addEventListener("click", logout);
   elements.resetLocalDataButton.addEventListener("click", resetCurrentAccount);
-  elements.openSelectedPackButton.addEventListener("click", () => openPack(getSave().selectedPack));
 
   elements.searchInput.addEventListener("input", (event) => {
     getSave().filters.search = event.target.value;
@@ -9978,6 +9974,16 @@ function formatDelta(delta) {
 
 function renderBoosterLab() {
   const save = getSave();
+  const availableOwnedPacks = Object.values(PACK_DEFINITIONS).filter((pack) => (save.packs[pack.id] || 0) > 0);
+  const previewPackId = PACK_DEFINITIONS[save.selectedPack] && ((save.packs[save.selectedPack] || 0) > 0 || !availableOwnedPacks.length)
+    ? save.selectedPack
+    : availableOwnedPacks[0]?.id || save.lastOpened.packId || Object.values(PACK_DEFINITIONS)[0].id;
+  const selectedPack = PACK_DEFINITIONS[previewPackId];
+
+  if (save.selectedPack !== previewPackId) {
+    save.selectedPack = previewPackId;
+    persistCurrentAccount();
+  }
   elements.ownedPackGrid.innerHTML = "";
   elements.openedCardsGrid.innerHTML = "";
   elements.openingStage.classList.remove("is-opening");
@@ -9987,7 +9993,6 @@ function renderBoosterLab() {
     elements.ownedPackGrid.append(createPackCard(pack.id, "owned"));
   });
 
-  const selectedPack = PACK_DEFINITIONS[save.selectedPack];
   elements.openingStage.dataset.pack = selectedPack.id;
   elements.selectedPackPreview.innerHTML = `
     <p class="eyebrow">${getPackTier(selectedPack.id)}</p>
@@ -10002,9 +10007,6 @@ function renderBoosterLab() {
       <span class="meta-chip">${getUiText("booster.draws")}</span>
     </div>
   `;
-
-  elements.openSelectedPackButton.disabled = save.packs[selectedPack.id] <= 0;
-
   if (!save.lastOpened.cards.length) {
     elements.openedCardsGrid.innerHTML = `
       <div class="info-panel empty-state-card booster-empty-state">
@@ -10023,7 +10025,6 @@ function renderBoosterLab() {
     elements.openedCardsGrid.append(renderCard(card, { context: "opened" }));
   });
   return;
-
   elements.openingStage.dataset.pack = selectedPack.id;
   elements.selectedPackPreview.innerHTML = `
     <p class="eyebrow">${selectedPack.tier}</p>
@@ -12063,6 +12064,27 @@ function createPackCard(packId, context) {
 
   element.classList.add(`pack-${pack.id}`, context === "shop" ? "pack-card-shop" : "pack-card-owned");
   element.dataset.packId = pack.id;
+  if (context === "owned") {
+    element.classList.add("clickable-card");
+    element.classList.toggle("is-selected", save.selectedPack === packId);
+    element.tabIndex = 0;
+    element.setAttribute("role", "button");
+    element.setAttribute("aria-label", `${getPackLabel(pack.id)} ${getUiText("common.select")}`);
+    const previewPack = () => selectPack(packId);
+    element.addEventListener("click", (event) => {
+      if (event.target.closest("button")) {
+        return;
+      }
+      previewPack();
+    });
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      event.preventDefault();
+      previewPack();
+    });
+  }
   element.querySelector(".pack-kicker").textContent = getPackTier(pack.id);
   element.querySelector(".pack-price").textContent = context === "shop"
     ? formatCurrency(pack.price)
@@ -12076,10 +12098,7 @@ function createPackCard(packId, context) {
   if (context === "shop") {
     actions.append(createActionButton(getUiText("common.buy"), () => buyPack(packId), getSave().gold < pack.price));
   } else {
-    actions.append(
-      createActionButton(getUiText("common.select"), () => selectPack(packId)),
-      createActionButton(getUiText("common.open"), () => openPack(packId), getSave().packs[packId] < 1),
-    );
+    actions.append(createActionButton(getUiText("common.open"), () => openPack(packId), getSave().packs[packId] < 1));
   }
 
   return element;
@@ -12766,6 +12785,7 @@ function openPack(packId) {
   }
 
   save.packs[packId] -= 1;
+  save.selectedPack = packId;
 
   cards.forEach((card) => {
     save.collection[card.id] = (save.collection[card.id] || 0) + 1;
