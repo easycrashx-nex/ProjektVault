@@ -139,9 +139,95 @@ function getRelationshipState(currentState, username) {
   return "none";
 }
 
+function getReservedCardCounts(account) {
+  const reserved = {};
+  const collect = (cards) => {
+    if (!Array.isArray(cards)) {
+      return;
+    }
+    cards.forEach((cardId) => {
+      const safeCardId = String(cardId || "").trim();
+      if (!safeCardId) {
+        return;
+      }
+      reserved[safeCardId] = (reserved[safeCardId] || 0) + 1;
+    });
+  };
+  (account?.save?.decks || []).forEach((deck) => collect(deck?.cards));
+  collect(account?.save?.hardcoreDeck?.cards);
+  return reserved;
+}
+
+function getTradeableCopies(account, cardId) {
+  const owned = Number(account?.save?.collection?.[cardId] || 0);
+  const reserved = getReservedCardCounts(account)[cardId] || 0;
+  return Math.max(0, owned - reserved);
+}
+
+function buildTradeableCopyMap(account) {
+  const reserved = getReservedCardCounts(account);
+  const result = {};
+  Object.entries(account?.save?.collection || {}).forEach(([cardId, count]) => {
+    result[cardId] = Math.max(0, Number(count || 0) - Number(reserved[cardId] || 0));
+  });
+  return result;
+}
+
+function ensureProgressionState(account) {
+  if (!account.save) {
+    account.save = {};
+  }
+  if (!account.save.progression || typeof account.save.progression !== "object") {
+    account.save.progression = {
+      rankPoints: 0,
+      achievementsClaimed: [],
+      quests: { dailyClaimed: [], weeklyClaimed: [] },
+      pity: {},
+      stats: {
+        arenaWins: 0,
+        arenaLosses: 0,
+        friendWins: 0,
+        friendLosses: 0,
+        boostersOpened: 0,
+        cardsOpened: 0,
+        goldEarned: 0,
+        tradesCompleted: 0,
+        marketDeals: 0,
+        hardcoreWins: 0,
+        legendaryPlusPulled: 0,
+      },
+      tradeHistory: [],
+      duelHistory: [],
+    };
+  }
+  if (!account.save.progression.stats || typeof account.save.progression.stats !== "object") {
+    account.save.progression.stats = {};
+  }
+  if (!Array.isArray(account.save.progression.tradeHistory)) {
+    account.save.progression.tradeHistory = [];
+  }
+  return account.save.progression;
+}
+
+function appendTradeHistory(account, note, value = 0, status = "trade") {
+  const progression = ensureProgressionState(account);
+  progression.stats.tradesCompleted = Number(progression.stats.tradesCompleted || 0) + 1;
+  progression.tradeHistory = [
+    {
+      id: `trade-log-${crypto.randomUUID()}`,
+      createdAt: new Date().toISOString(),
+      note: String(note || "").trim().slice(0, 160),
+      value: Number(value || 0),
+      status,
+    },
+    ...progression.tradeHistory,
+  ].slice(0, 24);
+}
+
 function buildTradeInventory(account) {
+  const tradeable = buildTradeableCopyMap(account);
   return Object.entries(account?.save?.collection || {})
-    .map(([cardId, count]) => ({ cardId, count: Number(count || 0) }))
+    .map(([cardId]) => ({ cardId, count: Number(tradeable[cardId] || 0) }))
     .filter((entry) => entry.cardId && entry.count > 0)
     .sort((left, right) => right.count - left.count || left.cardId.localeCompare(right.cardId))
     .slice(0, 240);
@@ -592,12 +678,12 @@ function registerFriendsRoutes(router) {
         error = { ok: false, error: "invalid_trade_cards", message: "Bitte wähle zwei unterschiedliche Karten für das Angebot." };
         return database;
       }
-      if ((account.save?.collection?.[offeredCardId] || 0) < 1) {
+      if (getTradeableCopies(account, offeredCardId) < 1) {
         status = 400;
         error = { ok: false, error: "missing_offered_card", message: "Diese angebotene Karte besitzt du aktuell nicht mehr." };
         return database;
       }
-      if ((target.save?.collection?.[requestedCardId] || 0) < 1) {
+      if (getTradeableCopies(target, requestedCardId) < 1) {
         status = 400;
         error = { ok: false, error: "missing_requested_card", message: "Die gewünschte Karte ist beim Zielkonto aktuell nicht verfügbar." };
         return database;
@@ -681,7 +767,7 @@ function registerFriendsRoutes(router) {
       counterpartSocial = getSocialState(counterpart);
 
       if (action === "accept" && incoming) {
-        if ((counterpart.save?.collection?.[offer.offeredCardId] || 0) < 1 || (account.save?.collection?.[offer.requestedCardId] || 0) < 1) {
+        if (getTradeableCopies(counterpart, offer.offeredCardId) < 1 || getTradeableCopies(account, offer.requestedCardId) < 1) {
           social.tradeOffersIncoming = removeOfferById(social.tradeOffersIncoming, offerId);
           counterpartSocial.tradeOffersOutgoing = removeOfferById(counterpartSocial.tradeOffersOutgoing, offerId);
           setSocialState(account, social);
@@ -702,6 +788,18 @@ function registerFriendsRoutes(router) {
 
         counterpart.save.collection[offer.requestedCardId] = (counterpart.save.collection[offer.requestedCardId] || 0) + 1;
         account.save.collection[offer.offeredCardId] = (account.save.collection[offer.offeredCardId] || 0) + 1;
+        appendTradeHistory(
+          account,
+          `Tausch mit ${counterpart.username}: ${offer.requestedCardId} gegen ${offer.offeredCardId}`,
+          0,
+          "accepted",
+        );
+        appendTradeHistory(
+          counterpart,
+          `Tausch mit ${account.username}: ${offer.offeredCardId} gegen ${offer.requestedCardId}`,
+          0,
+          "accepted",
+        );
       }
 
       if (!incoming && action !== "cancel") {

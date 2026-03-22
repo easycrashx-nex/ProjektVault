@@ -1355,6 +1355,216 @@ body[data-scene="settings"] .scene-core {
   grid-template-columns: minmax(290px, 0.92fr) minmax(380px, 1.08fr);
 }
 
+.progress-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--panel-gap);
+}
+
+.progress-column {
+  display: grid;
+  gap: var(--panel-gap);
+  align-content: start;
+}
+
+.progress-summary-grid,
+.album-grid,
+.pity-grid,
+.history-grid,
+.achievement-grid,
+.quest-list {
+  display: grid;
+  gap: 14px;
+}
+
+.progress-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.progress-stat-card,
+.achievement-card,
+.album-card,
+.pity-card,
+.history-entry,
+.rank-card {
+  border-radius: 22px;
+  border: 1px solid var(--panel-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.progress-stat-card,
+.achievement-card,
+.album-card,
+.pity-card,
+.history-entry {
+  padding: 16px 18px;
+}
+
+.progress-stat-card span,
+.album-card span,
+.pity-card .eyebrow {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.progress-stat-card strong,
+.album-progress-hero strong,
+.rank-head strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.55rem;
+  line-height: 1.05;
+}
+
+.quest-card {
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 221, 142, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+}
+
+.quest-card.claimable,
+.achievement-card.claimable {
+  border-color: rgba(255, 216, 120, 0.3);
+  box-shadow: 0 0 0 1px rgba(255, 216, 120, 0.08), 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.achievement-card.done {
+  border-color: rgba(106, 217, 170, 0.26);
+}
+
+.quest-head,
+.rank-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quest-head h4,
+.history-column h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.quest-reward-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.progress-meter {
+  height: 10px;
+  width: 100%;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 214, 113, 0.76), rgba(122, 216, 188, 0.88));
+}
+
+.rank-card {
+  padding: 20px;
+}
+
+.rank-head span {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.rank-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.rank-node {
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rank-node.done {
+  color: var(--text);
+  border-color: rgba(255, 214, 113, 0.18);
+}
+
+.rank-node.active {
+  color: #171616;
+  background: linear-gradient(135deg, rgba(255, 221, 142, 0.96), rgba(255, 247, 209, 0.96));
+  border-color: transparent;
+}
+
+.album-progress-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle at top right, rgba(126, 206, 180, 0.12), transparent 50%), rgba(255, 255, 255, 0.025);
+}
+
+.album-progress-hero span {
+  color: var(--muted);
+}
+
+.album-grid,
+.pity-grid,
+.history-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.album-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.15rem;
+}
+
+.history-column {
+  display: grid;
+  gap: 12px;
+}
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-entry strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.96rem;
+}
+
+.history-entry span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 .deck-column,
 .pack-grid,
 .future-grid,
@@ -3981,7 +4191,11 @@ body[data-scene="settings"] .scene-core {
   .admin-stat-grid,
   .profile-stat-grid,
   .friends-stat-grid,
-  .settings-summary-grid {
+  .settings-summary-grid,
+  .progress-summary-grid,
+  .album-grid,
+  .pity-grid,
+  .history-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -3990,7 +4204,8 @@ body[data-scene="settings"] .scene-core {
   }
 
   .shop-summary-grid,
-  .arena-status-shell {
+  .arena-status-shell,
+  .progress-layout {
     grid-template-columns: 1fr;
   }
 
@@ -4085,7 +4300,15 @@ body[data-scene="settings"] .scene-core {
   .future-grid,
   .card-grid,
   .opened-grid,
-  .board-row {
+  .board-row,
+  .achievement-grid,
+  .quest-list,
+  .rank-track,
+  .album-grid,
+  .pity-grid,
+  .history-grid,
+  .progress-summary-grid,
+  .progress-layout {
     grid-template-columns: 1fr;
   }
 

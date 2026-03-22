@@ -125,6 +125,12 @@ const SECTION_SCENE_META = {
     text: "Gespeicherte Listen, Warnungen und verfügbare Karten sind als modulare Kommandoflächen angeordnet.",
     theme: "decks",
   },
+  progress: {
+    eyebrow: "Fortschrittsarchiv",
+    title: "Quests, Liga und Sammlung greifen ineinander",
+    text: "Tagesziele, Langzeitfortschritt, Pity-System und Sammelalbum sitzen als eigene Schicht zwischen Arena und Shop.",
+    theme: "wiki",
+  },
   wiki: {
     eyebrow: "Wissensarchiv",
     title: "Alle Systeme, Regeln und Symbole an einem Ort",
@@ -192,6 +198,209 @@ const DEFAULT_FRIEND_STATE = Object.freeze({
   tradeOffersOutgoing: [],
   duelChallengesIncoming: [],
   duelChallengesOutgoing: [],
+});
+
+const DEFAULT_PROGRESS_STATE = Object.freeze({
+  rankPoints: 0,
+  achievementsClaimed: Object.freeze([]),
+  quests: Object.freeze({
+    dailyClaimed: Object.freeze([]),
+    weeklyClaimed: Object.freeze([]),
+  }),
+  pity: Object.freeze({}),
+  stats: Object.freeze({
+    arenaWins: 0,
+    arenaLosses: 0,
+    friendWins: 0,
+    friendLosses: 0,
+    boostersOpened: 0,
+    cardsOpened: 0,
+    goldEarned: 0,
+    tradesCompleted: 0,
+    marketDeals: 0,
+    hardcoreWins: 0,
+    legendaryPlusPulled: 0,
+  }),
+  tradeHistory: Object.freeze([]),
+  duelHistory: Object.freeze([]),
+});
+
+const RANK_TIERS = Object.freeze([
+  { id: "bronze", label: localText("Bronze", "Bronze", "Bronze"), min: 0 },
+  { id: "silber", label: localText("Silber", "Silver", "Argent"), min: 140 },
+  { id: "gold", label: localText("Gold", "Gold", "Or"), min: 320 },
+  { id: "platin", label: localText("Platin", "Platinum", "Platine"), min: 560 },
+  { id: "diamant", label: localText("Diamant", "Diamond", "Diamant"), min: 860 },
+  { id: "mythisch", label: localText("Mythisch", "Mythic", "Mythique"), min: 1220 },
+]);
+
+const DAILY_QUEST_DEFS = Object.freeze([
+  {
+    id: "daily-arena-wins",
+    title: localText("Zwei Arenasiege", "Two arena wins", "Deux victoires d'arène"),
+    description: localText("Gewinne 2 Arenakämpfe.", "Win 2 arena matches.", "Remporte 2 combats d'arène."),
+    rewardGold: 80,
+    getProgress: (progression) => progression.stats.arenaWins,
+    target: 2,
+  },
+  {
+    id: "daily-open-pack",
+    title: localText("Booster öffnen", "Open boosters", "Ouvrir des boosters"),
+    description: localText("Öffne 2 Booster.", "Open 2 boosters.", "Ouvre 2 boosters."),
+    rewardGold: 70,
+    getProgress: (progression) => progression.stats.boostersOpened,
+    target: 2,
+  },
+  {
+    id: "daily-market",
+    title: localText("Markthandel", "Market trading", "Marché"),
+    description: localText("Schließe 2 Marktdeals ab.", "Complete 2 market deals.", "Effectue 2 transactions au marché."),
+    rewardGold: 65,
+    getProgress: (progression) => progression.stats.marketDeals,
+    target: 2,
+  },
+]);
+
+const WEEKLY_QUEST_DEFS = Object.freeze([
+  {
+    id: "weekly-rank",
+    title: localText("Ligafokus", "League focus", "Focus ligue"),
+    description: localText("Sammle 90 Rangpunkte.", "Earn 90 rank points.", "Gagne 90 points de rang."),
+    rewardGold: 220,
+    rewardPackId: "market",
+    getProgress: (progression) => progression.rankPoints,
+    target: 90,
+  },
+  {
+    id: "weekly-collection",
+    title: localText("Albumdruck", "Album push", "Album"),
+    description: localText("Ziehe 15 neue Karten.", "Pull 15 cards.", "Obtiens 15 cartes."),
+    rewardGold: 180,
+    rewardPackId: "champion",
+    getProgress: (progression) => progression.stats.cardsOpened,
+    target: 15,
+  },
+  {
+    id: "weekly-social",
+    title: localText("Sozialer Handel", "Social trader", "Échange social"),
+    description: localText("Schließe 2 Trades oder Freundesduelle ab.", "Complete 2 trades or friend duels.", "Achève 2 échanges ou duels amicaux."),
+    rewardGold: 190,
+    rewardPackId: "market",
+    getProgress: (progression) => progression.stats.tradesCompleted + progression.stats.friendWins + progression.stats.friendLosses,
+    target: 2,
+  },
+]);
+
+const ACHIEVEMENT_DEFS = Object.freeze([
+  {
+    id: "ach-first-win",
+    title: localText("Erster Triumph", "First triumph", "Premier triomphe"),
+    description: localText("Gewinne deinen ersten Arenakampf.", "Win your first arena match.", "Gagne ton premier combat d'arène."),
+    rewardGold: 120,
+    isComplete: (progression) => progression.stats.arenaWins >= 1,
+  },
+  {
+    id: "ach-market-hand",
+    title: localText("Markthändler", "Market trader", "Marchand"),
+    description: localText("Schließe 10 Marktdeals ab.", "Complete 10 market deals.", "Effectue 10 transactions au marché."),
+    rewardGold: 180,
+    isComplete: (progression) => progression.stats.marketDeals >= 10,
+  },
+  {
+    id: "ach-collection-50",
+    title: localText("Archiv erweitert", "Expanded archive", "Archive étendue"),
+    description: localText("Besitze 50 einzigartige Karten.", "Own 50 unique cards.", "Possède 50 cartes uniques."),
+    rewardGold: 220,
+    isComplete: (_, save) => summarizeSave(save).uniqueCards >= 50,
+  },
+  {
+    id: "ach-legend",
+    title: localText("Glanzzug", "Shining pull", "Tir brillant"),
+    description: localText("Ziehe 5 Karten ab Legendär.", "Pull 5 legendary-or-better cards.", "Obtiens 5 cartes légendaires ou plus."),
+    rewardGold: 260,
+    rewardPackId: "champion",
+    isComplete: (progression) => progression.stats.legendaryPlusPulled >= 5,
+  },
+  {
+    id: "ach-hardcore",
+    title: localText("Hardcore-Siegel", "Hardcore seal", "Sceau hardcore"),
+    description: localText("Gewinne 1 Hardcore-Kampf.", "Win 1 hardcore match.", "Gagne 1 combat hardcore."),
+    rewardGold: 320,
+    rewardPackId: "relic",
+    isComplete: (progression) => progression.stats.hardcoreWins >= 1,
+  },
+]);
+
+const FACTION_DECK_BONUSES = Object.freeze({
+  glutorden: {
+    tone: "ember",
+    minCards: 8,
+    heroBonus: 2,
+    enemyHeroPenalty: 2,
+    title: localText("Glutorden-Druck", "Ember pressure", "Pression de braise"),
+    short: localText("+2 Leben, Gegner -2", "+2 life, enemy -2", "+2 vie, ennemi -2"),
+    description: localText("Dominanter Glutorden gibt deinem Helden +2 Leben und drückt den Gegner direkt um 2 Leben.", "A dominant Ember Order deck gives your hero +2 life and pressures the enemy hero for 2.", "Un deck Glutorden dominant donne +2 vie à ton héros et met 2 dégâts de pression au héros adverse."),
+  },
+  nebelchor: {
+    tone: "mist",
+    minCards: 8,
+    heroBarrier: 2,
+    openingHandDelta: 1,
+    title: localText("Nebelchor-Vorsprung", "Mist lead", "Avance du brouillard"),
+    short: localText("+2 Schild, +1 Karte", "+2 shield, +1 card", "+2 bouclier, +1 carte"),
+    description: localText("Dominanter Nebelchor startet mit Schild und einer zusätzlichen Karte.", "A dominant Mist Choir start grants shield and one extra opening card.", "Un Nebelchor dominant démarre avec du bouclier et une carte supplémentaire."),
+  },
+  wurzelpakt: {
+    tone: "grove",
+    minCards: 8,
+    heroBonus: 4,
+    title: localText("Wurzelpakt-Ausdauer", "Root endurance", "Endurance des racines"),
+    short: localText("+4 Leben", "+4 life", "+4 vie"),
+    description: localText("Dominanter Wurzelpakt erhöht deine Startausdauer deutlich.", "A dominant Root Pact list noticeably increases your starting durability.", "Un Wurzelpakt dominant augmente nettement ton endurance de départ."),
+  },
+  schattenzirkel: {
+    tone: "shadow",
+    minCards: 8,
+    heroBarrier: 1,
+    enemyHeroPenalty: 1,
+    title: localText("Schattenzirkel-Druck", "Shadow pressure", "Pression de l'ombre"),
+    short: localText("+1 Schild, Gegner -1", "+1 shield, enemy -1", "+1 bouclier, ennemi -1"),
+    description: localText("Schattenzirkel eröffnet defensiv und schwächt den Gegner direkt leicht an.", "Shadow Circle opens defensively and chips the enemy hero immediately.", "Le Cercle d'ombre ouvre défensivement et entame légèrement le héros adverse."),
+  },
+  sturmwacht: {
+    tone: "storm",
+    minCards: 8,
+    startingManaBonus: 1,
+    title: localText("Sturmwacht-Tempo", "Storm tempo", "Tempo de la tempête"),
+    short: localText("+1 Startmana", "+1 starting mana", "+1 mana de départ"),
+    description: localText("Eine klare Sturmwacht-Liste startet mit einem Mana Vorsprung.", "A focused Stormwatch list starts with an extra mana crystal.", "Une liste Tempête focalisée commence avec un cristal de mana supplémentaire."),
+  },
+  runenschmiede: {
+    tone: "rune",
+    minCards: 8,
+    heroBarrier: 3,
+    title: localText("Runenschmiede-Schutz", "Rune protection", "Protection runique"),
+    short: localText("+3 Schild", "+3 shield", "+3 bouclier"),
+    description: localText("Runenschmiede gibt deinem Helden einen kräftigen Startschutz.", "Runesmith grants your hero a sturdy opening shield.", "La Forge runique donne à ton héros un solide bouclier de départ."),
+  },
+  sternenhof: {
+    tone: "star",
+    minCards: 8,
+    heroBonus: 2,
+    openingHandDelta: 1,
+    title: localText("Sternenhof-Balance", "Star balance", "Équilibre astral"),
+    short: localText("+2 Leben, +1 Karte", "+2 life, +1 card", "+2 vie, +1 carte"),
+    description: localText("Sternenhof verbindet Sicherheit mit einem zusätzlichen Startzugriff.", "Star Court blends safety with one extra opening draw.", "La Cour des étoiles combine sécurité et une carte de départ supplémentaire."),
+  },
+  knochenbund: {
+    tone: "bone",
+    minCards: 8,
+    heroBonus: 2,
+    heroBarrier: 1,
+    title: localText("Knochenbund-Zähigkeit", "Bone resilience", "Résilience osseuse"),
+    short: localText("+2 Leben, +1 Schild", "+2 life, +1 shield", "+2 vie, +1 bouclier"),
+    description: localText("Knochenbund legt einen widerstandsfähigen Start hin.", "Bonebound opens with a sturdier starting shell.", "Le Clan d'os commence avec une base plus résistante."),
+  },
 });
 
 const ARENA_DIFFICULTIES = Object.freeze({
@@ -5754,6 +5963,7 @@ const elements = {
     booster: document.getElementById("boosterSection"),
     collection: document.getElementById("collectionSection"),
     decks: document.getElementById("decksSection"),
+    progress: document.getElementById("progressSection"),
     wiki: document.getElementById("wikiSection"),
     profile: document.getElementById("profileSection"),
     friends: document.getElementById("friendsSection"),
@@ -5811,6 +6021,13 @@ const elements = {
   savedDecksList: document.getElementById("savedDecksList"),
   savedDecksPanel: document.getElementById("savedDecksPanel"),
   deckCollectionGrid: document.getElementById("deckCollectionGrid"),
+  progressSummary: document.getElementById("progressSummary"),
+  progressQuestPanel: document.getElementById("progressQuestPanel"),
+  progressAchievementPanel: document.getElementById("progressAchievementPanel"),
+  progressRankPanel: document.getElementById("progressRankPanel"),
+  progressAlbumPanel: document.getElementById("progressAlbumPanel"),
+  progressPityPanel: document.getElementById("progressPityPanel"),
+  progressTradePanel: document.getElementById("progressTradePanel"),
   wikiSummary: document.getElementById("wikiSummary"),
   wikiFindHeading: document.getElementById("wikiFindHeading"),
   wikiSearchLabel: document.getElementById("wikiSearchLabel"),
@@ -7710,6 +7927,7 @@ function createEmptySave() {
     arenaDifficulty: "standard",
     settings: createDefaultSettings(),
     friends: createDefaultFriendState(),
+    progression: createDefaultProgression(),
     profileDisplay: cloneJsonValue(DEFAULT_PROFILE_DISPLAY),
     cosmetics: cloneJsonValue(DEFAULT_COSMETICS),
     lastOpened: {
@@ -7747,8 +7965,539 @@ function createDefaultFriendState() {
   return cloneJsonValue(DEFAULT_FRIEND_STATE);
 }
 
+function createDefaultProgression() {
+  return cloneJsonValue(DEFAULT_PROGRESS_STATE);
+}
+
 function createDefaultCosmetics() {
   return cloneJsonValue(DEFAULT_COSMETICS);
+}
+
+function createDefaultPityState() {
+  return { epicDry: 0, legendaryDry: 0 };
+}
+
+function getCurrentDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getCurrentWeekKey() {
+  const now = new Date();
+  const monday = new Date(now);
+  const day = monday.getUTCDay() || 7;
+  monday.setUTCDate(monday.getUTCDate() - (day - 1));
+  return monday.toISOString().slice(0, 10);
+}
+
+function sanitizeProgressionState(progression, baseProgression = createDefaultProgression()) {
+  const next = cloneJsonValue(baseProgression);
+  const source = progression && typeof progression === "object" ? progression : {};
+  next.rankPoints = sanitizeFiniteInteger(source.rankPoints, next.rankPoints, 0, SECURITY_LIMITS.maxGold * 10);
+  next.achievementsClaimed = [...new Set((Array.isArray(source.achievementsClaimed) ? source.achievementsClaimed : [])
+    .map((entry) => String(entry || "").trim().slice(0, 64))
+    .filter(Boolean))].slice(0, 120);
+  next.quests = {
+    dailyClaimed: [...new Set((Array.isArray(source.quests?.dailyClaimed) ? source.quests.dailyClaimed : [])
+      .map((entry) => String(entry || "").trim().slice(0, 64))
+      .filter(Boolean))].slice(0, 64),
+    weeklyClaimed: [...new Set((Array.isArray(source.quests?.weeklyClaimed) ? source.quests.weeklyClaimed : [])
+      .map((entry) => String(entry || "").trim().slice(0, 64))
+      .filter(Boolean))].slice(0, 64),
+  };
+  next.pity = {};
+  if (source.pity && typeof source.pity === "object") {
+    Object.keys(PACK_DEFINITIONS).forEach((packId) => {
+      const packState = source.pity[packId];
+      next.pity[packId] = {
+        epicDry: sanitizeFiniteInteger(packState?.epicDry, 0, 0, 999),
+        legendaryDry: sanitizeFiniteInteger(packState?.legendaryDry, 0, 0, 999),
+      };
+    });
+  }
+  next.stats = {
+    arenaWins: sanitizeFiniteInteger(source.stats?.arenaWins, 0, 0, 999999),
+    arenaLosses: sanitizeFiniteInteger(source.stats?.arenaLosses, 0, 0, 999999),
+    friendWins: sanitizeFiniteInteger(source.stats?.friendWins, 0, 0, 999999),
+    friendLosses: sanitizeFiniteInteger(source.stats?.friendLosses, 0, 0, 999999),
+    boostersOpened: sanitizeFiniteInteger(source.stats?.boostersOpened, 0, 0, 999999),
+    cardsOpened: sanitizeFiniteInteger(source.stats?.cardsOpened, 0, 0, 999999),
+    goldEarned: sanitizeFiniteInteger(source.stats?.goldEarned, 0, 0, SECURITY_LIMITS.maxGold * 100),
+    tradesCompleted: sanitizeFiniteInteger(source.stats?.tradesCompleted, 0, 0, 999999),
+    marketDeals: sanitizeFiniteInteger(source.stats?.marketDeals, 0, 0, 999999),
+    hardcoreWins: sanitizeFiniteInteger(source.stats?.hardcoreWins, 0, 0, 999999),
+    legendaryPlusPulled: sanitizeFiniteInteger(source.stats?.legendaryPlusPulled, 0, 0, 999999),
+  };
+  const sanitizeHistory = (entries, kind) => (Array.isArray(entries) ? entries : [])
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      return {
+        id: String(entry.id || "").trim().slice(0, 64),
+        createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+        note: String(entry.note || "").trim().slice(0, 160),
+        value: sanitizeFiniteInteger(entry.value, 0, 0, SECURITY_LIMITS.maxGold * 10),
+        status: String(entry.status || kind).trim().slice(0, 32),
+      };
+    })
+    .filter((entry) => entry && entry.id)
+    .slice(0, 24);
+  next.tradeHistory = sanitizeHistory(source.tradeHistory, "trade");
+  next.duelHistory = sanitizeHistory(source.duelHistory, "duel");
+  return next;
+}
+
+function getProgression() {
+  const save = getSave();
+  if (!save.progression) {
+    save.progression = createDefaultProgression();
+  }
+  save.progression = sanitizeProgressionState(save.progression);
+  return save.progression;
+}
+
+function pushLimitedHistory(list, entry, limit = 12) {
+  return [entry, ...(Array.isArray(list) ? list : [])].slice(0, limit);
+}
+
+function trackProgressStat(key, amount = 1) {
+  const progression = getProgression();
+  if (!(key in progression.stats)) {
+    return;
+  }
+  progression.stats[key] = Math.max(0, sanitizeFiniteInteger(progression.stats[key] + amount, 0, 0, SECURITY_LIMITS.maxGold * 100));
+}
+
+function addRankPoints(amount) {
+  const progression = getProgression();
+  progression.rankPoints = Math.max(0, progression.rankPoints + amount);
+}
+
+function addTradeHistoryEntry(note, value = 0, status = "trade") {
+  const progression = getProgression();
+  progression.tradeHistory = pushLimitedHistory(progression.tradeHistory, {
+    id: `trade-log-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    createdAt: new Date().toISOString(),
+    note,
+    value,
+    status,
+  });
+}
+
+function addDuelHistoryEntry(note, value = 0, status = "duel") {
+  const progression = getProgression();
+  progression.duelHistory = pushLimitedHistory(progression.duelHistory, {
+    id: `duel-log-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    createdAt: new Date().toISOString(),
+    note,
+    value,
+    status,
+  });
+}
+
+function formatProgressDate(value) {
+  if (!value) {
+    return localText("gerade eben", "just now", "à l'instant");
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return localText("gerade eben", "just now", "à l'instant");
+  }
+  return date.toLocaleDateString(getCurrentLocale(), {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function getRankState(points = 0) {
+  const safePoints = Math.max(0, Number(points || 0));
+  let tier = RANK_TIERS[0];
+  let nextTier = null;
+
+  RANK_TIERS.forEach((entry, index) => {
+    if (safePoints >= entry.min) {
+      tier = entry;
+      nextTier = RANK_TIERS[index + 1] || null;
+    }
+  });
+
+  const rangeStart = tier.min;
+  const rangeEnd = nextTier ? nextTier.min : rangeStart + 300;
+  const progress = nextTier ? clamp(0, 1, (safePoints - rangeStart) / Math.max(1, rangeEnd - rangeStart)) : 1;
+
+  return {
+    ...tier,
+    points: safePoints,
+    nextTier,
+    progress,
+    pointsIntoTier: safePoints - rangeStart,
+    pointsToNext: nextTier ? Math.max(0, nextTier.min - safePoints) : 0,
+  };
+}
+
+function buildQuestClaimKey(quest, periodKey) {
+  return `${periodKey}:${quest.id}`;
+}
+
+function getCurrentDailyQuests() {
+  return DAILY_QUEST_DEFS.map((quest) => ({
+    ...quest,
+    period: "daily",
+    periodKey: getCurrentDateKey(),
+  }));
+}
+
+function getCurrentWeeklyQuests() {
+  return WEEKLY_QUEST_DEFS.map((quest) => ({
+    ...quest,
+    period: "weekly",
+    periodKey: getCurrentWeekKey(),
+  }));
+}
+
+function getQuestProgress(progression, quest) {
+  return Math.min(quest.target, Math.max(0, Number(quest.getProgress(progression, getSave()) || 0)));
+}
+
+function isQuestClaimed(progression, quest) {
+  const claimedList = quest.period === "weekly" ? progression.quests.weeklyClaimed : progression.quests.dailyClaimed;
+  return claimedList.includes(buildQuestClaimKey(quest, quest.periodKey));
+}
+
+function isQuestClaimable(progression, quest) {
+  return !isQuestClaimed(progression, quest) && getQuestProgress(progression, quest) >= quest.target;
+}
+
+function grantRewardPackage({ rewardGold = 0, rewardPackId = "", source = "" } = {}) {
+  const save = getSave();
+  if (rewardGold > 0) {
+    save.gold += rewardGold;
+    trackProgressStat("goldEarned", rewardGold);
+  }
+  if (rewardPackId && PACK_DEFINITIONS[rewardPackId]) {
+    save.packs[rewardPackId] = (save.packs[rewardPackId] || 0) + 1;
+  }
+  if (source) {
+    showToast(source);
+  }
+}
+
+function claimQuest(period, questId) {
+  const progression = getProgression();
+  const questPool = period === "weekly" ? getCurrentWeeklyQuests() : getCurrentDailyQuests();
+  const quest = questPool.find((entry) => entry.id === questId);
+  if (!quest || !isQuestClaimable(progression, quest)) {
+    return;
+  }
+
+  const key = buildQuestClaimKey(quest, quest.periodKey);
+  if (period === "weekly") {
+    progression.quests.weeklyClaimed = [...progression.quests.weeklyClaimed, key];
+  } else {
+    progression.quests.dailyClaimed = [...progression.quests.dailyClaimed, key];
+  }
+
+  grantRewardPackage({
+    rewardGold: quest.rewardGold,
+    rewardPackId: quest.rewardPackId,
+    source: localText(
+      `${quest.title} abgeschlossen.`,
+      `${quest.title} completed.`,
+      `${quest.title} terminée.`,
+    ),
+  });
+  persistCurrentAccount();
+  renderAll();
+}
+
+function getAchievementStatus(definition) {
+  const progression = getProgression();
+  const completed = Boolean(definition.isComplete(progression, getSave()));
+  const claimed = progression.achievementsClaimed.includes(definition.id);
+  return { completed, claimed, claimable: completed && !claimed };
+}
+
+function claimAchievement(achievementId) {
+  const definition = ACHIEVEMENT_DEFS.find((entry) => entry.id === achievementId);
+  if (!definition) {
+    return;
+  }
+  const progression = getProgression();
+  const status = getAchievementStatus(definition);
+  if (!status.claimable) {
+    return;
+  }
+  progression.achievementsClaimed = [...progression.achievementsClaimed, definition.id];
+  grantRewardPackage({
+    rewardGold: definition.rewardGold,
+    rewardPackId: definition.rewardPackId,
+    source: localText(
+      `${definition.title} eingelöst.`,
+      `${definition.title} claimed.`,
+      `${definition.title} récupérée.`,
+    ),
+  });
+  persistCurrentAccount();
+  renderAll();
+}
+
+function getFactionDeckBonus(profile, mode = DECK_MODES.standard) {
+  if (!profile || !profile.factions) {
+    return null;
+  }
+  const dominant = Object.entries(profile.factions)
+    .sort((left, right) => right[1] - left[1])[0];
+  if (!dominant) {
+    return null;
+  }
+  const [factionId, count] = dominant;
+  const definition = FACTION_DECK_BONUSES[factionId];
+  const rules = getDeckRules(mode);
+  if (!definition) {
+    return null;
+  }
+  const threshold = Math.max(definition.minCards, Math.ceil(rules.size * 0.4));
+  if (count < threshold) {
+    return null;
+  }
+  return {
+    ...definition,
+    factionId,
+    count,
+    threshold,
+  };
+}
+
+function getAlbumProgress() {
+  const save = getSave();
+  const collection = save.collection || {};
+  const rarityStats = RARITY_ORDER.map((rarity) => {
+    const total = CARD_POOL.filter((card) => card.rarity === rarity).length;
+    const owned = CARD_POOL.filter((card) => card.rarity === rarity && (collection[card.id] || 0) > 0).length;
+    return { rarity, total, owned };
+  }).filter((entry) => entry.total > 0);
+
+  const factionStats = FACTIONS.map((faction) => {
+    const total = CARD_POOL.filter((card) => card.faction === faction.id).length;
+    const owned = CARD_POOL.filter((card) => card.faction === faction.id && (collection[card.id] || 0) > 0).length;
+    return { faction, total, owned };
+  });
+
+  return {
+    rarityStats,
+    factionStats,
+    ownedUnique: summarizeSave(save).uniqueCards,
+    totalUnique: CARD_POOL.length,
+  };
+}
+
+function renderProgress() {
+  if (!currentAccount) {
+    return;
+  }
+
+  const progression = getProgression();
+  const save = getSave();
+  const rank = getRankState(progression.rankPoints);
+  const dailyQuests = getCurrentDailyQuests();
+  const weeklyQuests = getCurrentWeeklyQuests();
+  const album = getAlbumProgress();
+  const achievementCards = ACHIEVEMENT_DEFS.map((definition) => ({ definition, status: getAchievementStatus(definition) }));
+  const claimableQuests = [...dailyQuests, ...weeklyQuests].filter((quest) => isQuestClaimable(progression, quest)).length;
+  const factionBonus = getFactionDeckBonus(analyzeDeck(getDeckByMode(DECK_MODES.standard)?.cards || []), DECK_MODES.standard);
+
+  elements.progressSummary.innerHTML = `
+    <p class="eyebrow">${localText("Status", "Status", "Statut")}</p>
+    <h3>${localText("Dein Fortschrittsüberblick", "Your progression snapshot", "Ton aperçu de progression")}</h3>
+    <div class="progress-summary-grid">
+      <article class="progress-stat-card">
+        <span>${localText("Rang", "Rank", "Rang")}</span>
+        <strong>${rank.label}</strong>
+        <small>${progression.rankPoints} RP</small>
+      </article>
+      <article class="progress-stat-card">
+        <span>${localText("Quest bereit", "Quests ready", "Quêtes prêtes")}</span>
+        <strong>${claimableQuests}</strong>
+        <small>${localText("einlösbar", "claimable", "réclamables")}</small>
+      </article>
+      <article class="progress-stat-card">
+        <span>${localText("Arenasiege", "Arena wins", "Victoires d'arène")}</span>
+        <strong>${progression.stats.arenaWins}</strong>
+        <small>${localText("gesamt", "total", "total")}</small>
+      </article>
+      <article class="progress-stat-card">
+        <span>${localText("Hardcore-Siege", "Hardcore wins", "Victoires hardcore")}</span>
+        <strong>${progression.stats.hardcoreWins}</strong>
+        <small>${localText("extrem", "extreme", "extrême")}</small>
+      </article>
+    </div>
+    ${factionBonus ? `<div class="warning-item ok">${escapeHtml(localText(
+      `Aktiver Fraktionsbonus: ${getFaction(factionBonus.factionId).name} – ${factionBonus.short}.`,
+      `Active faction bonus: ${getFaction(factionBonus.factionId).name} – ${factionBonus.short}.`,
+      `Bonus de faction actif : ${getFaction(factionBonus.factionId).name} – ${factionBonus.short}.`,
+    ))}</div>` : ""}
+  `;
+
+  const buildQuestMarkup = (quest) => {
+    const progress = getQuestProgress(progression, quest);
+    const claimed = isQuestClaimed(progression, quest);
+    const claimable = isQuestClaimable(progression, quest);
+    return `
+      <article class="quest-card ${claimable ? "claimable" : ""}">
+        <div class="quest-head">
+          <div>
+            <p class="eyebrow">${escapeHtml(quest.period === "weekly" ? localText("Wöchentlich", "Weekly", "Hebdomadaire") : localText("Täglich", "Daily", "Quotidien"))}</p>
+            <h4>${escapeHtml(quest.title)}</h4>
+          </div>
+          <span class="status-pill ${claimed ? "ok" : claimable ? "turn" : "subtle"}">${claimed ? localText("Eingelöst", "Claimed", "Réclamée") : `${progress}/${quest.target}`}</span>
+        </div>
+        <p class="mini-note">${escapeHtml(quest.description)}</p>
+        <div class="progress-meter"><span style="width:${Math.round((progress / quest.target) * 100)}%"></span></div>
+        <div class="quest-reward-row">
+          <span>${quest.rewardGold} ${localText("Gold", "Gold", "Or")}${quest.rewardPackId ? ` · ${getPackLabel(quest.rewardPackId)}` : ""}</span>
+          <button class="secondary-button" type="button" data-quest-claim="${quest.period}:${quest.id}" ${claimable ? "" : "disabled"}>${localText("Belohnung holen", "Claim", "Réclamer")}</button>
+        </div>
+      </article>
+    `;
+  };
+
+  elements.progressQuestPanel.innerHTML = `
+    <p class="eyebrow">${localText("Quests", "Quests", "Quêtes")}</p>
+    <h3>${localText("Täglich und wöchentlich", "Daily and weekly", "Quotidien et hebdomadaire")}</h3>
+    <div class="quest-list">
+      ${dailyQuests.map(buildQuestMarkup).join("")}
+      ${weeklyQuests.map(buildQuestMarkup).join("")}
+    </div>
+  `;
+
+  elements.progressAchievementPanel.innerHTML = `
+    <p class="eyebrow">${localText("Errungenschaften", "Achievements", "Succès")}</p>
+    <h3>${localText("Langfristige Meilensteine", "Long-term milestones", "Paliers long terme")}</h3>
+    <div class="achievement-grid">
+      ${achievementCards.map(({ definition, status }) => `
+        <article class="achievement-card ${status.claimable ? "claimable" : status.claimed ? "done" : ""}">
+          <div class="quest-head">
+            <h4>${escapeHtml(definition.title)}</h4>
+            <span class="status-pill ${status.claimed ? "ok" : status.claimable ? "turn" : "subtle"}">${status.claimed ? localText("Fertig", "Done", "Terminé") : status.claimable ? localText("Bereit", "Ready", "Prêt") : localText("Läuft", "In progress", "En cours")}</span>
+          </div>
+          <p class="mini-note">${escapeHtml(definition.description)}</p>
+          <div class="quest-reward-row">
+            <span>${definition.rewardGold} ${localText("Gold", "Gold", "Or")}${definition.rewardPackId ? ` · ${getPackLabel(definition.rewardPackId)}` : ""}</span>
+            <button class="secondary-button" type="button" data-achievement-claim="${escapeHtml(definition.id)}" ${status.claimable ? "" : "disabled"}>${localText("Einlösen", "Claim", "Réclamer")}</button>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  elements.progressRankPanel.innerHTML = `
+    <p class="eyebrow">${localText("Liga", "League", "Ligue")}</p>
+    <h3>${localText("Rang und Ligadruck", "Rank and ladder", "Rang et ladder")}</h3>
+    <div class="rank-card">
+      <div class="rank-head">
+        <strong>${rank.label}</strong>
+        <span>${progression.rankPoints} RP</span>
+      </div>
+      <div class="progress-meter rank-meter"><span style="width:${Math.round(rank.progress * 100)}%"></span></div>
+      <p class="mini-note">${rank.nextTier
+        ? localText(`${rank.pointsToNext} RP bis ${rank.nextTier.label}.`, `${rank.pointsToNext} RP to ${rank.nextTier.label}.`, `${rank.pointsToNext} RP jusqu'à ${rank.nextTier.label}.`)
+        : localText("Höchste sichtbare Liga erreicht.", "Highest visible league reached.", "Ligue visible maximale atteinte.")}</p>
+      <div class="rank-track">
+        ${RANK_TIERS.map((tier) => `<span class="rank-node ${tier.id === rank.id ? "active" : progression.rankPoints >= tier.min ? "done" : ""}">${escapeHtml(tier.label)}</span>`).join("")}
+      </div>
+    </div>
+  `;
+
+  elements.progressAlbumPanel.innerHTML = `
+    <p class="eyebrow">${localText("Album", "Album", "Album")}</p>
+    <h3>${localText("Sammlung nach Fraktion und Seltenheit", "Collection by faction and rarity", "Collection par faction et rareté")}</h3>
+    <div class="album-progress-hero">
+      <strong>${album.ownedUnique}/${album.totalUnique}</strong>
+      <span>${localText("einzigartige Karten gefunden", "unique cards collected", "cartes uniques trouvées")}</span>
+    </div>
+    <div class="album-grid">
+      ${album.rarityStats.map((entry) => `
+        <article class="album-card">
+          <span>${escapeHtml(RarityLabel(entry.rarity))}</span>
+          <strong>${entry.owned}/${entry.total}</strong>
+          <div class="progress-meter"><span style="width:${Math.round((entry.owned / entry.total) * 100)}%"></span></div>
+        </article>
+      `).join("")}
+      ${album.factionStats.map((entry) => `
+        <article class="album-card">
+          <span>${escapeHtml(entry.faction.name)}</span>
+          <strong>${entry.owned}/${entry.total}</strong>
+          <div class="progress-meter"><span style="width:${Math.round((entry.owned / entry.total) * 100)}%"></span></div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  const pityRows = Object.keys(PACK_DEFINITIONS).map((packId) => {
+    const state = progression.pity[packId] || createDefaultPityState();
+    return `
+      <article class="pity-card">
+        <div class="quest-head">
+          <h4>${escapeHtml(getPackLabel(packId))}</h4>
+          <span class="status-pill subtle">${escapeHtml(PACK_DEFINITIONS[packId].guaranteed ? RarityLabel(PACK_DEFINITIONS[packId].guaranteed) : "")}</span>
+        </div>
+        <p class="mini-note">${localText(`Epic-Pity: ${state.epicDry}/7 · Legendary-Pity: ${state.legendaryDry}/14`, `Epic pity: ${state.epicDry}/7 · Legendary pity: ${state.legendaryDry}/14`, `Pity épique : ${state.epicDry}/7 · Pity légendaire : ${state.legendaryDry}/14`)}</p>
+      </article>
+    `;
+  }).join("");
+
+  elements.progressPityPanel.innerHTML = `
+    <p class="eyebrow">${localText("Booster-Pity", "Booster pity", "Pity boosters")}</p>
+    <h3>${localText("Schlechte Serien werden weich abgefedert", "Bad streaks are softly corrected", "Les mauvaises séries sont adoucies")}</h3>
+    <p class="mini-note">${localText("Nach mehreren trockenen Öffnungen steigen die Chancen auf Episch und Legendär im jeweiligen Booster spürbar an.", "After several dry openings, the odds for epic and legendary cards inside that booster rise noticeably.", "Après plusieurs ouvertures sans gros tirage, les chances d'épique et de légendaire montent sensiblement dans ce booster.")}</p>
+    <div class="pity-grid">${pityRows}</div>
+  `;
+
+  elements.progressTradePanel.innerHTML = `
+    <p class="eyebrow">${localText("Sozial und Handel", "Social and trading", "Social et échanges")}</p>
+    <h3>${localText("Duelle, Trades und Sicherheit", "Duels, trades and safety", "Duels, échanges et sécurité")}</h3>
+    <div class="progress-summary-grid">
+      <article class="progress-stat-card">
+        <span>${localText("Trades", "Trades", "Échanges")}</span>
+        <strong>${progression.stats.tradesCompleted}</strong>
+        <small>${localText("abgeschlossen", "completed", "terminés")}</small>
+      </article>
+      <article class="progress-stat-card">
+        <span>${localText("Freundesduelle", "Friend duels", "Duels amicaux")}</span>
+        <strong>${progression.stats.friendWins + progression.stats.friendLosses}</strong>
+        <small>${progression.stats.friendWins}W / ${progression.stats.friendLosses}L</small>
+      </article>
+    </div>
+    <div class="history-grid">
+      <div class="history-column">
+        <h4>${localText("Letzte Trades", "Recent trades", "Derniers échanges")}</h4>
+        ${(progression.tradeHistory || []).length
+          ? progression.tradeHistory.map((entry) => `<div class="history-entry"><strong>${escapeHtml(entry.note)}</strong><span>${formatProgressDate(entry.createdAt)}</span></div>`).join("")
+          : `<p class="mini-note">${localText("Noch keine abgeschlossenen Trades.", "No completed trades yet.", "Aucun échange terminé pour l'instant.")}</p>`}
+      </div>
+      <div class="history-column">
+        <h4>${localText("Letzte Duelle", "Recent duels", "Derniers duels")}</h4>
+        ${(progression.duelHistory || []).length
+          ? progression.duelHistory.map((entry) => `<div class="history-entry"><strong>${escapeHtml(entry.note)}</strong><span>${formatProgressDate(entry.createdAt)}</span></div>`).join("")
+          : `<p class="mini-note">${localText("Noch keine geloggten Freundesduelle.", "No logged friend duels yet.", "Pas encore de duel amical enregistré.")}</p>`}
+      </div>
+    </div>
+    <div class="warning-item ok">${localText(
+      "Trades zeigen nur freie Kopien an. Karten, die in Decks gebunden sind, werden nicht als tauschbar angeboten.",
+      "Trades only expose free copies. Cards locked inside decks are not offered for exchange.",
+      "Les échanges n'affichent que les copies libres. Les cartes liées à des decks ne sont pas proposées.",
+    )}</div>
+  `;
+
+  elements.progressQuestPanel.querySelectorAll("[data-quest-claim]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const [period, questId] = String(button.dataset.questClaim || "").split(":");
+      claimQuest(period, questId);
+    });
+  });
+  elements.progressAchievementPanel.querySelectorAll("[data-achievement-claim]").forEach((button) => {
+    button.addEventListener("click", () => claimAchievement(button.dataset.achievementClaim));
+  });
 }
 
 function sanitizeCollection(collection) {
@@ -8262,6 +9011,7 @@ function normalizeAccount(account) {
       packs: sanitizePackInventory(save.packs, baseSave.packs),
       settings: sanitizePlayerSettings(save.settings, baseSave.settings),
       friends: sanitizeFriendState(save.friends, baseSave.friends),
+      progression: sanitizeProgressionState(save.progression, baseSave.progression),
       cosmetics,
       profileDisplay: sanitizeProfileDisplayState(save.profileDisplay, baseSave.profileDisplay, cosmetics),
       filters: sanitizeCollectionFilters(save.filters, baseSave.filters),
@@ -8802,6 +9552,10 @@ function renderMainMenu() {
   const arenaDeck = getDeckByMode(arenaDeckMode);
   const deckRules = getDeckRules(arenaDeckMode);
   const validation = validateDeck(arenaDeck, arenaDeckMode);
+  const progression = getProgression();
+  const rank = getRankState(progression.rankPoints);
+  const dailyQuests = getCurrentDailyQuests();
+  const claimableDaily = dailyQuests.filter((quest) => isQuestClaimable(progression, quest)).length;
   const menuTexts = {
     eyebrow: localText("Hauptmenü", "Main Menu", "Menu principal"),
     title: localText("Alles Wichtige startet in der Arena", "Everything important starts in the arena", "L'essentiel commence dans l'arène"),
@@ -8896,6 +9650,15 @@ function renderMainMenu() {
         : localText("Arena-Deck noch nicht spielbereit", "Arena deck not ready yet", "Le deck d'arène n'est pas encore prêt"),
     },
     {
+      ids: ["menuProgressKicker", "menuProgressTitle", "menuProgressText", "menuProgressMeta"],
+      kicker: localText("Fortschritt", "Progress", "Progression"),
+      title: localText("Quests und Liga", "Quests and league", "Quêtes et ligue"),
+      text: localText("Verfolge Tagesziele, Rang, Album und Booster-Pity zentral.", "Track daily goals, rank, album and booster pity in one place.", "Suis tes objectifs, ton rang, l'album et la pity des boosters au même endroit."),
+      meta: claimableDaily > 0
+        ? localText(`${claimableDaily} Daily-Quest bereit`, `${claimableDaily} daily quest ready`, `${claimableDaily} quête prête`)
+        : localText(`Rang ${rank.label}`, `Rank ${rank.label}`, `Rang ${rank.label}`),
+    },
+    {
       ids: ["menuShopKicker", "menuShopTitle", "menuShopText", "menuShopMeta"],
       kicker: localText("Shop", "Shop", "Boutique"),
       title: getUiText("nav.shop"),
@@ -8915,6 +9678,13 @@ function renderMainMenu() {
       title: getUiText("nav.wiki"),
       text: localText("Finde Symbole, Systeme und Begriffe schnell.", "Find symbols, systems and terms quickly.", "Retrouve rapidement les symboles, systèmes et termes."),
       meta: localText("Regeln, Effekte und Fortschritt", "Rules, effects and progression", "Règles, effets et progression"),
+    },
+    {
+      ids: ["menuFriendsKicker", "menuFriendsTitle", "menuFriendsText", "menuFriendsMeta"],
+      kicker: localText("Freunde", "Friends", "Amis"),
+      title: localText("Handel und Duelle", "Trading and duels", "Échanges et duels"),
+      text: localText("Suche Spieler, handle fair und fordere Freunde direkt heraus.", "Find players, trade fairly and challenge friends directly.", "Trouve des joueurs, échange équitablement et défie tes amis."),
+      meta: localText(`${getFriendState().friends.length} Freunde`, `${getFriendState().friends.length} friends`, `${getFriendState().friends.length} amis`),
     },
   ];
 
@@ -9005,6 +9775,7 @@ function renderAll() {
   renderBoosterLab();
   renderCollection();
   renderDeckManager();
+  renderProgress();
   renderWiki();
   renderProfile();
   renderFriends();
@@ -10106,6 +10877,8 @@ function renderDeckManager() {
   const deckRules = getDeckRules(deckMode);
   const activeDeck = getDeckByMode(deckMode);
   const validation = validateDeck(activeDeck, deckMode);
+  const deckProfile = analyzeDeck(activeDeck?.cards || []);
+  const factionBonus = getFactionDeckBonus(deckProfile, deckMode);
   const isHardcoreMode = deckMode === DECK_MODES.hardcore;
   const spellCount = getDeckTypeCount(activeDeck, "spell");
   const trainerCount = getDeckTypeCount(activeDeck, "trainer");
@@ -10414,6 +11187,13 @@ function renderDeckManager() {
     elements.activeDeckMeta.append(chip);
   });
 
+  if (factionBonus) {
+    const chip = document.createElement("div");
+    chip.className = `meta-chip tone-${factionBonus.tone}`;
+    chip.textContent = `${getFaction(factionBonus.factionId).name} · ${factionBonus.short}`;
+    elements.activeDeckMeta.append(chip);
+  }
+
   if (validation.valid) {
     const ok = document.createElement("div");
     ok.className = "warning-item ok";
@@ -10426,6 +11206,17 @@ function renderDeckManager() {
       warning.textContent = message;
       elements.activeDeckWarnings.append(warning);
     });
+  }
+
+  if (factionBonus) {
+    const factionNotice = document.createElement("div");
+    factionNotice.className = "warning-item ok";
+    factionNotice.textContent = localText(
+      `Fraktionsbonus aktiv: ${factionBonus.description}`,
+      `Faction bonus active: ${factionBonus.description}`,
+      `Bonus de faction actif : ${factionBonus.description}`,
+    );
+    elements.activeDeckWarnings.append(factionNotice);
   }
 
   if (!activeDeck.cards.length) {
@@ -12766,6 +13557,7 @@ function selectPack(packId) {
 function openPack(packId) {
   const save = getSave();
   const pack = PACK_DEFINITIONS[packId];
+  const progression = getProgression();
 
   if (!pack) {
     showToast("Dieses Booster ist ungültig.");
@@ -12791,6 +13583,17 @@ function openPack(packId) {
     save.collection[card.id] = (save.collection[card.id] || 0) + 1;
   });
 
+  const pityState = progression.pity[packId] || createDefaultPityState();
+  const hitEpic = cards.some((card) => RARITY_ORDER.indexOf(card.rarity) >= RARITY_ORDER.indexOf("epic"));
+  const hitLegendary = cards.some((card) => RARITY_ORDER.indexOf(card.rarity) >= RARITY_ORDER.indexOf("legendary"));
+  progression.pity[packId] = {
+    epicDry: hitEpic ? 0 : pityState.epicDry + 1,
+    legendaryDry: hitLegendary ? 0 : pityState.legendaryDry + 1,
+  };
+  trackProgressStat("boostersOpened", 1);
+  trackProgressStat("cardsOpened", cards.length);
+  trackProgressStat("legendaryPlusPulled", cards.filter((card) => RARITY_ORDER.indexOf(card.rarity) >= RARITY_ORDER.indexOf("legendary")).length);
+
   save.lastOpened = {
     packId,
     cards: cards.map((card) => card.id),
@@ -12805,6 +13608,7 @@ function openPack(packId) {
 
 function generatePack(packId) {
   const pack = PACK_DEFINITIONS[packId];
+  const pityState = getProgression().pity[packId] || createDefaultPityState();
 
   if (!pack) {
     return [];
@@ -12814,21 +13618,34 @@ function generatePack(packId) {
 
   for (let slot = 0; slot < 5; slot += 1) {
     const minimum = slot === 4 ? pack.guaranteed : "common";
-    const rarity = rollRarity(pack.odds, minimum);
+    const rarity = rollRarity(pack.odds, minimum, pityState);
     cards.push(drawCardByRarity(rarity));
   }
 
   return cards;
 }
 
-function rollRarity(weights, minimumRarity) {
+function rollRarity(weights, minimumRarity, pityState = createDefaultPityState()) {
   const minIndex = RARITY_ORDER.indexOf(minimumRarity);
   const eligibleRarities = RARITY_ORDER.slice(minIndex);
-  const total = eligibleRarities.reduce((sum, rarity) => sum + weights[rarity], 0);
+  const adjustedWeights = {};
+  const epicBonus = Math.min(14, Math.max(0, pityState.epicDry) * 0.85);
+  const legendaryBonus = Math.min(8, Math.max(0, pityState.legendaryDry - 4) * 0.55);
+  eligibleRarities.forEach((rarity) => {
+    let weight = weights[rarity];
+    if (["epic", "legendary", "ultra", "mythic", "transcendent"].includes(rarity)) {
+      weight += epicBonus;
+    }
+    if (["legendary", "ultra", "mythic", "transcendent"].includes(rarity)) {
+      weight += legendaryBonus;
+    }
+    adjustedWeights[rarity] = weight;
+  });
+  const total = eligibleRarities.reduce((sum, rarity) => sum + adjustedWeights[rarity], 0);
   let roll = Math.random() * total;
 
   for (const rarity of eligibleRarities) {
-    roll -= weights[rarity];
+    roll -= adjustedWeights[rarity];
     if (roll <= 0) {
       return rarity;
     }
@@ -13116,6 +13933,7 @@ function sellCardOnMarket(cardId, amount) {
   getSave().gold += quote.net;
   database.market.feeVault += quote.fee;
   recordMarketTrade(cardId, "sell", sellAmount);
+  trackProgressStat("marketDeals", sellAmount);
   persistCurrentAccount();
   if (isServerSessionActive()) {
     queueServerMarketSync();
@@ -13148,6 +13966,7 @@ function buyCardOnMarket(cardId, amount = 1) {
   getSave().gold -= totalPrice;
   getSave().collection[cardId] = (getSave().collection[cardId] || 0) + buyAmount;
   recordMarketTrade(cardId, "buy", buyAmount);
+  trackProgressStat("marketDeals", buyAmount);
   persistCurrentAccount();
   if (isServerSessionActive()) {
     queueServerMarketSync();
@@ -15443,6 +16262,8 @@ function clearMatch() {
 
     const deductedGold = Math.min(getSave().gold, plannedPenalty);
     getSave().gold = Math.max(0, getSave().gold - deductedGold);
+    trackProgressStat("arenaLosses", 1);
+    addRankPoints(-8);
     uiState.modalCardId = null;
     uiState.match = null;
     persistCurrentAccount();
@@ -15462,6 +16283,7 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
   const deckMode = getDeckModeId(options.deckMode || getDeckModeForDifficulty(difficultyId));
   const deckRules = getDeckRules(deckMode);
   const playerDeckProfile = analyzeDeck(playerDeckCards);
+  const factionBonus = getFactionDeckBonus(playerDeckProfile, deckMode);
   const difficulty = friendMode
     ? {
       ...getArenaDifficulty(getArenaDifficultyId(difficultyId)),
@@ -15495,6 +16317,7 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
     opponentDeckName: friendMode ? String(options.opponentDeckName || "").slice(0, 48) : "",
     sourceDeckName: String(options.sourceDeckName || "").slice(0, 48),
     stakedDeck: [...playerDeckCards],
+    factionBonus,
     turn: 0,
     phase: "player",
     status: "active",
@@ -15512,8 +16335,22 @@ function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSav
     match.enemy.mana = match.enemy.maxMana;
   }
 
+  if (factionBonus) {
+    match.player.hero = Math.max(1, match.player.hero + (factionBonus.heroBonus || 0));
+    match.player.heroBarrier = Math.max(0, match.player.heroBarrier + (factionBonus.heroBarrier || 0));
+    match.player.maxMana = clamp(0, APP_CONFIG.maxMana, match.player.maxMana + (factionBonus.startingManaBonus || 0));
+    match.player.mana = Math.max(match.player.mana, match.player.maxMana);
+    match.enemy.hero = Math.max(1, match.enemy.hero - (factionBonus.enemyHeroPenalty || 0));
+  }
+
   match.player.deckProfile = playerDeckProfile;
+  match.player.deckBonus = factionBonus;
   drawOpeningHands(match, difficulty);
+  if (factionBonus?.openingHandDelta) {
+    for (let drawIndex = 0; drawIndex < factionBonus.openingHandDelta; drawIndex += 1) {
+      drawCard(match.player);
+    }
+  }
   return match;
 }
 
@@ -15536,9 +16373,18 @@ function finishMatch(status, message) {
   if (!friendMode) {
     if (status === "won") {
       save.gold += rewardWin;
+      trackProgressStat("arenaWins", 1);
+      trackProgressStat("goldEarned", rewardWin);
+      addRankPoints(difficulty.id === "hardcore" ? 60 : difficulty.id === "nightmare" ? 34 : difficulty.id === "veteran" ? 24 : difficulty.id === "standard" ? 18 : 12);
+      if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
+        trackProgressStat("hardcoreWins", 1);
+      }
       addLog(getUiText("messages.matchRewardWin", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardWin }));
     } else {
       save.gold += rewardLoss;
+      trackProgressStat("arenaLosses", 1);
+      trackProgressStat("goldEarned", rewardLoss);
+      addRankPoints(-(difficulty.id === "hardcore" ? 16 : difficulty.id === "nightmare" ? 12 : difficulty.id === "veteran" ? 8 : 5));
       addLog(getUiText("messages.matchRewardLoss", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardLoss }));
       if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
         const lostCards = applyHardcoreDeckLoss(match.stakedDeck);
@@ -15550,6 +16396,19 @@ function finishMatch(status, message) {
       }
     }
   } else {
+    if (status === "won") {
+      trackProgressStat("friendWins", 1);
+      addRankPoints(10);
+    } else {
+      trackProgressStat("friendLosses", 1);
+    }
+    addDuelHistoryEntry(
+      status === "won"
+        ? localText(`Sieg gegen ${match.opponentLabel || "Freund"}`, `Win against ${match.opponentLabel || "friend"}`, `Victoire contre ${match.opponentLabel || "ami"}`)
+        : localText(`Niederlage gegen ${match.opponentLabel || "Freund"}`, `Loss against ${match.opponentLabel || "friend"}`, `Défaite contre ${match.opponentLabel || "ami"}`),
+      0,
+      status,
+    );
     addLog(status === "won"
       ? localText("Du gewinnst das Freundesduell.", "You win the friend duel.", "Tu gagnes le duel amical.")
       : localText("Das Freundesduell geht verloren.", "The friend duel is lost.", "Le duel amical est perdu."));
@@ -15568,6 +16427,7 @@ function renderArena() {
   const isFriendMatch = Boolean(hasMatch && match.mode === "friend");
   const matchFinished = Boolean(match && (match.status === "won" || match.status === "lost"));
   const previewDeckProfile = activeDeck ? analyzeDeck(activeDeck.cards) : null;
+  const previewFactionBonus = previewDeckProfile ? getFactionDeckBonus(previewDeckProfile, deckMode) : null;
   const deckRules = getDeckRules(hasMatch ? getDeckModeId(match.deckMode || deckMode) : deckMode);
   const difficulty = hasMatch
     ? {
@@ -15615,9 +16475,11 @@ function renderArena() {
     : difficulty.antiFarmActive
       ? `${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}. ${getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss })}`
       : `${getArenaDifficultyDescription(difficultyId)} ${getUiText("arena.difficultyHint")}`;
+  const activeFactionBonus = hasMatch ? match.player?.deckBonus : previewFactionBonus;
+  const factionNote = activeFactionBonus ? activeFactionBonus.description : "";
   const statusNote = hasMatch
     ? (matchFinished ? latestLog : isFriendMatch ? localText("Das Duell nutzt das gespeicherte Deck deines Freundes als Gegnerseite.", "The duel uses your friend's stored deck as the opponent side.", "Le duel utilise le deck enregistré de ton ami comme côté adverse.") : getUiText("arena.focusNote"))
-    : (validation.valid ? `${difficultyNote} ${getUiText("arena.readyStart")}` : `${difficultyNote} ${validation.messages.join(" ")}`);
+    : (validation.valid ? `${difficultyNote} ${factionNote} ${getUiText("arena.readyStart")}` : `${difficultyNote} ${factionNote} ${validation.messages.join(" ")}`);
   const previewSideState = {
     hero: APP_CONFIG.heroHealth,
     heroBarrier: 0,
@@ -15709,6 +16571,11 @@ function renderArena() {
       <p class="eyebrow">${getUiText("arena.latestLog")}</p>
       <strong>${hasMatch ? getUiText("arena.round", { turn: match.turn }) : getUiText("common.waiting")}</strong>
       <span>${latestLog}</span>
+    </article>
+    <article class="arena-insight-card">
+      <p class="eyebrow">${localText("Deckbonus", "Deck bonus", "Bonus deck")}</p>
+      <strong>${escapeHtml(activeFactionBonus?.title || localText("Neutral", "Neutral", "Neutre"))}</strong>
+      <span>${escapeHtml(activeFactionBonus?.description || localText("Kein aktiver Fraktionsbonus im aktuellen Deck.", "No active faction bonus in the current deck.", "Aucun bonus de faction actif dans le deck actuel."))}</span>
     </article>
   `;
 

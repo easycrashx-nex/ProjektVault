@@ -21,6 +21,36 @@ const DECK_RULES = Object.freeze({
   hardcore: Object.freeze({ size: 35 }),
 });
 const MAX_DECK_SIZE = Math.max(...Object.values(DECK_RULES).map((entry) => entry.size));
+const DEFAULT_PROGRESS_STATE = Object.freeze({
+  rankPoints: 0,
+  achievementsClaimed: [],
+  quests: {
+    dailyClaimed: [],
+    weeklyClaimed: [],
+  },
+  pity: Object.freeze({
+    starter: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    market: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    champion: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    relic: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    astral: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+  }),
+  stats: {
+    arenaWins: 0,
+    arenaLosses: 0,
+    friendWins: 0,
+    friendLosses: 0,
+    boostersOpened: 0,
+    cardsOpened: 0,
+    goldEarned: 0,
+    tradesCompleted: 0,
+    marketDeals: 0,
+    hardcoreWins: 0,
+    legendaryPlusPulled: 0,
+  },
+  tradeHistory: [],
+  duelHistory: [],
+});
 
 function clamp(min, max, value) {
   return Math.min(max, Math.max(min, value));
@@ -132,6 +162,30 @@ function createDefaultCosmetics() {
   };
 }
 
+function createDefaultProgression() {
+  return cloneJsonValue(DEFAULT_PROGRESS_STATE, {
+    rankPoints: 0,
+    achievementsClaimed: [],
+    quests: { dailyClaimed: [], weeklyClaimed: [] },
+    pity: {},
+    stats: {
+      arenaWins: 0,
+      arenaLosses: 0,
+      friendWins: 0,
+      friendLosses: 0,
+      boostersOpened: 0,
+      cardsOpened: 0,
+      goldEarned: 0,
+      tradesCompleted: 0,
+      marketDeals: 0,
+      hardcoreWins: 0,
+      legendaryPlusPulled: 0,
+    },
+    tradeHistory: [],
+    duelHistory: [],
+  });
+}
+
 function createEmptySave() {
   const firstDeck = createDeck("Erstes Deck");
   const hardcoreDeck = createDeck("Hardcore-Deck");
@@ -153,6 +207,7 @@ function createEmptySave() {
     arenaDifficulty: "standard",
     settings: createDefaultSettings(),
     friends: createDefaultFriendState(),
+    progression: createDefaultProgression(),
     profileDisplay: createDefaultProfileDisplay(),
     cosmetics: createDefaultCosmetics(),
     lastOpened: {
@@ -415,6 +470,60 @@ function sanitizeActiveMatch(match) {
   return snapshot;
 }
 
+function sanitizeProgression(progression, baseProgression = createDefaultProgression()) {
+  const next = cloneJsonValue(baseProgression, createDefaultProgression());
+  const source = progression && typeof progression === "object" ? progression : {};
+  next.rankPoints = sanitizeFiniteInteger(source.rankPoints, next.rankPoints, 0, GAME_LIMITS.maxGold * 10);
+  next.achievementsClaimed = [...new Set(sanitizeStringArray(source.achievementsClaimed, { maxItems: 120, maxLength: 64 }))];
+  next.quests = {
+    dailyClaimed: [...new Set(sanitizeStringArray(source.quests?.dailyClaimed, { maxItems: 64, maxLength: 64 }))],
+    weeklyClaimed: [...new Set(sanitizeStringArray(source.quests?.weeklyClaimed, { maxItems: 64, maxLength: 64 }))],
+  };
+  next.pity = {};
+  PACK_IDS.forEach((packId) => {
+    const pityState = source.pity?.[packId];
+    next.pity[packId] = {
+      epicDry: sanitizeFiniteInteger(pityState?.epicDry, 0, 0, 999),
+      legendaryDry: sanitizeFiniteInteger(pityState?.legendaryDry, 0, 0, 999),
+    };
+  });
+  next.stats = {
+    arenaWins: sanitizeFiniteInteger(source.stats?.arenaWins, 0, 0, 999999),
+    arenaLosses: sanitizeFiniteInteger(source.stats?.arenaLosses, 0, 0, 999999),
+    friendWins: sanitizeFiniteInteger(source.stats?.friendWins, 0, 0, 999999),
+    friendLosses: sanitizeFiniteInteger(source.stats?.friendLosses, 0, 0, 999999),
+    boostersOpened: sanitizeFiniteInteger(source.stats?.boostersOpened, 0, 0, 999999),
+    cardsOpened: sanitizeFiniteInteger(source.stats?.cardsOpened, 0, 0, 999999),
+    goldEarned: sanitizeFiniteInteger(source.stats?.goldEarned, 0, 0, GAME_LIMITS.maxGold * 100),
+    tradesCompleted: sanitizeFiniteInteger(source.stats?.tradesCompleted, 0, 0, 999999),
+    marketDeals: sanitizeFiniteInteger(source.stats?.marketDeals, 0, 0, 999999),
+    hardcoreWins: sanitizeFiniteInteger(source.stats?.hardcoreWins, 0, 0, 999999),
+    legendaryPlusPulled: sanitizeFiniteInteger(source.stats?.legendaryPlusPulled, 0, 0, 999999),
+  };
+  const sanitizeHistory = (entries, fallbackStatus) => (Array.isArray(entries) ? entries : [])
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      const id = sanitizeId(entry.id, 64);
+      if (!id) {
+        return null;
+      }
+      return {
+        id,
+        createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+        note: sanitizeText(entry.note, 160),
+        value: sanitizeFiniteInteger(entry.value, 0, 0, GAME_LIMITS.maxGold * 10),
+        status: sanitizeText(entry.status, 32) || fallbackStatus,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 24);
+  next.tradeHistory = sanitizeHistory(source.tradeHistory, "trade");
+  next.duelHistory = sanitizeHistory(source.duelHistory, "duel");
+  return next;
+}
+
 function sanitizeSave(save, sanitizeUsername) {
   const baseSave = createEmptySave();
   const sanitizedDecks = sanitizeDecks(save?.decks);
@@ -434,6 +543,7 @@ function sanitizeSave(save, sanitizeUsername) {
     arenaDifficulty: ARENA_DIFFICULTIES.includes(save?.arenaDifficulty) ? save.arenaDifficulty : baseSave.arenaDifficulty,
     settings: sanitizeSettings(save?.settings, baseSave.settings),
     friends: sanitizeFriends(save?.friends, baseSave.friends, sanitizeUsername),
+    progression: sanitizeProgression(save?.progression, baseSave.progression),
     profileDisplay: sanitizeProfileDisplay(save?.profileDisplay, baseSave.profileDisplay, cosmetics),
     cosmetics,
     lastOpened: sanitizeLastOpened(save?.lastOpened, baseSave.lastOpened),

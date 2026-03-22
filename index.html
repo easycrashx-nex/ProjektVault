@@ -168,6 +168,12 @@
                   <p id="menuDecksText">Baue Standard- und Hardcore-Decks gezielt auf.</p>
                   <span class="menu-link-meta" id="menuDecksMeta"></span>
                 </button>
+                <button class="menu-link-card nav-button" data-section="progress" type="button">
+                  <span class="menu-link-kicker" id="menuProgressKicker">Fortschritt</span>
+                  <strong id="menuProgressTitle">Quests und Liga</strong>
+                  <p id="menuProgressText">Behalte Quests, Rang, Album und Pity direkt im Blick.</p>
+                  <span class="menu-link-meta" id="menuProgressMeta"></span>
+                </button>
                 <button class="menu-link-card nav-button" data-section="shop" type="button">
                   <span class="menu-link-kicker" id="menuShopKicker">Shop</span>
                   <strong id="menuShopTitle">Neue Angebote</strong>
@@ -185,6 +191,12 @@
                   <strong id="menuWikiTitle">Regeln nachschlagen</strong>
                   <p id="menuWikiText">Finde Symbole, Systeme und Begriffe schnell.</p>
                   <span class="menu-link-meta" id="menuWikiMeta"></span>
+                </button>
+                <button class="menu-link-card nav-button" data-section="friends" type="button">
+                  <span class="menu-link-kicker" id="menuFriendsKicker">Freunde</span>
+                  <strong id="menuFriendsTitle">Handel und Duelle</strong>
+                  <p id="menuFriendsText">Suche Spieler, handle sicher und fordere Freunde heraus.</p>
+                  <span class="menu-link-meta" id="menuFriendsMeta"></span>
                 </button>
                 <button class="menu-link-card nav-button hidden" data-section="admin" data-admin-only="true" type="button">
                   <span class="menu-link-kicker" id="menuAdminKicker">Admin</span>
@@ -417,6 +429,31 @@
                   <p class="mini-note" id="deckAddCardsNote">Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.</p>
                   <div class="card-grid compact-grid" id="deckCollectionGrid"></div>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-panel" id="progressSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Fortschritt</p>
+                <h2>Quests, Liga, Album und Langzeitziele</h2>
+              </div>
+              <p class="section-note">Behalte tägliche Ziele, Errungenschaften, Pity und deinen Sammlungsausbau in einem Blick.</p>
+            </div>
+
+            <div class="progress-layout">
+              <div class="progress-column">
+                <div class="info-panel" id="progressSummary"></div>
+                <div class="info-panel" id="progressQuestPanel"></div>
+                <div class="info-panel" id="progressAchievementPanel"></div>
+              </div>
+
+              <div class="progress-column">
+                <div class="info-panel" id="progressRankPanel"></div>
+                <div class="info-panel" id="progressAlbumPanel"></div>
+                <div class="info-panel" id="progressPityPanel"></div>
+                <div class="info-panel" id="progressTradePanel"></div>
               </div>
             </div>
           </section>
