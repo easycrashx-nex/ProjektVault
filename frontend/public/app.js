@@ -10079,6 +10079,7 @@ function renderFriendBucket(element, { eyebrow, title, list, emptyText, note }) 
 }
 
 function renderFriends() {
+  return legacyRenderFriends();
   if (!currentAccount) {
     elements.friendsSummary.innerHTML = "";
     elements.friendsListPanel.innerHTML = "";
@@ -10267,6 +10268,7 @@ function renderSettings() {
 }
 
 function renderShop() {
+  return legacyRenderShop();
   if (!currentAccount) {
     return;
   }

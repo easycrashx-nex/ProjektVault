@@ -28,3 +28,5 @@ TODO
 - 2026-03-22: Hauptfehler nach Login war `factionBonus is not defined` in einer überschriebenen Altversion von `renderDeckManager()`. Dieser eine Laufzeitfehler stoppte `renderAll()` und ließ spätere Bereiche wie Freunde, Fortschritt, Wiki, Admin und Arena unvollständig wirken.
 
 - 2026-03-22: Letzter Live-Blocker identifiziert: actionBonus fehlte in der aktiven enderDeckManager()-Version. Dadurch brach enderAll() im Live-Deploy weiterhin im Deckbereich ab und ließ Bereiche wie Freunde, Fortschritt, Wiki, Arena und Admin unvollständig wirken.
+
+- 2026-03-22: Freunde- und Profil-Shop-Fehler korrigiert: Die aktiven enderFriends()- und enderShop()-Funktionen waren noch Platzhalterfassungen. Sie delegieren jetzt wieder an die vollständigen finalen Varianten, sodass Freundessuche, Anfragen, Handel, Duelle und der Kosmetik-Shop wieder rendern können.
