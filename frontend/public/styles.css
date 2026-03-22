@@ -873,6 +873,22 @@ p {
   z-index: 1;
 }
 
+.resource-chip small {
+  position: relative;
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.resource-chip.rank-chip strong {
+  font-size: 1.3rem;
+  line-height: 1.08;
+}
+
 .resource-chip.tone-gold {
   border-color: rgba(255, 210, 122, 0.18);
   background:
@@ -1487,18 +1503,18 @@ body[data-scene="settings"] .scene-core {
 
 .rank-track {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px;
   margin-top: 14px;
 }
 
 .rank-node {
-  padding: 10px 12px;
+  padding: 9px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--muted);
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

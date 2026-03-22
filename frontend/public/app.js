@@ -228,12 +228,12 @@ const DEFAULT_PROGRESS_STATE = Object.freeze({
 });
 
 const RANK_TIERS = Object.freeze([
-  { id: "bronze", label: localText("Bronze", "Bronze", "Bronze"), min: 0 },
-  { id: "silber", label: localText("Silber", "Silver", "Argent"), min: 140 },
-  { id: "gold", label: localText("Gold", "Gold", "Or"), min: 320 },
-  { id: "platin", label: localText("Platin", "Platinum", "Platine"), min: 560 },
-  { id: "diamant", label: localText("Diamant", "Diamond", "Diamant"), min: 860 },
-  { id: "mythisch", label: localText("Mythisch", "Mythic", "Mythique"), min: 1220 },
+  { id: "bronze", label: Object.freeze({ de: "Bronze", en: "Bronze", fr: "Bronze" }), min: 0 },
+  { id: "silber", label: Object.freeze({ de: "Silber", en: "Silver", fr: "Argent" }), min: 140 },
+  { id: "gold", label: Object.freeze({ de: "Gold", en: "Gold", fr: "Or" }), min: 320 },
+  { id: "platin", label: Object.freeze({ de: "Platin", en: "Platinum", fr: "Platine" }), min: 560 },
+  { id: "diamant", label: Object.freeze({ de: "Diamant", en: "Diamond", fr: "Diamant" }), min: 860 },
+  { id: "mythisch", label: Object.freeze({ de: "Mythisch", en: "Mythic", fr: "Mythique" }), min: 1220 },
 ]);
 
 const DAILY_QUEST_DEFS = Object.freeze([
@@ -410,6 +410,8 @@ const ARENA_DIFFICULTIES = Object.freeze({
     id: "novice",
     rewardWin: 55,
     rewardLoss: 20,
+    rankWin: 12,
+    rankLoss: 5,
     forfeitPenalty: 25,
     enemyHeroBonus: -5,
     enemyBarrier: 0,
@@ -423,6 +425,8 @@ const ARENA_DIFFICULTIES = Object.freeze({
     id: "standard",
     rewardWin: 90,
     rewardLoss: 35,
+    rankWin: 18,
+    rankLoss: 5,
     forfeitPenalty: 60,
     enemyHeroBonus: 0,
     enemyBarrier: 0,
@@ -436,6 +440,8 @@ const ARENA_DIFFICULTIES = Object.freeze({
     id: "veteran",
     rewardWin: 145,
     rewardLoss: 50,
+    rankWin: 24,
+    rankLoss: 8,
     forfeitPenalty: 100,
     enemyHeroBonus: 6,
     enemyBarrier: 2,
@@ -449,6 +455,8 @@ const ARENA_DIFFICULTIES = Object.freeze({
     id: "nightmare",
     rewardWin: 230,
     rewardLoss: 70,
+    rankWin: 34,
+    rankLoss: 12,
     forfeitPenalty: 150,
     enemyHeroBonus: 12,
     enemyBarrier: 4,
@@ -462,6 +470,8 @@ const ARENA_DIFFICULTIES = Object.freeze({
     id: "hardcore",
     rewardWin: 340,
     rewardLoss: 0,
+    rankWin: 60,
+    rankLoss: 16,
     forfeitPenalty: 0,
     enemyHeroBonus: 18,
     enemyBarrier: 6,
@@ -1335,6 +1345,8 @@ function createArenaMatchConfig(deckProfile, selectedDifficultyId) {
     antiFarmActive: antiFarmGap > 0,
     rewardWin: Math.max(6, Math.round(selectedDifficulty.rewardWin * rewardMultiplier)),
     rewardLoss: Math.max(2, Math.round(selectedDifficulty.rewardLoss * rewardMultiplier)),
+    rankWin: Math.max(2, Math.round(selectedDifficulty.rankWin * rewardMultiplier)),
+    rankLoss: Math.max(0, selectedDifficulty.rankLoss),
     powerScore: Number(deckProfile?.powerScore || 0),
   };
 }
@@ -8107,29 +8119,67 @@ function formatProgressDate(value) {
   });
 }
 
+function getRankTierLabel(tier) {
+  if (!tier) {
+    return "";
+  }
+  return pickLocalizedText(tier.label);
+}
+
+function getRankStages() {
+  return RANK_TIERS.flatMap((tier, tierIndex) => {
+    const previousTier = RANK_TIERS[tierIndex - 1] || null;
+    const nextTier = RANK_TIERS[tierIndex + 1] || null;
+    const tierSpan = nextTier
+      ? Math.max(3, nextTier.min - tier.min)
+      : Math.max(180, tier.min - (previousTier?.min ?? 0));
+    const stageSpan = Math.max(1, Math.ceil(tierSpan / 3));
+
+    return [3, 2, 1].map((division, divisionIndex) => {
+      const min = tier.min + (divisionIndex * stageSpan);
+      const maxExclusive = division === 1
+        ? (nextTier ? nextTier.min : Number.POSITIVE_INFINITY)
+        : Math.min(nextTier ? nextTier.min : Number.POSITIVE_INFINITY, tier.min + ((divisionIndex + 1) * stageSpan));
+
+      return {
+        id: `${tier.id}-${division}`,
+        tierId: tier.id,
+        tier,
+        division,
+        min,
+        maxExclusive,
+        label: `${getRankTierLabel(tier)} ${division}`,
+      };
+    });
+  });
+}
+
 function getRankState(points = 0) {
   const safePoints = Math.max(0, Number(points || 0));
-  let tier = RANK_TIERS[0];
-  let nextTier = null;
+  const stages = getRankStages();
+  let stage = stages[0];
+  let stageIndex = 0;
 
-  RANK_TIERS.forEach((entry, index) => {
+  stages.forEach((entry, index) => {
     if (safePoints >= entry.min) {
-      tier = entry;
-      nextTier = RANK_TIERS[index + 1] || null;
+      stage = entry;
+      stageIndex = index;
     }
   });
 
-  const rangeStart = tier.min;
-  const rangeEnd = nextTier ? nextTier.min : rangeStart + 300;
-  const progress = nextTier ? clamp(0, 1, (safePoints - rangeStart) / Math.max(1, rangeEnd - rangeStart)) : 1;
+  const nextStage = stages[stageIndex + 1] || null;
+  const rangeStart = stage.min;
+  const rangeEnd = nextStage ? nextStage.min : (Number.isFinite(stage.maxExclusive) ? stage.maxExclusive : stage.min + 120);
+  const progress = nextStage ? clamp(0, 1, (safePoints - rangeStart) / Math.max(1, rangeEnd - rangeStart)) : 1;
 
   return {
-    ...tier,
+    ...stage,
     points: safePoints,
-    nextTier,
+    nextStage,
     progress,
     pointsIntoTier: safePoints - rangeStart,
-    pointsToNext: nextTier ? Math.max(0, nextTier.min - safePoints) : 0,
+    pointsToNext: nextStage ? Math.max(0, nextStage.min - safePoints) : 0,
+    stages,
   };
 }
 
@@ -8397,11 +8447,11 @@ function renderProgress() {
         <span>${progression.rankPoints} RP</span>
       </div>
       <div class="progress-meter rank-meter"><span style="width:${Math.round(rank.progress * 100)}%"></span></div>
-      <p class="mini-note">${rank.nextTier
-        ? localText(`${rank.pointsToNext} RP bis ${rank.nextTier.label}.`, `${rank.pointsToNext} RP to ${rank.nextTier.label}.`, `${rank.pointsToNext} RP jusqu'à ${rank.nextTier.label}.`)
+      <p class="mini-note">${rank.nextStage
+        ? localText(`${rank.pointsToNext} RP bis ${rank.nextStage.label}.`, `${rank.pointsToNext} RP to ${rank.nextStage.label}.`, `${rank.pointsToNext} RP jusqu'à ${rank.nextStage.label}.`)
         : localText("Höchste sichtbare Liga erreicht.", "Highest visible league reached.", "Ligue visible maximale atteinte.")}</p>
       <div class="rank-track">
-        ${RANK_TIERS.map((tier) => `<span class="rank-node ${tier.id === rank.id ? "active" : progression.rankPoints >= tier.min ? "done" : ""}">${escapeHtml(tier.label)}</span>`).join("")}
+        ${rank.stages.map((stage) => `<span class="rank-node ${stage.id === rank.id ? "active" : progression.rankPoints >= stage.min ? "done" : ""}">${escapeHtml(stage.label)}</span>`).join("")}
       </div>
     </div>
   `;
@@ -8940,6 +8990,8 @@ function sanitizeSavedMatchState(match) {
     antiFarmActive: Boolean(match.antiFarmActive),
     rewardWin: sanitizeFiniteInteger(match.rewardWin, getArenaDifficulty(match.difficultyId).rewardWin, 0, SECURITY_LIMITS.maxGold),
     rewardLoss: sanitizeFiniteInteger(match.rewardLoss, getArenaDifficulty(match.difficultyId).rewardLoss, 0, SECURITY_LIMITS.maxGold),
+    rankWin: sanitizeFiniteInteger(match.rankWin, getArenaDifficulty(match.difficultyId).rankWin, 0, SECURITY_LIMITS.maxGold),
+    rankLoss: sanitizeFiniteInteger(match.rankLoss, getArenaDifficulty(match.difficultyId).rankLoss, 0, SECURITY_LIMITS.maxGold),
     forfeitPenalty: sanitizeFiniteInteger(match.forfeitPenalty, getArenaDifficulty(match.difficultyId).forfeitPenalty, 0, SECURITY_LIMITS.maxGold),
     mode: match.mode === "friend" ? "friend" : "arena",
     deckMode: getDeckModeId(match.deckMode || getDeckModeForDifficulty(match.difficultyId)),
@@ -9830,7 +9882,7 @@ function renderNavigation() {
 function renderResources() {
   const save = getSave();
   const { totalCards, uniqueCards, totalBoosters } = summarizeSave(save);
-  const activeDeck = getActiveDeck();
+  const rank = getRankState(getProgression().rankPoints);
 
   elements.resourceBar.innerHTML = "";
 
@@ -9839,13 +9891,19 @@ function renderResources() {
     { label: getCurrentLanguage() === "fr" ? "Cartes" : getCurrentLanguage() === "en" ? "Cards" : "Karten", value: totalCards, tone: "ember" },
     { label: getCurrentLanguage() === "fr" ? "Uniques" : getCurrentLanguage() === "en" ? "Unique" : "Einzigartig", value: uniqueCards, tone: "aqua" },
     { label: getCurrentLanguage() === "fr" ? "Boosters" : getCurrentLanguage() === "en" ? "Boosters" : "Booster", value: totalBoosters, tone: "violet" },
-    { label: getCurrentLanguage() === "fr" ? "Deck actif" : getCurrentLanguage() === "en" ? "Active Deck" : "Aktives Deck", value: activeDeck ? activeDeck.cards.length : 0, tone: "steel" },
+    {
+      label: getCurrentLanguage() === "fr" ? "Rang" : getCurrentLanguage() === "en" ? "Rank" : "Rang",
+      value: rank.label,
+      meta: `${rank.points} RP`,
+      tone: "steel",
+      className: "rank-chip",
+    },
   ];
 
   chips.forEach((chipData) => {
     const chip = document.createElement("div");
-    chip.className = `resource-chip tone-${chipData.tone}`;
-    chip.innerHTML = `<span>${chipData.label}</span><strong>${chipData.value}</strong>`;
+    chip.className = `resource-chip tone-${chipData.tone}${chipData.className ? ` ${chipData.className}` : ""}`;
+    chip.innerHTML = `<span>${chipData.label}</span><strong>${chipData.value}</strong>${chipData.meta ? `<small>${chipData.meta}</small>` : ""}`;
     elements.resourceBar.append(chip);
   });
 }
@@ -12138,6 +12196,8 @@ function renderArena() {
       ...getArenaDifficulty(difficultyId),
       rewardWin: sanitizeFiniteInteger(match.rewardWin, getArenaDifficulty(difficultyId).rewardWin, 0, SECURITY_LIMITS.maxGold),
       rewardLoss: sanitizeFiniteInteger(match.rewardLoss, getArenaDifficulty(difficultyId).rewardLoss, 0, SECURITY_LIMITS.maxGold),
+      rankWin: sanitizeFiniteInteger(match.rankWin, getArenaDifficulty(difficultyId).rankWin, 0, SECURITY_LIMITS.maxGold),
+      rankLoss: sanitizeFiniteInteger(match.rankLoss, getArenaDifficulty(difficultyId).rankLoss, 0, SECURITY_LIMITS.maxGold),
       recommendedDifficultyId: getArenaDifficultyId(match.recommendedDifficultyId || match.difficultyId),
       antiFarmActive: Boolean(match.antiFarmActive),
       antiFarmGap: sanitizeFiniteInteger(match.antiFarmGap, 0, 0, 3),
@@ -12148,6 +12208,8 @@ function renderArena() {
       recommendedDifficultyId: difficultyId,
       antiFarmActive: false,
       antiFarmGap: 0,
+      rankWin: getArenaDifficulty(difficultyId).rankWin,
+      rankLoss: getArenaDifficulty(difficultyId).rankLoss,
       powerScore: 0,
     });
   const boardDelta = hasMatch ? formatArenaDelta(match.player.board.length, match.enemy.board.length) : "0";
@@ -12170,6 +12232,11 @@ function renderArena() {
   const difficultyNote = difficulty.antiFarmActive
     ? `${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}. ${getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss })}`
     : `${getArenaDifficultyDescription(difficultyId)} ${getUiText("arena.difficultyHint")}`;
+  const rankRewardNote = localText(
+    `${difficulty.rankWin} RP pro Sieg`,
+    `${difficulty.rankWin} RP per win`,
+    `${difficulty.rankWin} RP par victoire`,
+  );
   const statusNote = hasMatch
     ? (matchFinished ? latestLog : getUiText("arena.focusNote"))
     : (validation.valid ? `${difficultyNote} ${getUiText("arena.readyStart")}` : `${difficultyNote} ${validation.messages.join(" ")}`);
@@ -12215,6 +12282,7 @@ function renderArena() {
         <span class="meta-chip">${hasMatch ? getUiText("arena.mana", { current: match.player.mana, max: match.player.maxMana }) : getUiText("arena.noHandTitle")}</span>
         <span class="meta-chip">${getArenaDifficultyLabel(difficultyId)}</span>
         <span class="meta-chip">${getUiText("arena.rewardWin", { gold: difficulty.rewardWin })}</span>
+        <span class="meta-chip">${rankRewardNote}</span>
         <span class="meta-chip">${getUiText("arena.rewardLoss", { gold: difficulty.rewardLoss })}</span>
         <span class="meta-chip">${getUiText("arena.forfeitPenalty", { gold: difficulty.forfeitPenalty })}</span>
         ${difficulty.antiFarmActive ? `<span class="meta-chip">${getUiText("arena.recommended", { difficulty: getArenaDifficultyLabel(difficulty.recommendedDifficultyId) })}</span>` : ""}
@@ -12226,7 +12294,7 @@ function renderArena() {
     <article class="arena-insight-card">
       <p class="eyebrow">${getUiText("arena.difficulty")}</p>
       <strong>${getArenaDifficultyLabel(difficultyId)}</strong>
-      <span>${difficulty.antiFarmActive ? getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss }) : getArenaDifficultyDescription(difficultyId)}</span>
+      <span>${difficulty.antiFarmActive ? `${getUiText("arena.antiFarmNote", { win: difficulty.rewardWin, loss: difficulty.rewardLoss })} · ${rankRewardNote}` : `${getArenaDifficultyDescription(difficultyId)} · ${rankRewardNote}`}</span>
     </article>
     <article class="arena-insight-card">
       <p class="eyebrow">${getUiText("arena.boardControl")}</p>
@@ -14044,33 +14112,7 @@ function clearMatch() {
 }
 
 function createMatch(playerDeckCards, difficultyId = getArenaDifficultyId(getSave().arenaDifficulty)) {
-  const playerDeckProfile = analyzeDeck(playerDeckCards);
-  const difficulty = createArenaMatchConfig(playerDeckProfile, difficultyId);
-  const match = {
-    difficultyId: difficulty.id,
-    recommendedDifficultyId: difficulty.recommendedDifficultyId,
-    antiFarmGap: difficulty.antiFarmGap,
-    antiFarmActive: difficulty.antiFarmActive,
-    rewardWin: difficulty.rewardWin,
-    rewardLoss: difficulty.rewardLoss,
-    turn: 0,
-    phase: "player",
-    status: "active",
-    statusMessage: getUiText("messages.matchStartStatus"),
-    log: [],
-    uidCounter: 0,
-    player: createSideState(playerDeckCards),
-    enemy: createSideState(generateEnemyDeck(difficulty.id)),
-  };
-
-  match.enemy.hero = Math.max(1, match.enemy.hero + difficulty.enemyHeroBonus);
-  match.enemy.heroBarrier = Math.max(0, difficulty.enemyBarrier);
-  match.enemy.maxMana = clamp(0, APP_CONFIG.maxMana, difficulty.enemyStartingManaBonus);
-  match.enemy.mana = match.enemy.maxMana;
-  match.player.deckProfile = playerDeckProfile;
-
-  drawOpeningHands(match, difficulty);
-  return match;
+  return legacyCreateMatch(playerDeckCards, difficultyId, arguments[2] || {});
 }
 
 function createSideState(deckCards, options = {}) {
@@ -14733,24 +14775,7 @@ function afterActionCheck() {
 }
 
 function finishMatch(status, message) {
-  const save = getSave();
-  const match = uiState.match;
-  const difficulty = getArenaDifficulty(match?.difficultyId);
-  const rewardWin = sanitizeFiniteInteger(match?.rewardWin, difficulty.rewardWin, 0, SECURITY_LIMITS.maxGold);
-  const rewardLoss = sanitizeFiniteInteger(match?.rewardLoss, difficulty.rewardLoss, 0, SECURITY_LIMITS.maxGold);
-  match.status = status;
-  match.statusMessage = message;
-  addLog(message);
-
-  if (status === "won") {
-    save.gold += rewardWin;
-    addLog(getUiText("messages.matchRewardWin", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardWin }));
-  } else {
-    save.gold += rewardLoss;
-    addLog(getUiText("messages.matchRewardLoss", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardLoss }));
-  }
-
-  persistCurrentAccount();
+  return legacyFinishMatch(status, message);
 }
 
 function addLog(text) {
@@ -16295,6 +16320,8 @@ function legacyCreateMatch(playerDeckCards, difficultyId = getArenaDifficultyId(
       antiFarmActive: false,
       rewardWin: sanitizeFiniteInteger(options.rewardWin, 0, 0, SECURITY_LIMITS.maxGold),
       rewardLoss: sanitizeFiniteInteger(options.rewardLoss, 0, 0, SECURITY_LIMITS.maxGold),
+      rankWin: 0,
+      rankLoss: 0,
       forfeitPenalty: sanitizeFiniteInteger(options.forfeitPenalty, 0, 0, SECURITY_LIMITS.maxGold),
       enemyHeroBonus: 0,
       enemyBarrier: 0,
@@ -16312,6 +16339,8 @@ function legacyCreateMatch(playerDeckCards, difficultyId = getArenaDifficultyId(
     antiFarmActive: difficulty.antiFarmActive,
     rewardWin: difficulty.rewardWin,
     rewardLoss: difficulty.rewardLoss,
+    rankWin: sanitizeFiniteInteger(difficulty.rankWin, 0, 0, SECURITY_LIMITS.maxGold),
+    rankLoss: sanitizeFiniteInteger(difficulty.rankLoss, 0, 0, SECURITY_LIMITS.maxGold),
     forfeitPenalty: difficulty.forfeitPenalty,
     mode: friendMode ? "friend" : "arena",
     deckMode,
@@ -16366,6 +16395,8 @@ function legacyFinishMatch(status, message) {
   const difficulty = getArenaDifficulty(match.difficultyId);
   const rewardWin = sanitizeFiniteInteger(match.rewardWin, difficulty.rewardWin, 0, SECURITY_LIMITS.maxGold);
   const rewardLoss = sanitizeFiniteInteger(match.rewardLoss, difficulty.rewardLoss, 0, SECURITY_LIMITS.maxGold);
+  const rankWin = sanitizeFiniteInteger(match.rankWin, difficulty.rankWin, 0, SECURITY_LIMITS.maxGold);
+  const rankLoss = sanitizeFiniteInteger(match.rankLoss, difficulty.rankLoss, 0, SECURITY_LIMITS.maxGold);
   const friendMode = match.mode === "friend";
 
   match.status = status;
@@ -16377,7 +16408,7 @@ function legacyFinishMatch(status, message) {
       save.gold += rewardWin;
       trackProgressStat("arenaWins", 1);
       trackProgressStat("goldEarned", rewardWin);
-      addRankPoints(difficulty.id === "hardcore" ? 60 : difficulty.id === "nightmare" ? 34 : difficulty.id === "veteran" ? 24 : difficulty.id === "standard" ? 18 : 12);
+      addRankPoints(rankWin);
       if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
         trackProgressStat("hardcoreWins", 1);
       }
@@ -16386,7 +16417,7 @@ function legacyFinishMatch(status, message) {
       save.gold += rewardLoss;
       trackProgressStat("arenaLosses", 1);
       trackProgressStat("goldEarned", rewardLoss);
-      addRankPoints(-(difficulty.id === "hardcore" ? 16 : difficulty.id === "nightmare" ? 12 : difficulty.id === "veteran" ? 8 : 5));
+      addRankPoints(-rankLoss);
       addLog(getUiText("messages.matchRewardLoss", { difficulty: getArenaDifficultyLabel(difficulty.id), gold: rewardLoss }));
       if (getDeckModeId(match.deckMode) === DECK_MODES.hardcore) {
         const lostCards = applyHardcoreDeckLoss(match.stakedDeck);

@@ -30,3 +30,4 @@ TODO
 - 2026-03-22: Letzter Live-Blocker identifiziert: actionBonus fehlte in der aktiven enderDeckManager()-Version. Dadurch brach enderAll() im Live-Deploy weiterhin im Deckbereich ab und ließ Bereiche wie Freunde, Fortschritt, Wiki, Arena und Admin unvollständig wirken.
 
 - 2026-03-22: Freunde- und Profil-Shop-Fehler korrigiert: Die aktiven enderFriends()- und enderShop()-Funktionen waren noch Platzhalterfassungen. Sie delegieren jetzt wieder an die vollständigen finalen Varianten, sodass Freundessuche, Anfragen, Handel, Duelle und der Kosmetik-Shop wieder rendern können.
+2026-03-22: Rank ladder updated with 3-1 divisions, topbar rank chip, and arena RP-per-win display.
