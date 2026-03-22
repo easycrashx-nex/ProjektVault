@@ -8875,15 +8875,6 @@ function renderMainMenu() {
       `
     )
     .join("");
-  document.getElementById("menuArenaVisualLabel").textContent = localText("Jetzt spielen", "Play now", "Jouer maintenant");
-  document.getElementById("menuArenaVisualValue").textContent = getArenaDifficultyLabel(arenaDifficultyId);
-  document.getElementById("menuArenaCta").textContent = localText("Arena öffnen", "Open Arena", "Ouvrir l'arène");
-  document.getElementById("menuArenaFootnote").textContent = localText(
-    "Hauptquelle für Gold und Fortschritt",
-    "Main source of gold and progression",
-    "Source principale d'or et de progression"
-  );
-
   const menuCards = [
     {
       ids: ["menuBoosterKicker", "menuBoosterTitle", "menuBoosterText", "menuBoosterMeta"],
