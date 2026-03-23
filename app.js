@@ -29,6 +29,8 @@ const DECK_RULES = Object.freeze({
 });
 
 const MAX_DECK_SIZE = Math.max(...Object.values(DECK_RULES).map((entry) => entry.size));
+const DECK_CODE_PREFIX = "PV1";
+const DECK_CODE_VERSION = 1;
 
 const MARKETPLACE_FEE_RATE = 0.07;
 const ADMIN_BOOTSTRAP = {
@@ -922,6 +924,14 @@ const UI_TEXT = Object.freeze({
       add: "Hinzufügen",
       unavailable: "Nicht verfügbar",
       inDeck: "Im Deck {used}/{owned}",
+      codeEyebrow: "Deck-Code",
+      codeTitle: "Deck teilen und importieren",
+      codeNote: "Kopiere dein aktuelles Deck oder füge einen Code ein, um eine Liste direkt zu laden.",
+      codeLabel: "Deck-Code",
+      codePlaceholder: "Deck-Code einfügen",
+      copyCode: "Code kopieren",
+      importCode: "Code importieren",
+      clearCode: "Code löschen",
     },
     profile: {
       activeProfile: "Aktives Profil",
@@ -3348,6 +3358,14 @@ Object.assign(UI_TEXT.en, {
     add: "Add",
     unavailable: "Unavailable",
     inDeck: "In deck {used}/{owned}",
+    codeEyebrow: "Deck code",
+    codeTitle: "Share and import decks",
+    codeNote: "Copy your current deck or paste a code to load a list instantly.",
+    codeLabel: "Deck code",
+    codePlaceholder: "Paste deck code",
+    copyCode: "Copy code",
+    importCode: "Import code",
+    clearCode: "Clear code",
   },
   profile: {
     activeProfile: "Active profile",
@@ -3749,6 +3767,14 @@ Object.assign(UI_TEXT.fr, {
     add: "Ajouter",
     unavailable: "Indisponible",
     inDeck: "Dans le deck {used}/{owned}",
+    codeEyebrow: "Code de deck",
+    codeTitle: "Partager et importer",
+    codeNote: "Copie ton deck actuel ou colle un code pour charger une liste immédiatement.",
+    codeLabel: "Code de deck",
+    codePlaceholder: "Coller un code de deck",
+    copyCode: "Copier le code",
+    importCode: "Importer le code",
+    clearCode: "Effacer le code",
   },
   profile: {
     activeProfile: "Profil actif",
@@ -4134,6 +4160,12 @@ Object.assign(UI_TEXT.de, {
     deckLimitExceeded: "{name} überschreitet das Decklimit von {limit}.",
     deckSpellLimit: "Zu viele Zauber im Deck: {count}/{limit}.",
     deckTrainerLimit: "Zu viele Trainer im Deck: {count}/{limit}.",
+    deckCodeMissing: "Bitte zuerst einen Deck-Code einfügen.",
+    deckCodeInvalid: "Der Deck-Code ist ungültig oder beschädigt.",
+    deckCodeCopied: "Deck-Code kopiert.",
+    deckCodeCopiedFallback: "Deck-Code wurde ins Feld geschrieben.",
+    deckCodeImported: "{mode} importiert: {name}.",
+    deckCodeHardcoreConfirm: "Das bestehende Hardcore-Deck wird durch diesen Code ersetzt. Wirklich importieren?",
     matchNotPlayable: "Das aktive Deck ist noch nicht spielbar.",
     matchAlreadyRunning: "Beende zuerst das laufende Match, bevor du ein neues startest.",
     matchStarted: "Neues Match gestartet.",
@@ -4239,6 +4271,12 @@ Object.assign(UI_TEXT.en, {
     deckLimitExceeded: "{name} exceeds the deck limit of {limit}.",
     deckSpellLimit: "Too many spells in deck: {count}/{limit}.",
     deckTrainerLimit: "Too many trainers in deck: {count}/{limit}.",
+    deckCodeMissing: "Please paste a deck code first.",
+    deckCodeInvalid: "The deck code is invalid or damaged.",
+    deckCodeCopied: "Deck code copied.",
+    deckCodeCopiedFallback: "Deck code was written into the field.",
+    deckCodeImported: "{mode} imported: {name}.",
+    deckCodeHardcoreConfirm: "The current hardcore deck will be replaced by this code. Import anyway?",
     matchNotPlayable: "The active deck is not playable yet.",
     matchAlreadyRunning: "Finish the current match before you start a new one.",
     matchStarted: "New match started.",
@@ -4344,6 +4382,12 @@ Object.assign(UI_TEXT.fr, {
     deckLimitExceeded: "{name} dépasse la limite de deck de {limit}.",
     deckSpellLimit: "Trop de sorts dans le deck : {count}/{limit}.",
     deckTrainerLimit: "Trop d'entraîneurs dans le deck : {count}/{limit}.",
+    deckCodeMissing: "Colle d'abord un code de deck.",
+    deckCodeInvalid: "Le code de deck est invalide ou corrompu.",
+    deckCodeCopied: "Code de deck copié.",
+    deckCodeCopiedFallback: "Le code de deck a été placé dans le champ.",
+    deckCodeImported: "{mode} importé : {name}.",
+    deckCodeHardcoreConfirm: "Le deck hardcore actuel sera remplacé par ce code. Continuer ?",
     matchNotPlayable: "Le deck actif n'est pas encore jouable.",
     matchAlreadyRunning: "Termine d'abord le match en cours avant d'en lancer un autre.",
     matchStarted: "Nouveau match lancé.",
@@ -6101,10 +6145,14 @@ const elements = {
   duplicatesOnlyToggle: document.getElementById("duplicatesOnlyToggle"),
   deckNameInput: document.getElementById("deckNameInput"),
   deckModeSelect: document.getElementById("deckModeSelect"),
+  deckCodeInput: document.getElementById("deckCodeInput"),
   renameDeckButton: document.getElementById("renameDeckButton"),
   newDeckButton: document.getElementById("newDeckButton"),
   duplicateDeckButton: document.getElementById("duplicateDeckButton"),
   deleteDeckButton: document.getElementById("deleteDeckButton"),
+  copyDeckCodeButton: document.getElementById("copyDeckCodeButton"),
+  importDeckCodeButton: document.getElementById("importDeckCodeButton"),
+  clearDeckCodeButton: document.getElementById("clearDeckCodeButton"),
   activeDeckMeta: document.getElementById("activeDeckMeta"),
   activeDeckWarnings: document.getElementById("activeDeckWarnings"),
   activeDeckList: document.getElementById("activeDeckList"),
@@ -6216,6 +6264,7 @@ uiState = {
   wikiSearch: "",
   wikiTopic: "all",
   deckMode: DECK_MODES.standard,
+  deckCodeDraft: "",
   previewLanguage: "de",
   toastTimer: null,
 };
@@ -6339,6 +6388,14 @@ function applyStaticTranslations() {
   setStaticText("#savedDecksHeading", getUiText("decks.savedDecksTitle"));
   setStaticText("#deckAddCardsHeading", getUiText("decks.addCardsTitle"));
   setStaticText("#deckAddCardsNote", getUiText("decks.addCardsNote"));
+  setStaticText("#deckCodeEyebrow", getUiText("decks.codeEyebrow"));
+  setStaticText("#deckCodeHeading", getUiText("decks.codeTitle"));
+  setStaticText("#deckCodeNote", getUiText("decks.codeNote"));
+  setStaticText("#deckCodeLabel", getUiText("decks.codeLabel"));
+  setStaticAttribute("#deckCodeInput", "placeholder", getUiText("decks.codePlaceholder"));
+  setStaticText("#copyDeckCodeButton", getUiText("decks.copyCode"));
+  setStaticText("#importDeckCodeButton", getUiText("decks.importCode"));
+  setStaticText("#clearDeckCodeButton", getUiText("decks.clearCode"));
 
   setStaticText("#wikiSection .section-head .eyebrow", getUiText("nav.wiki"));
   setStaticText("#wikiSection .section-head h2", getUiText("sections.wikiTitle"));
@@ -6591,6 +6648,13 @@ function overrideArcaneVaultSystems() {
     elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
     elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
     elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
+    elements.deckCodeInput.addEventListener("input", (event) => {
+      uiState.deckCodeDraft = event.target.value;
+      syncDeckCodeControls();
+    });
+    elements.copyDeckCodeButton.addEventListener("click", copyActiveDeckCode);
+    elements.importDeckCodeButton.addEventListener("click", importDeckCode);
+    elements.clearDeckCodeButton.addEventListener("click", clearDeckCodeInput);
 
     Object.keys(SETTINGS_INPUT_MAP).forEach((elementKey) => {
       elements[elementKey].addEventListener("change", handleSettingsToggle);
@@ -7226,6 +7290,13 @@ function bindStaticEvents() {
   elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
   elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
   elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
+  elements.deckCodeInput.addEventListener("input", (event) => {
+    uiState.deckCodeDraft = event.target.value;
+    syncDeckCodeControls();
+  });
+  elements.copyDeckCodeButton.addEventListener("click", copyActiveDeckCode);
+  elements.importDeckCodeButton.addEventListener("click", importDeckCode);
+  elements.clearDeckCodeButton.addEventListener("click", clearDeckCodeInput);
 
   Object.keys(SETTINGS_INPUT_MAP).forEach((elementKey) => {
     elements[elementKey].addEventListener("change", handleSettingsToggle);
@@ -11434,6 +11505,8 @@ function renderDeckManager() {
   elements.duplicateDeckButton.disabled = isHardcoreMode;
   elements.deleteDeckButton.disabled = isHardcoreMode;
   elements.savedDecksPanel.classList.toggle("hidden", isHardcoreMode);
+  elements.deckCodeInput.value = uiState.deckCodeDraft || "";
+  syncDeckCodeControls();
 
   document.getElementById("activeDeckHeading").textContent = isHardcoreMode
     ? localText("Hardcore-Spezialdeck", "Hardcore special deck", "Deck spécial hardcore")
@@ -13965,6 +14038,166 @@ function getDeckByMode(mode = DECK_MODES.standard) {
 
 function getDeckModeTitle(mode = DECK_MODES.standard) {
   return getDeckModeId(mode) === DECK_MODES.hardcore ? getUiText("decks.hardcoreDeck") : getUiText("decks.standardDeck");
+}
+
+function encodeBase64Url(value) {
+  return String(value || "").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function decodeBase64Url(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  return normalized + "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
+}
+
+function sanitizeDeckCodeName(value, mode = DECK_MODES.standard) {
+  const fallback = getDeckModeId(mode) === DECK_MODES.hardcore
+    ? getUiText("decks.hardcoreDeck")
+    : localText("Importiertes Deck", "Imported deck", "Deck importé");
+  const trimmed = String(value || "").replace(/\s+/g, " ").trim().slice(0, 24);
+  return trimmed || fallback;
+}
+
+function buildDeckCodePayload(deck, mode = DECK_MODES.standard) {
+  const deckMode = getDeckModeId(mode);
+  const rules = getDeckRules(deckMode);
+  return {
+    version: DECK_CODE_VERSION,
+    mode: deckMode,
+    name: sanitizeDeckCodeName(deck?.name, deckMode),
+    cards: Array.isArray(deck?.cards)
+      ? deck.cards.filter((cardId) => typeof cardId === "string").slice(0, rules.size)
+      : [],
+  };
+}
+
+function encodeDeckCode(deck, mode = DECK_MODES.standard) {
+  const payload = buildDeckCodePayload(deck, mode);
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  return `${DECK_CODE_PREFIX}-${encodeBase64Url(bytesToBase64(bytes))}`;
+}
+
+function decodeDeckCode(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) {
+    return { error: "empty" };
+  }
+
+  const match = value.match(new RegExp(`^${DECK_CODE_PREFIX}-([A-Za-z0-9_-]+)$`));
+  if (!match) {
+    return { error: "invalid" };
+  }
+
+  try {
+    const bytes = base64ToBytes(decodeBase64Url(match[1]));
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    const mode = getDeckModeId(payload?.mode);
+    const rules = getDeckRules(mode);
+    if (sanitizeFiniteInteger(payload?.version, 0, 0, 99) !== DECK_CODE_VERSION) {
+      return { error: "invalid" };
+    }
+
+    return {
+      payload: {
+        version: DECK_CODE_VERSION,
+        mode,
+        name: sanitizeDeckCodeName(payload?.name, mode),
+        cards: Array.isArray(payload?.cards)
+          ? payload.cards.filter((cardId) => typeof cardId === "string" && Boolean(getCard(cardId))).slice(0, rules.size)
+          : [],
+      },
+    };
+  } catch {
+    return { error: "invalid" };
+  }
+}
+
+function syncDeckCodeControls() {
+  const hasCode = Boolean(String(uiState.deckCodeDraft || "").trim());
+  if (elements.importDeckCodeButton) {
+    elements.importDeckCodeButton.disabled = !hasCode;
+  }
+  if (elements.clearDeckCodeButton) {
+    elements.clearDeckCodeButton.disabled = !hasCode;
+  }
+}
+
+async function copyActiveDeckCode() {
+  const deckMode = getSelectedDeckMode();
+  const activeDeck = getDeckByMode(deckMode);
+
+  if (!activeDeck) {
+    showToast(getUiText("messages.deckMissing"));
+    return;
+  }
+
+  const code = encodeDeckCode(activeDeck, deckMode);
+  uiState.deckCodeDraft = code;
+  if (elements.deckCodeInput) {
+    elements.deckCodeInput.value = code;
+  }
+  syncDeckCodeControls();
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(code);
+      showToast(getUiText("messages.deckCodeCopied"));
+      return;
+    }
+  } catch {
+    // Fallback below keeps the code visible and selectable.
+  }
+
+  elements.deckCodeInput?.focus();
+  elements.deckCodeInput?.select?.();
+  showToast(getUiText("messages.deckCodeCopiedFallback"));
+}
+
+function clearDeckCodeInput() {
+  uiState.deckCodeDraft = "";
+  if (elements.deckCodeInput) {
+    elements.deckCodeInput.value = "";
+    elements.deckCodeInput.focus();
+  }
+  syncDeckCodeControls();
+}
+
+function importDeckCode() {
+  if (isMatchSessionLocked()) {
+    showToast(getUiText("messages.matchCollectionLocked"));
+    return;
+  }
+
+  const { payload, error } = decodeDeckCode(uiState.deckCodeDraft || elements.deckCodeInput?.value);
+  if (error === "empty") {
+    showToast(getUiText("messages.deckCodeMissing"));
+    return;
+  }
+  if (error || !payload) {
+    showToast(getUiText("messages.deckCodeInvalid"));
+    return;
+  }
+
+  if (payload.mode === DECK_MODES.hardcore && getHardcoreDeck().cards.length && !requestActionConfirmation(getUiText("messages.deckCodeHardcoreConfirm"))) {
+    return;
+  }
+
+  const importedDeck = createDeck(payload.name, payload.cards);
+
+  if (payload.mode === DECK_MODES.hardcore) {
+    getSave().hardcoreDeck = importedDeck;
+  } else {
+    getSave().decks.push(importedDeck);
+    getSave().activeDeckId = importedDeck.id;
+  }
+
+  uiState.deckMode = payload.mode;
+  uiState.deckCodeDraft = "";
+  persistCurrentAccount();
+  renderAll();
+  showToast(getUiText("messages.deckCodeImported", {
+    mode: getDeckModeTitle(payload.mode),
+    name: importedDeck.name,
+  }));
 }
 
 function applyHardcoreDeckLoss(cardIds) {

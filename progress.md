@@ -34,3 +34,16 @@ TODO
 2026-03-22: Main-menu arena hero enlarged again by widening the left column and scaling title, copy, and stat cards.
 2026-03-22: Quest and achievement rewards are now claimed server-side and can no longer be collected multiple times; UI claim buttons also lock immediately on click.
 - 2026-03-22: Quest-System auf rotierende Tages-/Wochenfenster mit 5 aktiven Daily- und 5 aktiven Weekly-Quests umgestellt; Shared-Definitionen eingeführt, 200 Quest-Definitionen und 35 Errungenschaften aktiviert, Server-Claims und periodische Resets vereinheitlicht.
+- 2026-03-23: Deck-Code-System ergänzt: aktives Standard- oder Hardcore-Deck lässt sich jetzt als `PV1-...` exportieren, per Zwischenablage kopieren und über den Deckmanager wieder importieren.
+- 2026-03-23: Standard-Deck-Codes erzeugen beim Import ein neues aktives Deck, Hardcore-Codes überschreiben nach Bestätigung das Hardcore-Spezialdeck; fehlende Besitzkarten bleiben weiter über die bestehende Deckvalidierung blockiert statt den Import zu verhindern.
+- 2026-03-23: Deckmanager um kompakten Code-Block mit Eingabefeld, Kopieren-, Importieren- und Löschen-Aktionen erweitert; Frontend-Mirror synchronisiert und `npm run check` erfolgreich ausgeführt.
+
+TODO
+- Deck-Code-Flow noch einmal live im Browser gegen einen stabil laufenden lokalen oder deployten Server durchspielen: Code kopieren, neues Standard-Deck importieren, Hardcore-Code importieren und auf korrekte Validierungswarnungen prüfen.
+
+## 2026-03-23 Deck-Codes
+- Deck-Code Panel in der Deckverwaltung ergänzt (Export, Import, Löschen).
+- Standard-Deck-Codes erzeugen neue aktive Decks; Hardcore-Codes überschreiben nach Bestätigung das Hardcore-Deck.
+- Textarea-Styling auf globale Formularoptik angeglichen und Frontend-Mirror synchronisiert.
+- Syntaxcheck erfolgreich; echter Browser-Smoke-Test lokal noch offen.
+
