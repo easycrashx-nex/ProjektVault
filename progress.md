@@ -47,3 +47,9 @@ TODO
 - Textarea-Styling auf globale Formularoptik angeglichen und Frontend-Mirror synchronisiert.
 - Syntaxcheck erfolgreich; echter Browser-Smoke-Test lokal noch offen.
 
+## 2026-03-23 UI-Überarbeitung nach PDF-Inspiration
+- Oberflächen auf ein stärkeres Szenen-/Themensystem umgestellt: Shop, Marktplatz, Booster, Sammlung, Decks und Arena nutzen jetzt eigene Akzentfarben, Washes und Linien statt eines fast identischen Einheits-Looks.
+- Topbar, Spielerfeld, Hauptmenü-Karten, Banner und Bereichspanels visuell vereinheitlicht und stärker gewichtet; dadurch klarere Hierarchie und weniger flache Containeroptik.
+- Hauptmenü-Arena-Kachel, Summary-Karten und Navigationsflächen größer und ruhiger ausbalanciert; Fokus auf Lesbarkeit, Wiedererkennbarkeit und konsistenten Abstand statt zufälliger Dichte.
+- Responsives Verhalten für die neue Grid-Struktur nachgezogen, damit Banner- und Section-Köpfe auch auf schmaleren Breiten sauber umbrechen.
+- Frontend-Mirror synchronisiert und Syntaxcheck erfolgreich; lokaler Browser-Smoke-Test blieb wegen instabilem lokalen Serverlauf in dieser Umgebung eingeschränkt.
