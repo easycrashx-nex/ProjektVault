@@ -10326,7 +10326,7 @@ function isAccountDeletionProtected(account) {
   return Boolean(account?.isAdmin || account?.username === ADMIN_BOOTSTRAP.username);
 }
 
-function renderProfile() {
+function legacyMinimalRenderProfile() {
   if (!currentAccount) {
     elements.profileSummary.innerHTML = "";
     return;
@@ -10410,6 +10410,10 @@ function renderProfile() {
   [...elements.profileRenameForm.querySelectorAll("button"), ...elements.profilePasswordForm.querySelectorAll("button")].forEach((button) => {
     button.disabled = profileLocked;
   });
+}
+
+function renderProfile() {
+  return legacyRenderProfile();
 }
 
 function renderFriendBucket(element, { eyebrow, title, list, emptyText, note }) {
