@@ -2,6 +2,7 @@ const APP_CONFIG = {
   deckSize: 20,
   baseGold: 260,
   openingHandSize: 4,
+  startingMana: 1,
   maxMana: 10,
   boardSize: 5,
   heroHealth: 36,
@@ -2074,77 +2075,7 @@ function bindProfileLoadoutPanelEvents() {
 }
 
 function bindFriendsPanelEvents() {
-  const searchForm = elements.friendsSummary.querySelector("#friendSearchForm");
-  if (searchForm) {
-    searchForm.addEventListener("submit", handleFriendSearchSubmit);
-  }
-
-  elements.friendsSummary.querySelectorAll("[data-friend-request]").forEach((button) => {
-    button.addEventListener("click", () => sendFriendRequest(button.dataset.friendRequest));
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-request-action]").forEach((button) => {
-    button.addEventListener("click", () => handleFriendRequestAction(button.dataset.username, button.dataset.requestAction));
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-remove-friend]").forEach((button) => {
-    button.addEventListener("click", () => removeFriend(button.dataset.removeFriend));
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-block-user]").forEach((button) => {
-    button.addEventListener("click", () => blockFriend(button.dataset.blockUser));
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-unblock-user]").forEach((button) => {
-    button.addEventListener("click", () => unblockFriend(button.dataset.unblockUser));
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-trade-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-      uiState.section = "friends";
-      uiState.friendTradeTarget = sanitizeUsername(button.dataset.tradeTarget);
-      renderFriends();
-      setFriendTradeTarget(button.dataset.tradeTarget);
-    });
-  });
-
-  elements.friendsSummary.querySelectorAll("[data-duel-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-      uiState.friendChallengeTarget = sanitizeUsername(button.dataset.duelTarget);
-      renderFriends();
-    });
-  });
-
-  const tradeForm = elements.friendsTradePanel.querySelector("#friendTradeForm");
-  if (tradeForm) {
-    tradeForm.addEventListener("submit", handleFriendTradeSubmit);
-    const tradeSelect = tradeForm.querySelector('[name="tradeFriend"]');
-    if (tradeSelect) {
-      tradeSelect.addEventListener("change", () => {
-        uiState.friendTradeTarget = sanitizeUsername(tradeSelect.value);
-        setFriendTradeTarget(tradeSelect.value);
-      });
-    }
-  }
-
-  elements.friendsTradePanel.querySelectorAll("[data-trade-offer-action]").forEach((button) => {
-    button.addEventListener("click", () => handleTradeOfferAction(button.dataset.tradeOfferId, button.dataset.tradeOfferAction));
-  });
-
-  const challengeForm = elements.friendsDuelPanel.querySelector("#friendChallengeForm");
-  if (challengeForm) {
-    challengeForm.addEventListener("submit", handleFriendChallengeSubmit);
-    const challengeSelect = challengeForm.querySelector('[name="challengeFriend"]');
-    if (challengeSelect) {
-      challengeSelect.addEventListener("change", () => {
-        uiState.friendChallengeTarget = sanitizeUsername(challengeSelect.value);
-      });
-    }
-  }
-
-  elements.friendsDuelPanel.querySelectorAll("[data-challenge-action]").forEach((button) => {
-    button.addEventListener("click", () => handleFriendChallengeAction(button.dataset.challengeId, button.dataset.challengeAction));
-  });
+  return legacyBindFriendsPanelEvents();
 }
 
 function getShopBundleTierLabel(tierId) {
@@ -10124,8 +10055,12 @@ function renderAll() {
   renderCardModal();
 }
 
+function isMatchActive(match = uiState.match) {
+  return Boolean(match && match.status === "active");
+}
+
 function isMatchSessionLocked() {
-  return Boolean(uiState.match);
+  return isMatchActive();
 }
 
 function isSectionNavigationLocked(section) {
@@ -10136,6 +10071,12 @@ function requestSectionChange(section) {
   if (isSectionNavigationLocked(section)) {
     showToast(getUiText("messages.matchNavigationLocked"));
     return;
+  }
+
+  if (section !== "arena" && uiState.match && !isMatchActive()) {
+    uiState.modalCardId = null;
+    uiState.match = null;
+    persistCurrentMatchIfNeeded(false);
   }
 
   uiState.section = section;
@@ -12562,7 +12503,7 @@ function renderArena() {
   elements.battleLog.innerHTML = "";
   elements.playerHand.innerHTML = "";
   elements.endTurnButton.disabled = true;
-  elements.startMatchButton.disabled = !validation.valid || hasMatch;
+  elements.startMatchButton.disabled = !validation.valid || isMatchSessionLocked();
   elements.resetMatchButton.disabled = !hasMatch;
 
   elements.arenaStatus.innerHTML = `
@@ -14516,6 +14457,11 @@ function startMatch() {
     return;
   }
 
+  if (uiState.match && !isMatchActive()) {
+    uiState.match = null;
+    persistCurrentMatchIfNeeded(false);
+  }
+
   const difficultyId = getArenaDifficultyId(getSave().arenaDifficulty);
   const deckMode = getDeckModeForDifficulty(difficultyId);
   const deck = getDeckByMode(deckMode);
@@ -14575,8 +14521,8 @@ function createSideState(deckCards, options = {}) {
   return {
     hero: APP_CONFIG.heroHealth + sanitizeFiniteInteger(options.heroBonus, 0, -20, 80),
     heroBarrier: sanitizeFiniteInteger(options.heroBarrier, 0, 0, 20),
-    maxMana: sanitizeFiniteInteger(options.startingMaxMana, 0, 0, APP_CONFIG.maxMana),
-    mana: sanitizeFiniteInteger(options.startingMana, 0, 0, APP_CONFIG.maxMana),
+    maxMana: sanitizeFiniteInteger(options.startingMaxMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
+    mana: sanitizeFiniteInteger(options.startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
     deck: shuffledDeck,
     hand: [],
     board: [],
@@ -16998,7 +16944,7 @@ function legacyRenderArena() {
   elements.battleLog.innerHTML = "";
   elements.playerHand.innerHTML = "";
   elements.endTurnButton.disabled = true;
-  elements.startMatchButton.disabled = !validation.valid || hasMatch;
+  elements.startMatchButton.disabled = !validation.valid || isMatchSessionLocked();
   elements.resetMatchButton.disabled = !hasMatch;
 
   const statusChips = [
