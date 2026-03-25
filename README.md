@@ -98,3 +98,4 @@ Wichtig für Serverbetrieb:
 - Freundes- und Handelsaktionen serverseitig ausbauen
 - JSON-Store bei Bedarf auf eine echte Datenbank umstellen
 - Produktivdomain, HTTPS und engere Firewall-Regeln setzen
+v1.1
