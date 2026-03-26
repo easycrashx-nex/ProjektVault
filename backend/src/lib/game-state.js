@@ -13,7 +13,18 @@ const GAME_LIMITS = Object.freeze({
   maxOfferEntries: 64,
 });
 
-const PACK_IDS = Object.freeze(["starter", "market", "champion", "relic", "astral"]);
+const PACK_IDS = Object.freeze([
+  "starter",
+  "market",
+  "champion",
+  "relic",
+  "astral",
+  "sovereign",
+  "eclipse",
+  "nexus",
+  "cataclysm",
+  "singularity",
+]);
 const SUPPORTED_LANGUAGES = Object.freeze(["de", "en", "fr"]);
 const SHOP_TABS = Object.freeze(["boosters", "packs", "cosmetics"]);
 const ARENA_DIFFICULTIES = Object.freeze(["novice", "standard", "veteran", "nightmare", "hardcore"]);
@@ -32,6 +43,11 @@ const DEFAULT_PROGRESS_STATE = Object.freeze({
     champion: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
     relic: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
     astral: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    sovereign: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    eclipse: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    nexus: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    cataclysm: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
+    singularity: Object.freeze({ epicDry: 0, legendaryDry: 0 }),
   }),
   stats: {
     arenaWins: 0,
@@ -187,16 +203,12 @@ function createDefaultProgression() {
 function createEmptySave() {
   const firstDeck = createDeck("Erstes Deck");
   const hardcoreDeck = createDeck("Hardcore-Deck");
+  const packs = Object.fromEntries(PACK_IDS.map((packId) => [packId, 0]));
+  packs.starter = 5;
   return {
     gold: 260,
     collection: {},
-    packs: {
-      starter: 5,
-      market: 0,
-      champion: 0,
-      relic: 0,
-      astral: 0,
-    },
+    packs,
     decks: [firstDeck],
     activeDeckId: firstDeck.id,
     hardcoreDeck,

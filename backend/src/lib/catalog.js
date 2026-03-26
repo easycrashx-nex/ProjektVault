@@ -4,6 +4,11 @@ const BOOSTER_CATALOG = Object.freeze([
   { id: "champion", label: "Champion-Booster", tier: "Fortgeschritten", price: 210, guaranteed: "Selten" },
   { id: "relic", label: "Relikt-Booster", tier: "Elite", price: 340, guaranteed: "Episch" },
   { id: "astral", label: "Astral-Booster", tier: "Luxus", price: 520, guaranteed: "Legendär" },
+  { id: "sovereign", label: "Souverän-Booster", tier: "Souverän", price: 760, guaranteed: "Legendär" },
+  { id: "eclipse", label: "Eklipsen-Booster", tier: "Eklipse", price: 930, guaranteed: "Ultra Rare" },
+  { id: "nexus", label: "Nexus-Booster", tier: "Nexus", price: 1180, guaranteed: "Ultra Rare" },
+  { id: "cataclysm", label: "Kataklysmus-Booster", tier: "Kataklysmus", price: 1460, guaranteed: "Mythisch" },
+  { id: "singularity", label: "Singularitäts-Booster", tier: "Singularität", price: 1820, guaranteed: "Transzendent" },
 ]);
 
 const PACK_TEMPLATES = Object.freeze([

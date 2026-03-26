@@ -6791,8 +6791,10 @@ const elements = {
     admin: document.getElementById("adminSection"),
     arena: document.getElementById("arenaSection"),
   },
+  topbar: document.querySelector(".topbar"),
   playerName: document.getElementById("playerName"),
   resourceBar: document.getElementById("resourceBar"),
+  floatingResourceBar: document.getElementById("floatingResourceBar"),
   menuSummaryGrid: document.getElementById("menuSummaryGrid"),
   resetLocalDataButton: document.getElementById("resetLocalDataButton"),
   logoutButton: document.getElementById("logoutButton"),
@@ -7368,6 +7370,9 @@ function overrideArcaneVaultSystems() {
         closeCardModal();
       }
     });
+
+    window.addEventListener("scroll", updateFloatingResourceBarVisibility, { passive: true });
+    window.addEventListener("resize", updateFloatingResourceBarVisibility);
   };
 
   validateDeck = function validateDeck(deck, mode = DECK_MODES.standard) {
@@ -8779,16 +8784,12 @@ function resetCurrentSettings() {
 function createEmptySave() {
   const firstDeck = createDeck("Erstes Deck");
   const hardcoreDeck = createDeck("Hardcore-Deck");
+  const packInventory = Object.fromEntries(Object.keys(PACK_DEFINITIONS).map((packId) => [packId, 0]));
+  packInventory.starter = 5;
   return {
     gold: APP_CONFIG.baseGold,
     collection: {},
-    packs: {
-      starter: 5,
-      market: 0,
-      champion: 0,
-      relic: 0,
-      astral: 0,
-    },
+    packs: packInventory,
     decks: [firstDeck],
     activeDeckId: firstDeck.id,
     hardcoreDeck,
@@ -10788,6 +10789,7 @@ function renderAll() {
 
   if (!signedIn) {
     switchAuthMode(uiState.authMode);
+    updateFloatingResourceBarVisibility();
     return;
   }
 
@@ -10834,6 +10836,7 @@ function renderAll() {
   renderAdminPanel();
   renderArena();
   renderCardModal();
+  updateFloatingResourceBarVisibility();
 }
 
 function isMatchActive(match = uiState.match) {
@@ -10896,6 +10899,9 @@ function renderResources() {
   const rank = getRankState(getProgression().rankPoints);
 
   elements.resourceBar.innerHTML = "";
+  if (elements.floatingResourceBar) {
+    elements.floatingResourceBar.innerHTML = "";
+  }
 
   const chips = [
     { label: getCurrentLanguage() === "fr" ? "Or" : getCurrentLanguage() === "en" ? "Gold" : "Gold", value: save.gold, tone: "gold" },
@@ -10916,7 +10922,35 @@ function renderResources() {
     chip.className = `resource-chip tone-${chipData.tone}${chipData.className ? ` ${chipData.className}` : ""}`;
     chip.innerHTML = `<span>${chipData.label}</span><strong>${chipData.value}</strong>${chipData.meta ? `<small>${chipData.meta}</small>` : ""}`;
     elements.resourceBar.append(chip);
+    if (elements.floatingResourceBar) {
+      elements.floatingResourceBar.append(chip.cloneNode(true));
+    }
   });
+
+  updateFloatingResourceBarVisibility();
+}
+
+function shouldShowFloatingResourceBar() {
+  if (!elements.floatingResourceBar || !elements.topbar || elements.gameShell.classList.contains("hidden")) {
+    return false;
+  }
+
+  if (uiState.section === "arena") {
+    return false;
+  }
+
+  const topbarRect = elements.topbar.getBoundingClientRect();
+  return topbarRect.bottom <= 14;
+}
+
+function updateFloatingResourceBarVisibility() {
+  if (!elements.floatingResourceBar) {
+    return;
+  }
+
+  const shouldShow = shouldShowFloatingResourceBar();
+  elements.floatingResourceBar.classList.toggle("is-visible", shouldShow);
+  elements.floatingResourceBar.setAttribute("aria-hidden", shouldShow ? "false" : "true");
 }
 
 function renderAdminPanel() {
@@ -14715,7 +14749,7 @@ function buyPack(packId) {
   }
 
   save.gold -= pack.price;
-  save.packs[packId] += 1;
+  save.packs[packId] = (save.packs[packId] || 0) + 1;
   persistCurrentAccount();
   renderAll();
   showToast(getUiText("booster.packBought", { pack: getPackLabel(packId) }));

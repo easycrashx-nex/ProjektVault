@@ -583,6 +583,37 @@ p {
   gap: var(--layout-gap);
 }
 
+.floating-resource-bar {
+  position: fixed;
+  top: 14px;
+  left: var(--layout-pad);
+  right: var(--layout-pad);
+  z-index: 60;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--compact-gap);
+  padding: 10px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 86% 18%, rgba(var(--scene-secondary-rgb), 0.12), transparent 26%),
+    radial-gradient(circle at 8% 0%, rgba(var(--scene-accent-rgb), 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(20, 28, 44, 0.82), rgba(10, 15, 25, 0.74));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 42px rgba(4, 9, 18, 0.28);
+  backdrop-filter: blur(18px);
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.floating-resource-bar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .sidebar {
   display: grid;
   gap: var(--layout-gap);
@@ -945,6 +976,11 @@ p {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--compact-gap);
+}
+
+.floating-resource-bar .resource-chip {
+  min-height: 84px;
+  padding-block: 12px;
 }
 
 .resource-chip {
@@ -4509,6 +4545,7 @@ body[data-scene="settings"] .scene-core {
   }
 
   .resource-bar,
+  .floating-resource-bar,
   .menu-summary-grid,
   .menu-link-grid,
   .filter-toolbar,
@@ -4586,6 +4623,12 @@ body[data-scene="settings"] .scene-core {
 
   .app-root {
     padding: var(--layout-pad);
+  }
+
+  .floating-resource-bar {
+    top: 10px;
+    left: var(--layout-pad);
+    right: var(--layout-pad);
   }
 
   .auth-card {
