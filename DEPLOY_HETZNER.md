@@ -1,163 +1,175 @@
-# Arcane Vault auf Hetzner deployen
+# Projekt Vault auf Hetzner deployen
 
-Diese Anleitung ist für den einfachsten Weg gedacht.
+Diese Anleitung beschreibt einen einfachen Produktionspfad für `Projekt Vault` auf Hetzner.
 
-## Meine klare Empfehlung
+## Empfohlene Varianten
 
-Nimm in Hetzner links:
+### Variante A: Hetzner + Coolify
+
+Empfohlen für:
+
+- GitHub-basierte Deployments
+- einfache Verwaltung per Weboberfläche
+- kleine bis mittlere Projekte
+
+### Variante B: Hetzner + Docker
+
+Empfohlen für:
+
+- manuelle Deployments
+- einfache Server ohne zusätzliche Verwaltungsebene
+- Entwickler, die den Stack selbst kontrollieren wollen
+
+## Voraussetzungen
+
+- Hetzner Cloud Server
+- SSH-Zugriff
+- Repository-Zugriff
+- Domain optional, aber empfohlen
+
+## Server-Grundsetup
+
+In Hetzner werden für einen einfachen Start in der Regel diese Bereiche benötigt:
 
 - `Servers`
-- danach zusätzlich `Firewalls`
-- optional später `DNS Zones`, wenn du eine Domain direkt bei Hetzner verwalten willst
+- `Firewalls`
+- optional `DNS Zones`
 
-`Volumes`, `Load Balancers`, `Floating IPs`, `Networks`, `Buckets` und `Storage Boxes` brauchst du für den ersten Start nicht.
+Für viele erste Setups sind diese Ports eingehend ausreichend:
 
-## Zwei sinnvolle Wege
+- `22` TCP für SSH
+- `80` TCP für HTTP
+- `443` TCP für HTTPS
 
-### Weg A: Am einfachsten für GitHub-Deploys
+Wenn Coolify initial direkt über Port `8000` verwendet wird, muss dieser Port während des Setups zusätzlich freigegeben sein.
 
-Server mit `Coolify` aufsetzen.
+## Variante A: Deploy mit Coolify
 
-Das ist für dich wahrscheinlich der leichteste Weg, weil du dann später einfach dein GitHub-Repo verbindest und Deployments über eine Oberfläche anstoßen kannst.
+### 1. Server erstellen
 
-### Weg B: Direkt und schlicht
+Empfohlene Basis:
 
-Server mit `Docker CE` oder normalem `Ubuntu 24.04` aufsetzen und das Projekt per Docker Compose starten.
+- Image: `Coolify` oder `Ubuntu 24.04`
+- öffentlicher SSH-Key
+- kleine bis mittlere Instanz für den Anfang
 
-Das ist technisch einfacher zu verstehen, aber etwas manueller.
+### 2. Firewall setzen
 
-## Was du in Hetzner konkret klickst
+Mindestens:
 
-### 1. Server anlegen
+- TCP `22`
+- TCP `80`
+- TCP `443`
 
-In Hetzner:
+Falls nötig temporär zusätzlich:
 
-1. `Servers`
-2. `Create Server`
-3. Region auswählen
-4. Image:
-   - entweder `Coolify`
-   - oder `Docker CE`
-   - oder `Ubuntu 24.04`
-5. Einen kleinen Cloud-Server wählen
+- TCP `8000`
+- TCP `6001`
+- TCP `6002`
 
-Für den Anfang reicht meistens ein kleiner Server. Wenn später viele Spieler gleichzeitig online sind, musst du hochskalieren.
+### 3. Repository verbinden
 
-Wichtig:
+In Coolify:
 
-- SSH-Key direkt beim Erstellen auswählen
-- wenn du keinen SSH-Key auswählst, musst du mit dem Root-Passwort arbeiten
+1. Projekt anlegen
+2. GitHub-App oder Repository-Zugriff verbinden
+3. Anwendung als `Dockerfile`-Deploy anlegen
+4. Port `3000` verwenden
 
-### 2. Firewall anlegen
+### 4. Persistente Daten setzen
 
-In Hetzner:
+Für produktiven Betrieb sollte ein persistenter Directory Mount gesetzt werden:
 
-1. `Firewalls`
-2. `Create Firewall`
-3. eingehend nur freigeben:
-   - TCP `22` für SSH
-   - TCP `80` für HTTP
-   - TCP `443` für HTTPS
-4. Firewall auf den Server anwenden
+- Host-Pfad: `/data/projekt-vault`
+- Container-Pfad: `/data/projekt-vault`
 
-## Weg A: Mit Coolify
+Dadurch bleiben Nutzerdaten und Backups bei Redeploys erhalten.
 
-Wenn du `Coolify` als Server-App wählst:
+### 5. Wichtige Umgebungsvariablen
 
-1. Server erstellen
-2. per SSH auf den Server
-3. Coolify-Erstsetup abschließen
-4. in Coolify dein GitHub-Repo verbinden
-5. Deployment-Typ über `Dockerfile`
-6. Port `3000`
-7. als Persistenz in Coolify einen `Directory Mount` setzen:
-   - Server-Pfad: `/data/projekt-vault`
-   - Container-Pfad: `/data/projekt-vault`
-8. Domain hinzufügen
-9. Deploy auslösen
+Mindestens:
 
-Dann reicht später meistens:
+- `HOST=0.0.0.0`
+- `PORT=3000`
+- `DATA_DIR=/data/projekt-vault`
+- `ADMIN_USERNAME=<eigener-admin-name>`
+- `ADMIN_PASSWORD=<starkes-passwort>`
 
-1. lokal ändern
-2. auf GitHub pushen
-3. in Coolify neu deployen oder Auto-Deploy nutzen
+### 6. Domain hinzufügen
 
-## Weg B: Direkt mit Docker
+Sobald die App läuft:
 
-### 1. Auf den Server verbinden
+1. Domain in Coolify eintragen
+2. DNS auf die Server-IP zeigen lassen
+3. HTTPS/Let's Encrypt aktivieren
 
-Beispiel:
+## Variante B: Deploy mit Docker
+
+### 1. Server vorbereiten
 
 ```bash
-ssh root@DEINE_SERVER_IP
+apt update && apt upgrade -y
+apt install -y git docker.io docker-compose-plugin
 ```
 
 ### 2. Projekt klonen
 
 ```bash
-apt update && apt upgrade -y
-apt install -y git docker.io docker-compose-plugin
-git clone https://github.com/DEINNAME/arcane-vault.git
-cd arcane-vault
+git clone https://github.com/<user>/<repo>.git
+cd <repo>
 cp .env.example .env
 ```
 
-Wichtig:
+### 3. `.env` anpassen
 
-- `DATA_DIR` sollte auf `/data/projekt-vault` bleiben
-- dort liegen die Nutzerdaten und Marktstände bewusst außerhalb des austauschbaren App-Codes
-- zusätzlich wird vor jedem Schreibvorgang eine Backup-Datei `local-database.backup.json` im selben Ordner gepflegt
-- die Persistenz kommt ausschließlich über den expliziten Coolify-`Directory Mount`; ohne diesen Mount darf der Server nicht als sicher persistent betrachtet werden
+Wichtige Variablen:
 
-### 3. Container starten
+- `HOST=0.0.0.0`
+- `PORT=3000`
+- `DATA_DIR=/data/projekt-vault`
+- `ADMIN_USERNAME=<eigener-admin-name>`
+- `ADMIN_PASSWORD=<starkes-passwort>`
+
+### 4. Persistenz vorbereiten
+
+```bash
+mkdir -p /data/projekt-vault
+```
+
+### 5. Container starten
 
 ```bash
 docker compose up -d --build
 ```
 
-Danach läuft die App erstmal auf:
+Danach ist die Anwendung typischerweise unter folgendem Port erreichbar:
 
-`http://DEINE_SERVER_IP:3000`
+- `http://SERVER-IP:3000`
 
-## Domain später
+## Backup-Hinweise
 
-Wenn du eine Domain hast:
+Für produktiven Betrieb empfohlen:
 
-- DNS `A` Record auf die Server-IP zeigen lassen
-- danach Reverse Proxy oder Coolify-HTTPS nutzen
+- regelmäßige Sicherung von `DATA_DIR`
+- Backups außerhalb des App-Code-Pfads
+- vor größeren Updates ein zusätzliches manuelles Backup
 
-## Wichtiger Sicherheitsstatus
+## Sicherheit
 
-Der Server-Teil ist jetzt vorbereitet und Auth/Profil laufen bereits über Backend, aber die komplette Spielwirtschaft ist noch nicht vollständig serverseitig.
+Für einen öffentlichen oder produktiven Betrieb sollte zusätzlich beachtet werden:
 
-Das heißt:
+- keine Secrets ins Repository committen
+- starke Admin-Zugangsdaten verwenden
+- Daten nicht im Container-Dateisystem ohne Persistenz speichern
+- produktive Änderungen erst nach Test deployen
 
-- Login ist schon auf dem Server möglich
-- Profiländerungen sind schon serverseitig vorbereitet
-- Gold, Karten, Booster, Decks und Marktplatz sind noch nicht vollständig vom Frontend ins Backend migriert
+Weitere Hinweise:
 
-Für echte Sicherheit im Live-Betrieb ist genau das der nächste Schritt.
+- `SECURITY.md`
 
-## Was du als Nächstes von mir bekommen solltest
+## Nützliche Quellen
 
-Wenn du willst, mache ich jetzt als Nächstes genau diese Server-Migration:
-
-1. Gold, Sammlung und Booster serverseitig speichern
-2. Decks serverseitig speichern
-3. Marktplatz serverseitig speichern
-4. lokale direkte Spielstände komplett abschalten
-
-Dann wäre dein Ablauf wirklich:
-
-1. lokal coden
-2. auf GitHub pushen
-3. auf Hetzner deployen
-4. nur noch den Serverstand verwenden
-
-## Quellen
-
-- [Hetzner: Creating a Server](https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server)
-- [Hetzner: Connecting to your Server](https://docs.hetzner.com/cloud/servers/getting-started/connecting-to-the-server/)
-- [Hetzner: Creating a Firewall](https://docs.hetzner.com/cloud/firewalls/getting-started/creating-a-firewall)
-- [Hetzner: Docker CE App](https://docs.hetzner.com/cloud/apps/list/docker-ce/)
-- [Hetzner: Coolify App](https://docs.hetzner.com/de/cloud/apps/list/coolify/)
+- [Hetzner Cloud: Server erstellen](https://docs.hetzner.com/cloud/servers/getting-started/creating-a-server)
+- [Hetzner Cloud: Server verbinden](https://docs.hetzner.com/cloud/servers/getting-started/connecting-to-the-server/)
+- [Hetzner Cloud: Firewalls](https://docs.hetzner.com/cloud/firewalls/getting-started/creating-a-firewall)
+- [Hetzner Cloud: Coolify App](https://docs.hetzner.com/de/cloud/apps/list/coolify/)
