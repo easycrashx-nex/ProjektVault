@@ -484,7 +484,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
     enemyStartingManaBonus: 0,
     unitBias: 0.6,
     selectionBias: -0.4,
-    rarityRolls: Object.freeze({ legendary: 0.34, ultra: 0.12, mythic: 0.05, transcendent: 0.01 }),
+    rarityRolls: Object.freeze({ legendary: 0.34, ultra: 0.12, mythic: 0.05, transcendent: 0.01, singular: 0 }),
   }),
   standard: Object.freeze({
     id: "standard",
@@ -499,7 +499,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
     enemyStartingManaBonus: 0,
     unitBias: 0.63,
     selectionBias: -0.14,
-    rarityRolls: Object.freeze({ legendary: 0.56, ultra: 0.28, mythic: 0.14, transcendent: 0.03 }),
+    rarityRolls: Object.freeze({ legendary: 0.56, ultra: 0.28, mythic: 0.14, transcendent: 0.03, singular: 0.005 }),
   }),
   veteran: Object.freeze({
     id: "veteran",
@@ -514,7 +514,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
     enemyStartingManaBonus: 0,
     unitBias: 0.67,
     selectionBias: 0.16,
-    rarityRolls: Object.freeze({ legendary: 0.72, ultra: 0.42, mythic: 0.24, transcendent: 0.06 }),
+    rarityRolls: Object.freeze({ legendary: 0.72, ultra: 0.42, mythic: 0.24, transcendent: 0.06, singular: 0.012 }),
   }),
   nightmare: Object.freeze({
     id: "nightmare",
@@ -529,7 +529,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
     enemyStartingManaBonus: 1,
     unitBias: 0.71,
     selectionBias: 0.36,
-    rarityRolls: Object.freeze({ legendary: 0.84, ultra: 0.56, mythic: 0.34, transcendent: 0.1 }),
+    rarityRolls: Object.freeze({ legendary: 0.84, ultra: 0.56, mythic: 0.34, transcendent: 0.1, singular: 0.025 }),
   }),
   hardcore: Object.freeze({
     id: "hardcore",
@@ -544,7 +544,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
     enemyStartingManaBonus: 1,
     unitBias: 0.74,
     selectionBias: 0.48,
-    rarityRolls: Object.freeze({ legendary: 0.9, ultra: 0.66, mythic: 0.44, transcendent: 0.14 }),
+    rarityRolls: Object.freeze({ legendary: 0.9, ultra: 0.66, mythic: 0.44, transcendent: 0.14, singular: 0.05 }),
   }),
 });
 
@@ -1381,15 +1381,16 @@ function getArenaDifficultyRank(value) {
 function getRecommendedArenaDifficultyId(profile) {
   const powerScore = Number(profile?.powerScore || 0);
   const eliteCount = Number(profile?.eliteCount || 0);
+  const singularCount = Number(profile?.rarities?.singular || 0);
   const transcendentCount = Number(profile?.rarities?.transcendent || 0);
   const mythicCount = Number(profile?.rarities?.mythic || 0);
   const ultraCount = Number(profile?.rarities?.ultra || 0);
 
-  if (powerScore >= 380 || transcendentCount >= 4 || mythicCount >= 7 || eliteCount >= 14) {
+  if (powerScore >= 430 || singularCount >= 2 || transcendentCount >= 4 || mythicCount >= 7 || eliteCount >= 14) {
     return "hardcore";
   }
 
-  if (powerScore >= 280 || transcendentCount >= 2 || mythicCount >= 4 || eliteCount >= 10) {
+  if (powerScore >= 320 || singularCount >= 1 || transcendentCount >= 2 || mythicCount >= 4 || eliteCount >= 10) {
     return "nightmare";
   }
 
@@ -4804,6 +4805,369 @@ const PACK_DEFINITIONS = {
   },
 };
 
+function buildGeneratedTitleSeries(leftParts, rightParts, count) {
+  const titles = [];
+  for (const left of leftParts) {
+    for (const right of rightParts) {
+      titles.push(`${left}${right}`);
+      if (titles.length >= count) {
+        return titles;
+      }
+    }
+  }
+  return titles.slice(0, count);
+}
+
+const ETERNAL_UNIT_TITLES = [
+  "Aegishüter",
+  "Kronenwacht",
+  "Siegelpirscher",
+  "Rissgardist",
+  "Echobrecher",
+  "Schwurklinge",
+  "Sphärenvogt",
+  "Nexushüter",
+  "Dämmerlanze",
+  "Sonnenrichter",
+  "Kristallgardist",
+  "Leerenreiter",
+  "Jagdläufer",
+  "Eidarchon",
+  "Himmelsspalter",
+  "Glanzweber",
+  "Runenstürmer",
+  "Schleierkavalier",
+  "Morgenwacht",
+  "Kernrufer",
+  "Horizontjäger",
+  "Prismatitan",
+  "Echoseneschall",
+  "Weltenvogt",
+  "Dornkommandant",
+  "Schwurhirte",
+  "Sternbrecher",
+  "Nexusschmied",
+  "Risspirscher",
+  "Aegispaladin",
+  "Wellenrichter",
+  "Hallenwächter",
+  "Kometreiter",
+  "Fährtenrichter",
+  "Siegelkoloss",
+  "Scherbenhüter",
+  "Leitsternjäger",
+  "Zwielichtvogt",
+  "Kernpaladin",
+  "Morgenarchon",
+];
+
+const ETERNAL_SPELL_TITLES = [
+  "Prismaschlag",
+  "Rissbann",
+  "Kometfessel",
+  "Schwurfunke",
+  "Nexusklinge",
+  "Spiegelflut",
+  "Kernimpuls",
+  "Dämmerbruch",
+  "Sternensalve",
+  "Weltenknall",
+  "Leerenfuge",
+  "Echosiegel",
+];
+
+const ETERNAL_TRAINER_TITLES = [
+  "Konzilsmeister",
+  "Siegelmentor",
+  "Feldkonsul",
+  "Nexuslotse",
+  "Sphärenleser",
+  "Eidbewahrer",
+  "Kammerherr",
+  "Kartenweber",
+  "Bannerkurat",
+  "Schwurseneschall",
+  "Wegorakel",
+  "Taktikvogt",
+];
+
+const ETERNAL_UNIT_RARITIES = [
+  "common", "common", "common", "common", "common", "common", "common", "common", "common", "common", "common", "common",
+  "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare", "rare",
+  "epic", "epic", "epic", "epic", "epic", "epic", "epic", "epic",
+  "legendary", "legendary", "legendary", "legendary", "legendary",
+  "ultra", "ultra", "ultra",
+  "mythic",
+  "singular",
+];
+
+const ETERNAL_SPELL_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "epic", "legendary", "legendary", "ultra", "mythic"];
+const ETERNAL_TRAINER_RARITIES = ["common", "common", "rare", "rare", "rare", "epic", "epic", "epic", "legendary", "legendary", "ultra", "mythic"];
+
+const EXTRA_FACTION_DECK_BONUSES = Object.freeze({
+  sonnenchor: {
+    tone: "gold",
+    minCards: 8,
+    heroBonus: 3,
+    heroBarrier: 1,
+    title: localText("Sonnenchor-Aufbruch", "Solar opening", "Ouverture solaire"),
+    short: localText("+3 Leben, +1 Schild", "+3 life, +1 shield", "+3 vie, +1 bouclier"),
+    description: localText("Ein dominanter Sonnenchor-Deckkern sorgt für einen stabilen und hellen Start.", "A dominant Sun Chorus shell grants a bright and stable opening.", "Une base dominante du Chœur solaire offre un départ lumineux et stable."),
+  },
+  leerenpakt: {
+    tone: "void",
+    minCards: 8,
+    enemyHeroPenalty: 2,
+    heroBarrier: 1,
+    title: localText("Leerenpakt-Druck", "Void pressure", "Pression du vide"),
+    short: localText("+1 Schild, Gegner -2", "+1 shield, enemy -2", "+1 bouclier, ennemi -2"),
+    description: localText("Leerenpakt startet mit stiller Härte und nimmt dem Gegner direkt Raum.", "Void Pact opens with quiet pressure and immediately taxes the enemy.", "Le Pacte du Vide commence avec une pression discrète et retire immédiatement de l'espace à l'adversaire."),
+  },
+  kristallrat: {
+    tone: "aqua",
+    minCards: 8,
+    heroBarrier: 2,
+    openingHandDelta: 1,
+    title: localText("Kristallrat-Fokus", "Crystal focus", "Focalisation cristalline"),
+    short: localText("+2 Schild, +1 Karte", "+2 shield, +1 card", "+2 bouclier, +1 carte"),
+    description: localText("Kristallrat beginnt strukturiert mit Schutz und einer zusätzlichen Option.", "Crystal Council begins with protection and an extra option.", "Le Conseil cristallin commence avec protection et une option supplémentaire."),
+  },
+  dämmerbund: {
+    tone: "violet",
+    minCards: 8,
+    heroBonus: 2,
+    enemyHeroPenalty: 1,
+    title: localText("Dämmerbund-Zugriff", "Twilight reach", "Portée du crépuscule"),
+    short: localText("+2 Leben, Gegner -1", "+2 life, enemy -1", "+2 vie, ennemi -1"),
+    description: localText("Dämmerbund eröffnet zwischen Druck und Kontrolle mit einem kleinen Lebensvorsprung.", "Twilight Covenant opens between pressure and control with a small life edge.", "Le Conclave du crépuscule ouvre entre pression et contrôle avec un léger avantage de vie."),
+  },
+  wildjagd: {
+    tone: "verdant",
+    minCards: 8,
+    heroBonus: 2,
+    startingManaBonus: 1,
+    title: localText("Wildjagd-Tempo", "Wild Hunt tempo", "Tempo de la chasse sauvage"),
+    short: localText("+2 Leben, +1 Startmana", "+2 life, +1 starting mana", "+2 vie, +1 mana de départ"),
+    description: localText("Die Wildjagd springt schneller an und hält dabei genug Druck aus.", "The Wild Hunt gets moving faster while keeping enough durability.", "La Chasse sauvage démarre plus vite tout en gardant assez de résistance."),
+  },
+});
+
+RARITY_ORDER.push("singular");
+Object.assign(RARITY_META, {
+  singular: { label: "Singulär", sellValue: 560 },
+});
+Object.assign(RARITY_TRANSLATIONS.de, { singular: "Singulär" });
+Object.assign(RARITY_TRANSLATIONS.en, { singular: "Singular" });
+Object.assign(RARITY_TRANSLATIONS.fr, { singular: "Singulier" });
+
+Object.assign(EFFECT_VISUALS, {
+  strikeStrongest: { symbol: "✶", tone: "damage" },
+  healWeakestAlly: { symbol: "✚", tone: "heal" },
+  cleanseAllies: { symbol: "◌", tone: "aqua" },
+  barrierAllies: { symbol: "⛨", tone: "barrier" },
+  sapMana: { symbol: "⇣", tone: "mana" },
+  millEnemy: { symbol: "☄", tone: "void" },
+  drainStrongest: { symbol: "✢", tone: "drain" },
+  burnAllEnemies: { symbol: "✹", tone: "burn" },
+  freezeStrongest: { symbol: "❄", tone: "freeze" },
+  poisonAllEnemies: { symbol: "☠", tone: "poison" },
+});
+
+FACTIONS.push(
+  { id: "sonnenchor", name: "Sonnenchor", prefix: "Sonnen" },
+  { id: "leerenpakt", name: "Leerenpakt", prefix: "Leeren" },
+  { id: "kristallrat", name: "Kristallrat", prefix: "Kristall" },
+  { id: "dämmerbund", name: "Dämmerbund", prefix: "Dämmer" },
+  { id: "wildjagd", name: "Wildjagd", prefix: "Wild" },
+);
+
+Object.assign(FACTION_VISUALS, {
+  sonnenchor: { symbol: "☼", tone: "gold" },
+  leerenpakt: { symbol: "✦", tone: "void" },
+  kristallrat: { symbol: "❖", tone: "aqua" },
+  dämmerbund: { symbol: "☾", tone: "violet" },
+  wildjagd: { symbol: "♞", tone: "verdant" },
+});
+
+Object.assign(FACTION_PARTNERS, {
+  sonnenchor: "dämmerbund",
+  leerenpakt: "kristallrat",
+  kristallrat: "leerenpakt",
+  dämmerbund: "sonnenchor",
+  wildjagd: "wurzelpakt",
+});
+
+Object.assign(FACTION_CARD_PROFILES, {
+  sonnenchor: {
+    unitEffects: ["healHero", "healWeakestAlly", "barrierHero", "barrierAllies", "draw", "gainMana", "cleanseAllies", "summonTokens"],
+    spellEffects: ["healBoard", "healWeakestAlly", "barrierAllies", "draw", "gainMaxMana", "cleanseAllies", "summonTokens"],
+    trainerEffects: ["healHero", "barrierHero", "barrierAllies", "draw", "cleanseAllies", "gainMana"],
+    keywords: ["guard", "regen"],
+  },
+  leerenpakt: {
+    unitEffects: ["drainHero", "drainStrongest", "strikeStrongest", "sapMana", "millEnemy", "poisonAllEnemies", "weakenEnemies", "freezeStrongest"],
+    spellEffects: ["drainStrongest", "sapMana", "millEnemy", "poisonAllEnemies", "freezeStrongest", "weakenEnemies", "damageHero"],
+    trainerEffects: ["draw", "sapMana", "millEnemy", "drainHero", "weakenEnemies", "poisonWeakest"],
+    keywords: ["lifesteal", "charge"],
+  },
+  kristallrat: {
+    unitEffects: ["buffBoard", "empowerUnit", "barrierStrongest", "barrierAllies", "draw", "cleanseAllies", "strikeStrongest"],
+    spellEffects: ["barrierAllies", "draw", "cleanseAllies", "strikeStrongest", "gainMaxMana", "healWeakestAlly", "buffBoard"],
+    trainerEffects: ["barrierStrongest", "barrierAllies", "draw", "cleanseAllies", "gainMana", "empowerUnit"],
+    keywords: ["guard", "charge"],
+  },
+  dämmerbund: {
+    unitEffects: ["damageHero", "strikeWeakest", "strikeStrongest", "freezeWeakest", "freezeStrongest", "sapMana", "burnAllEnemies", "weakenEnemies"],
+    spellEffects: ["damageHero", "strikeStrongest", "freezeStrongest", "burnAllEnemies", "weakenEnemies", "draw", "sapMana"],
+    trainerEffects: ["draw", "freezeWeakest", "sapMana", "weakenEnemies", "damageHero", "burnWeakest"],
+    keywords: ["charge", "lifesteal"],
+  },
+  wildjagd: {
+    unitEffects: ["readyStrongest", "summonTokens", "healWeakestAlly", "empowerUnit", "strikeStrongest", "poisonAllEnemies", "draw"],
+    spellEffects: ["readyStrongest", "summonTokens", "strikeStrongest", "healWeakestAlly", "poisonAllEnemies", "gainMana", "buffBoard"],
+    trainerEffects: ["readyStrongest", "summonTokens", "healHero", "healWeakestAlly", "draw", "empowerUnit"],
+    keywords: ["charge", "regen"],
+  },
+});
+
+PACK_DEFINITIONS.starter.odds = { ...PACK_DEFINITIONS.starter.odds, singular: 0 };
+PACK_DEFINITIONS.market.odds = { ...PACK_DEFINITIONS.market.odds, singular: 0 };
+PACK_DEFINITIONS.champion.odds = { ...PACK_DEFINITIONS.champion.odds, singular: 0 };
+PACK_DEFINITIONS.relic.odds = { common: 43.08, rare: 27.75, epic: 15.5, legendary: 8.2, ultra: 4.4, mythic: 0.95, transcendent: 0.1, singular: 0.02 };
+PACK_DEFINITIONS.astral.odds = { common: 30.84, rare: 24, epic: 20, legendary: 12.5, ultra: 8, mythic: 4.4, transcendent: 0.18, singular: 0.08 };
+
+Object.assign(PACK_DEFINITIONS, {
+  sovereign: {
+    id: "sovereign",
+    label: "Souverän-Booster",
+    tier: "Souverän",
+    price: 760,
+    description: "Veredelte Stufe mit starkem Fokus auf legendäre und bessere Züge.",
+    guaranteed: "legendary",
+    odds: { common: 26.3, rare: 23, epic: 21, legendary: 16, ultra: 9, mythic: 4.4, transcendent: 0.25, singular: 0.05 },
+  },
+  eclipse: {
+    id: "eclipse",
+    label: "Eklipsen-Booster",
+    tier: "Eklipse",
+    price: 930,
+    description: "Druckvoller Hochstufen-Booster mit echter Chance auf transzendente Treffer.",
+    guaranteed: "ultra",
+    odds: { common: 17.5, rare: 18, epic: 22, legendary: 18, ultra: 14, mythic: 8, transcendent: 2.3, singular: 0.2 },
+  },
+  nexus: {
+    id: "nexus",
+    label: "Nexus-Booster",
+    tier: "Nexus",
+    price: 1180,
+    description: "Starker Mittelfokus zwischen Ultra, Mythic und seltenen Spitzenkarten.",
+    guaranteed: "ultra",
+    odds: { common: 12, rare: 14, epic: 19, legendary: 20, ultra: 17, mythic: 11, transcendent: 6.4, singular: 0.6 },
+  },
+  cataclysm: {
+    id: "cataclysm",
+    label: "Kataklysmus-Booster",
+    tier: "Kataklysmus",
+    price: 1460,
+    description: "Späte Luxus-Stufe mit hoher Dichte an Spitzenseltenheiten.",
+    guaranteed: "mythic",
+    odds: { common: 7.5, rare: 11, epic: 17, legendary: 21, ultra: 18, mythic: 15, transcendent: 9.6, singular: 0.9 },
+  },
+  singularity: {
+    id: "singularity",
+    label: "Singularitäts-Booster",
+    tier: "Singularität",
+    price: 1820,
+    description: "Die seltenste Kammer im Shop. Hier lebt die kleinste Chance auf singuläre Karten.",
+    guaranteed: "transcendent",
+    odds: { common: 4.4, rare: 8, epic: 14, legendary: 18, ultra: 20, mythic: 16, transcendent: 17, singular: 2.6 },
+  },
+});
+
+Object.assign(PACK_TRANSLATIONS.de, {
+  sovereign: {
+    label: "Souverän-Booster",
+    tier: "Souverän",
+    description: "Veredelte Stufe mit starkem Fokus auf legendäre und bessere Züge.",
+  },
+  eclipse: {
+    label: "Eklipsen-Booster",
+    tier: "Eklipse",
+    description: "Druckvoller Hochstufen-Booster mit echter Chance auf transzendente Treffer.",
+  },
+  nexus: {
+    label: "Nexus-Booster",
+    tier: "Nexus",
+    description: "Starker Mittelfokus zwischen Ultra, Mythic und seltenen Spitzenkarten.",
+  },
+  cataclysm: {
+    label: "Kataklysmus-Booster",
+    tier: "Kataklysmus",
+    description: "Späte Luxus-Stufe mit hoher Dichte an Spitzenseltenheiten.",
+  },
+  singularity: {
+    label: "Singularitäts-Booster",
+    tier: "Singularität",
+    description: "Die seltenste Kammer im Shop. Hier lebt die kleinste Chance auf singuläre Karten.",
+  },
+});
+
+Object.assign(PACK_TRANSLATIONS.en, {
+  sovereign: {
+    label: "Sovereign Booster",
+    tier: "Sovereign",
+    description: "A refined tier with a strong focus on legendary and better pulls.",
+  },
+  eclipse: {
+    label: "Eclipse Booster",
+    tier: "Eclipse",
+    description: "A forceful late-game booster with a real shot at transcendent pulls.",
+  },
+  nexus: {
+    label: "Nexus Booster",
+    tier: "Nexus",
+    description: "A sharp mid-luxury mix between ultra, mythic and rare top-end cards.",
+  },
+  cataclysm: {
+    label: "Cataclysm Booster",
+    tier: "Cataclysm",
+    description: "Late luxury tier with a dense spread of top rarities.",
+  },
+  singularity: {
+    label: "Singularity Booster",
+    tier: "Singularity",
+    description: "The rarest chamber in the shop. This is where the faint chance for singular cards lives.",
+  },
+});
+
+Object.assign(PACK_TRANSLATIONS.fr, {
+  sovereign: {
+    label: "Booster souverain",
+    tier: "Souverain",
+    description: "Un palier raffiné axé sur les tirages légendaires et supérieurs.",
+  },
+  eclipse: {
+    label: "Booster éclipse",
+    tier: "Éclipse",
+    description: "Un booster de fin de jeu avec une vraie chance d'obtenir du transcendant.",
+  },
+  nexus: {
+    label: "Booster nexus",
+    tier: "Nexus",
+    description: "Un mélange haut de gamme entre ultra, mythique et cartes d'élite.",
+  },
+  cataclysm: {
+    label: "Booster cataclysme",
+    tier: "Cataclysme",
+    description: "Un palier luxueux de fin de jeu rempli de hautes raretés.",
+  },
+  singularity: {
+    label: "Booster singularité",
+    tier: "Singularité",
+    description: "La chambre la plus rare de la boutique et la plus faible chance d'obtenir une carte singulière.",
+  },
+});
+
 const FUTURE_SHOP_ITEMS = [
   { title: "Kartenhüllen", copy: "Kosmetische Hüllen mit Fraktionsoptik und besonderen Rahmen." },
   { title: "Turnier-Tickets", copy: "Später für Events, Ranglisten und Spezialbelohnungen gedacht." },
@@ -5179,6 +5543,371 @@ function createTokenCard(id, name, faction, attack, health, keywords = []) {
       default:
         return { kind: "none" };
     }
+  };
+
+  const EXTENDED_EFFECT_TRANSLATIONS = {
+    strikeStrongest: { de: "Stärkeschlag", en: "Power strike", fr: "Frappe majeure" },
+    healWeakestAlly: { de: "Rettung", en: "Rescue", fr: "Secours" },
+    cleanseAllies: { de: "Reinigung", en: "Cleanse", fr: "Purification" },
+    barrierAllies: { de: "Feldbarriere", en: "Field barrier", fr: "Barrière de ligne" },
+    sapMana: { de: "Manaentzug", en: "Mana drain", fr: "Drain de mana" },
+    millEnemy: { de: "Deckbruch", en: "Deck break", fr: "Brèche du deck" },
+    drainStrongest: { de: "Seelenraub", en: "Soul drain", fr: "Drain d'âme" },
+    burnAllEnemies: { de: "Feuersturm", en: "Firestorm", fr: "Tempête de feu" },
+    freezeStrongest: { de: "Eisgriff", en: "Ice grasp", fr: "Étreinte glacée" },
+    poisonAllEnemies: { de: "Seuchenhauch", en: "Peste de champ", fr: "Souffle pestiféré" },
+  };
+
+  const getExtendedEffectText = (kind) => {
+    const labels = EXTENDED_EFFECT_TRANSLATIONS[kind];
+    if (!labels) {
+      return null;
+    }
+    return getCurrentLanguage() === "fr" ? labels.fr : getCurrentLanguage() === "en" ? labels.en : labels.de;
+  };
+
+  const formatLocalizedTurns = (turns) => {
+    if (getCurrentLanguage() === "fr") {
+      return turns > 1 ? `${turns} tours` : `${turns} tour`;
+    }
+    if (getCurrentLanguage() === "en") {
+      return turns > 1 ? `${turns} turns` : `${turns} turn`;
+    }
+    return turns > 1 ? `${turns} Runden` : `${turns} Runde`;
+  };
+
+  const baseGetSecondaryEffectPool = getSecondaryEffectPool;
+  getSecondaryEffectPool = function getSecondaryEffectPool(type) {
+    const basePool = baseGetSecondaryEffectPool(type) || [];
+    const extension = {
+      unit: ["strikeStrongest", "healWeakestAlly", "cleanseAllies", "barrierAllies", "drainStrongest", "burnAllEnemies", "freezeStrongest", "poisonAllEnemies"],
+      spell: ["strikeStrongest", "sapMana", "millEnemy", "drainStrongest", "burnAllEnemies", "freezeStrongest", "poisonAllEnemies", "barrierAllies", "cleanseAllies"],
+      trainer: ["healWeakestAlly", "cleanseAllies", "barrierAllies", "sapMana", "millEnemy", "strikeStrongest", "drainStrongest"],
+    };
+    return uniqueValues([...basePool, ...(extension[type] || [])]);
+  };
+
+  const baseCreateEffectPayload = createEffectPayload;
+  createEffectPayload = function createEffectPayload(kind, rarity, type, seed, factionId = null) {
+    const rank = Math.max(0, RARITY_ORDER.indexOf(rarity));
+    switch (kind) {
+      case "strikeStrongest":
+        return { kind, value: 1 + Math.floor(rank / 2) + Number(type === "spell") + Number(rank >= 6) };
+      case "healWeakestAlly":
+        return { kind, value: 2 + Math.floor(rank / 2) + Number(type === "trainer") + Number(rank >= 7) };
+      case "cleanseAllies":
+        return { kind, heal: Number(rank >= 4) + Number(rank >= 7) };
+      case "barrierAllies":
+        return { kind, heroShield: Number(rank >= 5) };
+      case "sapMana":
+        return { kind, value: Math.min(2, 1 + Number(rank >= 6)) };
+      case "millEnemy":
+        return { kind, amount: Math.min(3, 1 + Number(rank >= 3) + Number(rank >= 6)) };
+      case "drainStrongest": {
+        const damage = 2 + Math.floor(rank / 2) + Number(type !== "unit") + Number(rank >= 7);
+        return { kind, damage, heal: Math.max(1, Math.ceil(damage / 2)) };
+      }
+      case "burnAllEnemies":
+        return { kind, value: 1 + Number(rank >= 4), turns: 1 + Number(rank >= 6) };
+      case "freezeStrongest":
+        return { kind, turns: 1 + Number(rank >= 6) };
+      case "poisonAllEnemies":
+        return { kind, value: 1 + Number(rank >= 6), turns: 2 + Number(rank >= 4) };
+      default:
+        return baseCreateEffectPayload(kind, rarity, type, seed, factionId);
+    }
+  };
+
+  const baseApplySingleEffect = applySingleEffect;
+  applySingleEffect = function applySingleEffect(effect, owner, sourceName) {
+    const match = uiState.match;
+    const actor = match?.[owner];
+    const enemySide = owner === "player" ? "enemy" : "player";
+    const enemy = match?.[enemySide];
+    if (!effect || !actor || !enemy) {
+      return baseApplySingleEffect(effect, owner, sourceName);
+    }
+
+    switch (effect.kind) {
+      case "strikeStrongest": {
+        const target = selectStrongestUnit(getAttackableEnemyUnits(owner));
+        if (!target) {
+          enemy.hero -= effect.value;
+          addLog(`${sourceName} trifft mangels Feldzielen den Helden für ${effect.value}.`);
+          return;
+        }
+        dealDamageToUnit(target, effect.value, `${sourceName} trifft ${getCard(target.cardId).name}`, enemySide);
+        return;
+      }
+      case "healWeakestAlly": {
+        const damaged = actor.board.filter((unit) => unit.health < unit.maxHealth);
+        const target = selectWeakestUnit(damaged.length ? damaged : actor.board);
+        if (!target) {
+          actor.hero += effect.value;
+          addLog(`${sourceName} heilt den Helden um ${effect.value}.`);
+          return;
+        }
+        target.health = Math.min(target.maxHealth, target.health + effect.value);
+        addLog(`${sourceName} heilt ${getCard(target.cardId).name} um ${effect.value}.`);
+        return;
+      }
+      case "cleanseAllies": {
+        const removable = new Set(["burn", "freeze", "poison"]);
+        let cleaned = 0;
+        actor.board.forEach((unit) => {
+          const before = unit.statuses?.length || 0;
+          unit.statuses = (unit.statuses || []).filter((status) => !removable.has(status.kind));
+          if ((unit.statuses?.length || 0) !== before) {
+            cleaned += 1;
+          }
+          if (effect.heal) {
+            unit.health = Math.min(unit.maxHealth, unit.health + effect.heal);
+          }
+        });
+        if (!actor.board.length) {
+          actor.hero += Math.max(1, effect.heal || 0);
+          addLog(`${sourceName} stabilisiert mangels Feld den Helden.`);
+          return;
+        }
+        addLog(cleaned
+          ? `${sourceName} reinigt ${cleaned} eigene Einheit${cleaned > 1 ? "en" : ""}.`
+          : `${sourceName} stärkt dein Feld ohne negative Zustände zu entfernen.`);
+        return;
+      }
+      case "barrierAllies": {
+        if (!actor.board.length) {
+          actor.heroBarrier += Math.max(1, effect.heroShield || 1);
+          addLog(`${sourceName} schützt mangels Feld den Helden mit Schild.`);
+          return;
+        }
+        actor.board.forEach((unit) => addStatusToUnit(unit, { kind: "barrier" }, sourceName));
+        if (effect.heroShield) {
+          actor.heroBarrier += effect.heroShield;
+        }
+        addLog(`${sourceName} errichtet eine Barriere für dein Feld.`);
+        return;
+      }
+      case "sapMana": {
+        const reduced = Math.min(enemy.mana, effect.value);
+        enemy.mana = Math.max(0, enemy.mana - effect.value);
+        addLog(`${sourceName} entzieht dem Gegner ${reduced} Mana.`);
+        return;
+      }
+      case "millEnemy": {
+        const amount = Math.max(0, Math.min(effect.amount || 0, enemy.deck.length));
+        if (!amount) {
+          addLog(`${sourceName} findet kein gegnerisches Deck mehr zum Zerreiben.`);
+          return;
+        }
+        enemy.deck.splice(0, amount);
+        addLog(`${sourceName} wirft ${amount} Karte${amount > 1 ? "n" : ""} aus dem gegnerischen Deck ab.`);
+        return;
+      }
+      case "drainStrongest": {
+        const target = selectStrongestUnit(getAttackableEnemyUnits(owner));
+        if (!target) {
+          enemy.hero -= effect.damage;
+          actor.hero += effect.heal;
+          addLog(`${sourceName} entzieht dem Helden ${effect.damage} Leben und heilt ${effect.heal}.`);
+          return;
+        }
+        dealDamageToUnit(target, effect.damage, `${sourceName} trifft ${getCard(target.cardId).name}`, enemySide);
+        actor.hero += effect.heal;
+        addLog(`${sourceName} heilt den eigenen Helden um ${effect.heal}.`);
+        return;
+      }
+      case "burnAllEnemies": {
+        if (!enemy.board.length) {
+          enemy.hero -= effect.value;
+          addLog(`${sourceName} verbrennt mangels Feldzielen den Helden für ${effect.value}.`);
+          return;
+        }
+        enemy.board.forEach((unit) => addStatusToUnit(unit, { kind: "burn", value: effect.value, turns: effect.turns }, sourceName));
+        return;
+      }
+      case "freezeStrongest": {
+        const target = selectStrongestUnit(getAttackableEnemyUnits(owner));
+        if (!target) {
+          addLog(`${sourceName} findet kein Ziel für Eisgriff.`);
+          return;
+        }
+        addStatusToUnit(target, { kind: "freeze", turns: effect.turns }, sourceName);
+        return;
+      }
+      case "poisonAllEnemies": {
+        if (!enemy.board.length) {
+          addLog(`${sourceName} findet kein gegnerisches Feld für Gift.`);
+          return;
+        }
+        enemy.board.forEach((unit) => addStatusToUnit(unit, { kind: "poison", value: effect.value, turns: effect.turns }, sourceName));
+        return;
+      }
+      default:
+        return baseApplySingleEffect(effect, owner, sourceName);
+    }
+  };
+
+  const baseCreateCostForRarity = createCostForRarity;
+  createCostForRarity = function createCostForRarity(rarity, index, type) {
+    if (rarity !== "singular") {
+      return baseCreateCostForRarity(rarity, index, type);
+    }
+    return Math.min(APP_CONFIG.maxMana, baseCreateCostForRarity("transcendent", index, type) + 1);
+  };
+
+  const baseCreateUnitStats = createUnitStats;
+  createUnitStats = function createUnitStats(cost, rarity, index, factionIndex, keywords = [], title = "") {
+    if (rarity !== "singular") {
+      return baseCreateUnitStats(cost, rarity, index, factionIndex, keywords, title);
+    }
+    const transcendentStats = baseCreateUnitStats(cost, "transcendent", index, factionIndex, keywords, title);
+    return {
+      attack: transcendentStats.attack + 1,
+      health: transcendentStats.health + 1,
+    };
+  };
+
+  const baseBuildGeneratedCards = buildGeneratedCards;
+  buildGeneratedCards = function buildGeneratedCards() {
+    const cards = baseBuildGeneratedCards();
+    const extraCards = [];
+    const expandedUnitOffset = UNIT_TITLES.length + 2;
+    const expandedSpellOffset = SPELL_TITLES.length + 3;
+    const expandedTrainerOffset = TRAINER_TITLES.length + 4;
+    const ascendantUnitOffset = expandedUnitOffset + EXPANDED_UNIT_TITLES.length + 5;
+    const ascendantSpellOffset = expandedSpellOffset + EXPANDED_SPELL_TITLES.length + 7;
+    const ascendantTrainerOffset = expandedTrainerOffset + EXPANDED_TRAINER_TITLES.length + 9;
+    const eternalUnitOffset = ascendantUnitOffset + ASCENDANT_UNIT_TITLES.length + 11;
+    const eternalSpellOffset = ascendantSpellOffset + ASCENDANT_SPELL_TITLES.length + 13;
+    const eternalTrainerOffset = ascendantTrainerOffset + ASCENDANT_TRAINER_TITLES.length + 15;
+
+    FACTIONS.forEach((faction, factionIndex) => {
+      appendGeneratedUnitSet(extraCards, faction, factionIndex, ETERNAL_UNIT_TITLES, ETERNAL_UNIT_RARITIES, "einheit-ewig", eternalUnitOffset);
+      appendGeneratedSpellSet(extraCards, faction, ETERNAL_SPELL_TITLES, ETERNAL_SPELL_RARITIES, "zauber-ewig", eternalSpellOffset);
+      appendGeneratedTrainerSet(extraCards, faction, ETERNAL_TRAINER_TITLES, ETERNAL_TRAINER_RARITIES, "trainer-ewig", eternalTrainerOffset);
+    });
+
+    return [...cards, ...extraCards];
+  };
+
+  const baseGetLocalizedEffectBadgeLabel = getLocalizedEffectBadgeLabel;
+  getLocalizedEffectBadgeLabel = function getLocalizedEffectBadgeLabel(kind) {
+    return getExtendedEffectText(kind) || baseGetLocalizedEffectBadgeLabel(kind);
+  };
+
+  const baseGetLocalizedCompactEffect = getLocalizedCompactEffect;
+  getLocalizedCompactEffect = function getLocalizedCompactEffect(effect) {
+    switch (effect?.kind) {
+      case "strikeStrongest":
+        return getCurrentLanguage() === "fr" ? `Plus forte cible ${effect.value}` : getCurrentLanguage() === "en" ? `Strongest target ${effect.value}` : `Stärkstes Ziel ${effect.value}`;
+      case "healWeakestAlly":
+        return getCurrentLanguage() === "fr" ? `Allié faible +${effect.value}` : getCurrentLanguage() === "en" ? `Weak ally +${effect.value}` : `Schwacher Verb. +${effect.value}`;
+      case "cleanseAllies":
+        return getCurrentLanguage() === "fr" ? "Nettoie le champ" : getCurrentLanguage() === "en" ? "Cleanse field" : "Feld reinigen";
+      case "barrierAllies":
+        return getCurrentLanguage() === "fr" ? "Barrière pour le champ" : getCurrentLanguage() === "en" ? "Barrier for board" : "Barriere fürs Feld";
+      case "sapMana":
+        return getCurrentLanguage() === "fr" ? `Mana adverse -${effect.value}` : getCurrentLanguage() === "en" ? `Enemy mana -${effect.value}` : `Gegner -${effect.value} Mana`;
+      case "millEnemy":
+        return getCurrentLanguage() === "fr" ? `Défausse ${effect.amount}` : getCurrentLanguage() === "en" ? `Mill ${effect.amount}` : `Deck -${effect.amount}`;
+      case "drainStrongest":
+        return getCurrentLanguage() === "fr" ? `Drain ${effect.damage}/${effect.heal}` : getCurrentLanguage() === "en" ? `Drain ${effect.damage}/${effect.heal}` : `Entzug ${effect.damage}/${effect.heal}`;
+      case "burnAllEnemies":
+        return getCurrentLanguage() === "fr" ? `Tous brûlent ${effect.value}/${effect.turns}` : getCurrentLanguage() === "en" ? `All burn ${effect.value}/${effect.turns}` : `Alle Brand ${effect.value}/${effect.turns}`;
+      case "freezeStrongest":
+        return getCurrentLanguage() === "fr" ? `Gel ${effect.turns} tour` : getCurrentLanguage() === "en" ? `Freeze ${effect.turns} turn` : `Frost ${effect.turns} Runde`;
+      case "poisonAllEnemies":
+        return getCurrentLanguage() === "fr" ? `Tous poison ${effect.value}/${effect.turns}` : getCurrentLanguage() === "en" ? `All poison ${effect.value}/${effect.turns}` : `Alle Gift ${effect.value}/${effect.turns}`;
+      default:
+        return baseGetLocalizedCompactEffect(effect);
+    }
+  };
+
+  const baseDescribeLocalizedEffect = describeLocalizedEffect;
+  describeLocalizedEffect = function describeLocalizedEffect(type, effect, index = 0) {
+    const opener = index === 0 ? (type === "unit" ? getUiText("card.onPlay") : getUiText("card.effect")) : getUiText("card.also");
+    switch (effect?.kind) {
+      case "strikeStrongest":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : frappe la plus forte unité ennemie ou le héros pour ${effect.value}.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Hit the strongest enemy unit or the hero for ${effect.value}.`
+            : `${opener}: Trifft die stärkste gegnerische Einheit oder den Helden für ${effect.value}.`;
+      case "healWeakestAlly":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : soigne ton allié le plus affaibli de ${effect.value} ou le héros s'il n'y a pas d'unité.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Heal your weakest ally for ${effect.value}, or the hero if no ally is in play.`
+            : `${opener}: Heilt deinen schwächsten Verbündeten um ${effect.value} oder den Helden, falls kein Feld liegt.`;
+      case "cleanseAllies":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : retire brûlure, gel et poison de tes alliés${effect.heal ? ` et leur rend ${effect.heal} vie` : ""}.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Remove burn, freeze and poison from your allies${effect.heal ? ` and restore ${effect.heal} health` : ""}.`
+            : `${opener}: Entfernt Brand, Frost und Gift von deinen Verbündeten${effect.heal ? ` und heilt sie um ${effect.heal}` : ""}.`;
+      case "barrierAllies":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : donne une barrière à toutes tes unités${effect.heroShield ? ` et ${effect.heroShield} bouclier à ton héros` : ""}.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Give all allied units a barrier${effect.heroShield ? ` and ${effect.heroShield} shield to your hero` : ""}.`
+            : `${opener}: Gibt allen eigenen Einheiten eine Barriere${effect.heroShield ? ` und deinem Helden ${effect.heroShield} Schild` : ""}.`;
+      case "sapMana":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : retire ${effect.value} mana au joueur adverse.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Drain ${effect.value} mana from the opponent.`
+            : `${opener}: Entzieht dem Gegner ${effect.value} Mana.`;
+      case "millEnemy":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : défausse ${effect.amount} carte${effect.amount > 1 ? "s" : ""} du dessus du deck adverse.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Mill ${effect.amount} card${effect.amount > 1 ? "s" : ""} from the top of the enemy deck.`
+            : `${opener}: Wirft ${effect.amount} Karte${effect.amount > 1 ? "n" : ""} vom gegnerischen Deck ab.`;
+      case "drainStrongest":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : inflige ${effect.damage} à l'unité ennemie la plus forte et te soigne de ${effect.heal}.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Deal ${effect.damage} to the strongest enemy unit and heal for ${effect.heal}.`
+            : `${opener}: Fügt der stärksten gegnerischen Einheit ${effect.damage} zu und heilt dich um ${effect.heal}.`;
+      case "burnAllEnemies":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : applique brûlure à toutes les unités ennemies pendant ${formatLocalizedTurns(effect.turns)} (${effect.value} dégâts par tour).`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Burn all enemy units for ${formatLocalizedTurns(effect.turns)} (${effect.value} damage per turn).`
+            : `${opener}: Belegt alle gegnerischen Einheiten für ${formatLocalizedTurns(effect.turns)} mit Brand (${effect.value} Schaden pro Zug).`;
+      case "freezeStrongest":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : gèle la plus forte unité ennemie pendant ${formatLocalizedTurns(effect.turns)}.`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Freeze the strongest enemy unit for ${formatLocalizedTurns(effect.turns)}.`
+            : `${opener}: Friert die stärkste gegnerische Einheit für ${formatLocalizedTurns(effect.turns)} ein.`;
+      case "poisonAllEnemies":
+        return getCurrentLanguage() === "fr"
+          ? `${opener} : empoisonne toutes les unités ennemies pendant ${formatLocalizedTurns(effect.turns)} (${effect.value} dégâts en fin de tour).`
+          : getCurrentLanguage() === "en"
+            ? `${opener}: Poison all enemy units for ${formatLocalizedTurns(effect.turns)} (${effect.value} end-step damage).`
+            : `${opener}: Vergiftet alle gegnerischen Einheiten für ${formatLocalizedTurns(effect.turns)} (${effect.value} Schaden am Zugende).`;
+      default:
+        return baseDescribeLocalizedEffect(type, effect, index);
+    }
+  };
+
+  const basePlayPackOpeningSequence = playPackOpeningSequence;
+  playPackOpeningSequence = function playPackOpeningSequence(cards, packId) {
+    basePlayPackOpeningSequence(cards, packId);
+    if (!elements.openingStage || !cards?.length || !getUserSettings().packEffects || getUserSettings().reducedMotion) {
+      return;
+    }
+    const highestRarity = getHighestRarity(cards);
+    if (highestRarity !== "singular") {
+      return;
+    }
+    createFxPulse({
+      theme: "booster-rare",
+      x: window.innerWidth ? window.innerWidth * 0.66 : 820,
+      y: 280,
+      size: 340,
+    });
   };
 
   getTitleBias = function getTitleBias(title) {
@@ -5900,6 +6629,11 @@ const TOKEN_CARDS = [
   createTokenCard("token-runen-konstrukt", "Runenkonstrukt", "runenschmiede", 1, 2, ["guard"]),
   createTokenCard("token-sternen-funken", "Sternenfunken", "sternenhof", 1, 2, ["regen"]),
   createTokenCard("token-knochen-diener", "Knochendiener", "knochenbund", 2, 1, ["lifesteal"]),
+  createTokenCard("token-sonnen-funke", "Lichtfunke", "sonnenchor", 1, 2, ["regen"]),
+  createTokenCard("token-leeren-splitter", "Leerenplitter", "leerenpakt", 2, 1, ["charge"]),
+  createTokenCard("token-kristall-prisma", "Prismascherbe", "kristallrat", 1, 2, ["guard"]),
+  createTokenCard("token-daemmer-schemen", "Dämmerschemen", "dämmerbund", 1, 1, ["lifesteal"]),
+  createTokenCard("token-wild-spur", "Jagdspur", "wildjagd", 1, 1, ["charge"]),
 ];
 const TOKEN_CARD_MAP = new Map(TOKEN_CARDS.map((card) => [card.id, card]));
 const TOKEN_IDS_BY_FACTION = TOKEN_CARDS.reduce((map, card) => {
@@ -8508,7 +9242,7 @@ function getFactionDeckBonus(profile, mode = DECK_MODES.standard) {
     return null;
   }
   const [factionId, count] = dominant;
-  const definition = FACTION_DECK_BONUSES[factionId];
+  const definition = FACTION_DECK_BONUSES[factionId] || EXTRA_FACTION_DECK_BONUSES[factionId];
   const rules = getDeckRules(mode);
   if (!definition) {
     return null;
@@ -9689,8 +10423,8 @@ function updateMarketForHour(market) {
   CARD_POOL.forEach((card) => {
     const state = market.cards[card.id];
     const anchor = getMarketAnchor(card);
-    const rarityDemandBias = { common: -1.4, rare: -0.4, epic: 0.8, legendary: 1.4, ultra: 2.2, mythic: 3, transcendent: 4.2 }[card.rarity];
-    const raritySupplyBias = { common: 2.4, rare: 1.2, epic: 0.4, legendary: -0.6, ultra: -1.4, mythic: -2.2, transcendent: -3.4 }[card.rarity];
+    const rarityDemandBias = { common: -1.4, rare: -0.4, epic: 0.8, legendary: 1.4, ultra: 2.2, mythic: 3, transcendent: 4.2, singular: 5.6 }[card.rarity];
+    const raritySupplyBias = { common: 2.4, rare: 1.2, epic: 0.4, legendary: -0.6, ultra: -1.4, mythic: -2.2, transcendent: -3.4, singular: -4.8 }[card.rarity];
     const tradePressure = state.tradePressure || 0;
     const randomSwing = randomBetween(-0.055, 0.055);
     const specialEvent = Math.random() < 0.035 ? randomBetween(-0.14, 0.18) : 0;
@@ -9726,7 +10460,7 @@ function getElapsedHourCount(fromHourKey, toHourKey) {
 }
 
 function getMarketAnchor(card) {
-  const rarityFactor = { common: 1, rare: 1.3, epic: 1.8, legendary: 2.35, ultra: 3.05, mythic: 4.1, transcendent: 5.6 }[card.rarity];
+  const rarityFactor = { common: 1, rare: 1.3, epic: 1.8, legendary: 2.35, ultra: 3.05, mythic: 4.1, transcendent: 5.6, singular: 7.4 }[card.rarity];
   const typeFactor = { unit: 1.05, spell: 1.12, trainer: 1.16 }[card.type];
   return Math.round((RARITY_META[card.rarity].sellValue * 1.6 + (card.cost || 0) * 6 + 10) * rarityFactor * typeFactor / 2.25);
 }
@@ -10621,7 +11355,7 @@ function renderShop() {
       },
       {
         title: getUiText("shop.summaryGuaranteed"),
-        value: `${getRarityLabel(PACK_DEFINITIONS.starter.guaranteed)} → ${getRarityLabel(PACK_DEFINITIONS.astral.guaranteed)}`,
+        value: `${getRarityLabel(PACK_DEFINITIONS.starter.guaranteed)} → ${getRarityLabel((PACK_DEFINITIONS.singularity || PACK_DEFINITIONS.astral).guaranteed)}`,
         text: getCurrentLanguage() === "fr" ? "Garantie croissante selon le palier" : getCurrentLanguage() === "en" ? "Rarity floor rises with each tier" : "Garantierte Mindestseltenheit steigt pro Stufe",
       },
       {
@@ -13155,7 +13889,7 @@ function createPackCard(packId, context) {
   const element = elements.packTemplate.content.firstElementChild.cloneNode(true);
   const save = getSave();
   const packEntryPrice = context === "shop" ? pack.price : save.packs[packId];
-  const odds = ["rare", "epic", "legendary", "ultra", "mythic", "transcendent"]
+  const odds = ["rare", "epic", "legendary", "ultra", "mythic", "transcendent", "singular"]
     .map((rarity) => `<div class="odds-row"><span>${RarityLabel(rarity)}</span><strong>${pack.odds[rarity]}%</strong></div>`)
     .join("");
 
@@ -13534,6 +14268,7 @@ function analyzeDeck(cardIds) {
     ultra: 10.5,
     mythic: 14.2,
     transcendent: 19,
+    singular: 26.5,
   };
 
   cards.forEach((card) => {
@@ -13557,7 +14292,7 @@ function analyzeDeck(cardIds) {
       profile.deathEffectCount += 1;
     }
 
-    if (["legendary", "ultra", "mythic", "transcendent"].includes(card.rarity)) {
+    if (["legendary", "ultra", "mythic", "transcendent", "singular"].includes(card.rarity)) {
       profile.eliteCount += 1;
     }
 
@@ -13939,10 +14674,10 @@ function rollRarity(weights, minimumRarity, pityState = createDefaultPityState()
   const legendaryBonus = Math.min(8, Math.max(0, pityState.legendaryDry - 4) * 0.55);
   eligibleRarities.forEach((rarity) => {
     let weight = weights[rarity];
-    if (["epic", "legendary", "ultra", "mythic", "transcendent"].includes(rarity)) {
+    if (["epic", "legendary", "ultra", "mythic", "transcendent", "singular"].includes(rarity)) {
       weight += epicBonus;
     }
-    if (["legendary", "ultra", "mythic", "transcendent"].includes(rarity)) {
+    if (["legendary", "ultra", "mythic", "transcendent", "singular"].includes(rarity)) {
       weight += legendaryBonus;
     }
     adjustedWeights[rarity] = weight;
@@ -15309,7 +16044,7 @@ function countCopiesInArray(cardIds, targetId) {
 
 function getDeckCopyLimit(cardId) {
   const rarity = getCard(cardId)?.rarity;
-  return ["legendary", "ultra", "mythic", "transcendent"].includes(rarity) ? 1 : 2;
+  return ["legendary", "ultra", "mythic", "transcendent", "singular"].includes(rarity) ? 1 : 2;
 }
 
 function getCard(cardId) {
@@ -16472,7 +17207,7 @@ function legacyRenderShop() {
       },
       {
         title: getUiText("shop.summaryGuaranteed"),
-        value: `${getRarityLabel(PACK_DEFINITIONS.starter.guaranteed)} → ${getRarityLabel(PACK_DEFINITIONS.astral.guaranteed)}`,
+        value: `${getRarityLabel(PACK_DEFINITIONS.starter.guaranteed)} → ${getRarityLabel((PACK_DEFINITIONS.singularity || PACK_DEFINITIONS.astral).guaranteed)}`,
         text: localText("Garantierte Mindestseltenheit steigt pro Stufe", "Rarity floor rises with each tier", "Le palier minimum monte avec chaque niveau"),
       },
       {

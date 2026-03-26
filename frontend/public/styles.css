@@ -59,6 +59,11 @@
   --transcendent-c: #ffe38f;
   --transcendent-d: #b8fff0;
   --transcendent-e: #cad8ff;
+  --singular-a: #fff8dd;
+  --singular-b: #ffd9f7;
+  --singular-c: #9fe7ff;
+  --singular-d: #fff0a8;
+  --singular-e: #ffffff;
   --scene-accent-rgb: 255, 210, 122;
   --scene-secondary-rgb: 121, 217, 255;
   --scene-accent: #ffd27a;
@@ -2175,6 +2180,10 @@ body[data-scene="settings"] .scene-core {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.34), rgba(193, 137, 255, 0.16), transparent 72%);
 }
 
+.opening-stage[data-highlight="singular"]::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.42), rgba(255, 216, 156, 0.24), rgba(159, 231, 255, 0.18), transparent 74%);
+}
+
 .opening-stage.is-opening {
   animation: pack-stage-flare 540ms ease;
 }
@@ -3185,6 +3194,20 @@ body[data-scene="settings"] .scene-core {
   animation: transcendent-flow 4.8s linear infinite;
 }
 
+.card-singular {
+  box-shadow: 0 34px 92px rgba(255, 242, 176, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.card-singular::after {
+  background: linear-gradient(135deg, var(--singular-a), var(--singular-b), var(--singular-c), var(--singular-d), var(--singular-e), var(--singular-a));
+  background-size: 260% 260%;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: transcendent-flow 4.2s linear infinite;
+}
+
 .card-topline {
   position: relative;
   z-index: 1;
@@ -3596,6 +3619,11 @@ body[data-scene="settings"] .scene-core {
 .rarity-transcendent {
   color: #0f1320;
   background: linear-gradient(120deg, var(--transcendent-a), var(--transcendent-b), var(--transcendent-c), var(--transcendent-d), var(--transcendent-e));
+}
+
+.rarity-singular {
+  color: #10131d;
+  background: linear-gradient(120deg, var(--singular-a), var(--singular-b), var(--singular-c), var(--singular-d), var(--singular-e));
 }
 
 .saved-deck-card {

@@ -53,3 +53,12 @@ TODO
 - Hauptmenü-Arena-Kachel, Summary-Karten und Navigationsflächen größer und ruhiger ausbalanciert; Fokus auf Lesbarkeit, Wiedererkennbarkeit und konsistenten Abstand statt zufälliger Dichte.
 - Responsives Verhalten für die neue Grid-Struktur nachgezogen, damit Banner- und Section-Köpfe auch auf schmaleren Breiten sauber umbrechen.
 - Frontend-Mirror synchronisiert und Syntaxcheck erfolgreich; lokaler Browser-Smoke-Test blieb wegen instabilem lokalen Serverlauf in dieser Umgebung eingeschränkt.
+## 2026-03-25 Content-Erweiterung
+- Kartenpool massiv erweitert: fünf neue Fraktionen (Sonnenchor, Leerenpakt, Kristallrat, Dämmerbund, Wildjagd) vollständig in Generator, Synergien, Markt und Deckboni eingebunden.
+- Neue Spitzen-Seltenheit Singulär ergänzt, inklusive lokalisierter Labels, Dropchancen, Marktwerten, Kartenstil und Pack-Opening-Highlight.
+- Zehn neue Effekte in die aktive Effekt-Engine gehängt: strikeStrongest, healWeakestAlly, cleanseAllies, arrierAllies, sapMana, millEnemy, drainStrongest, urnAllEnemies, reezeStrongest, poisonAllEnemies.
+- Booster-Katalog um fünf neue Booster erweitert: Sovereign, Eclipse, Nexus, Cataclysm, Singularity.
+- Pack-Katalog durch die neuen Fraktionen automatisch auf 65 Themen-Packs erweitert; damit liegen 25 zusätzliche Packs über dem früheren 40er-Stand.
+- Neue Ewig-/Endgame-Kartenfamilie pro Fraktion ergänzt; aktueller Pool liegt jetzt bei 2'845 Karten insgesamt bzw. 2'821 generierten Karten.
+- Frontend-Mirror nach rontend/public synchronisiert; Syntaxchecks (
+ode --check app.js, cmd /c npm run check) erfolgreich. Ein echter Browser-Smoke-Test des erweiterten Pools steht noch aus.
