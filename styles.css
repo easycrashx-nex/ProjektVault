@@ -3744,6 +3744,9 @@ body[data-scene="settings"] .scene-core {
 }
 
 .battle-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   grid-template-columns: 1fr 0.82fr 1fr;
   align-items: start;
   padding: var(--space-md);
@@ -3753,6 +3756,111 @@ body[data-scene="settings"] .scene-core {
     radial-gradient(circle at 50% 0%, rgba(121, 217, 255, 0.08), transparent 30%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
     rgba(9, 15, 25, 0.9);
+}
+
+.battle-trail,
+.battle-impact {
+  position: absolute;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.battle-trail {
+  height: 5px;
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  opacity: 0;
+  animation: battleTrailPulse 320ms ease forwards;
+}
+
+.battle-trail.tone-player {
+  background: linear-gradient(90deg, rgba(255, 210, 122, 0.04), rgba(255, 210, 122, 0.98), rgba(255, 236, 191, 0.04));
+  box-shadow: 0 0 18px rgba(255, 210, 122, 0.48);
+}
+
+.battle-trail.tone-enemy {
+  background: linear-gradient(90deg, rgba(121, 217, 255, 0.04), rgba(121, 217, 255, 0.98), rgba(223, 246, 255, 0.04));
+  box-shadow: 0 0 18px rgba(121, 217, 255, 0.48);
+}
+
+.battle-impact {
+  width: 82px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  translate: -50% -50%;
+  opacity: 0;
+  animation: battleImpactBurst 240ms ease forwards;
+}
+
+.battle-impact.tone-player {
+  background: radial-gradient(circle, rgba(255, 236, 191, 0.92), rgba(255, 210, 122, 0.18) 44%, rgba(255, 210, 122, 0) 72%);
+}
+
+.battle-impact.tone-enemy {
+  background: radial-gradient(circle, rgba(230, 247, 255, 0.92), rgba(121, 217, 255, 0.18) 44%, rgba(121, 217, 255, 0) 72%);
+}
+
+.game-card.is-attack-lunge-player,
+.hero-card.is-attack-lunge-player {
+  transform: translateY(-18px) scale(1.02);
+  box-shadow: 0 22px 44px rgba(255, 210, 122, 0.2);
+}
+
+.game-card.is-attack-lunge-enemy,
+.hero-card.is-attack-lunge-enemy {
+  transform: translateY(18px) scale(1.02);
+  box-shadow: 0 22px 44px rgba(121, 217, 255, 0.2);
+}
+
+.game-card.is-battle-targeted,
+.hero-card.is-battle-targeted {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 10px rgba(255, 255, 255, 0.015);
+}
+
+.game-card.is-battle-hit,
+.hero-card.is-battle-hit {
+  animation: battleTargetFlash 220ms ease;
+}
+
+@keyframes battleTrailPulse {
+  0% {
+    opacity: 0;
+    scale: 0.55 1;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1 1;
+  }
+}
+
+@keyframes battleImpactBurst {
+  0% {
+    opacity: 0;
+    scale: 0.2;
+  }
+  30% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.35;
+  }
+}
+
+@keyframes battleTargetFlash {
+  0% {
+    filter: brightness(1);
+  }
+  35% {
+    filter: brightness(1.28);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 .battle-lane {
@@ -4685,7 +4793,11 @@ body[data-motion="reduced"] .scene-banner-enter,
 body[data-motion="reduced"] .reveal-card,
 body[data-motion="reduced"] .surface-ripple,
 body[data-motion="reduced"] .fx-pulse,
-body[data-motion="reduced"] .opening-burst {
+body[data-motion="reduced"] .opening-burst,
+body[data-motion="reduced"] .battle-trail,
+body[data-motion="reduced"] .battle-impact,
+body[data-motion="reduced"] .game-card.is-battle-hit,
+body[data-motion="reduced"] .hero-card.is-battle-hit {
   animation: none !important;
   display: none !important;
 }
@@ -4696,6 +4808,10 @@ body[data-motion="reduced"] .pack-card,
 body[data-motion="reduced"] .resource-chip,
 body[data-motion="reduced"] .nav-button,
 body[data-motion="reduced"] .primary-button,
-body[data-motion="reduced"] .secondary-button {
+body[data-motion="reduced"] .secondary-button,
+body[data-motion="reduced"] .game-card.is-attack-lunge-player,
+body[data-motion="reduced"] .game-card.is-attack-lunge-enemy,
+body[data-motion="reduced"] .hero-card.is-attack-lunge-player,
+body[data-motion="reduced"] .hero-card.is-attack-lunge-enemy {
   transition-duration: 0.01ms !important;
 }

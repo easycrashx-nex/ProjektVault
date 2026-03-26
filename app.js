@@ -473,6 +473,7 @@ const FACTION_DECK_BONUSES = Object.freeze({
 const ARENA_DIFFICULTIES = Object.freeze({
   novice: Object.freeze({
     id: "novice",
+    startingMana: 10,
     rewardWin: 55,
     rewardLoss: 20,
     rankWin: 12,
@@ -488,6 +489,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
   }),
   standard: Object.freeze({
     id: "standard",
+    startingMana: 5,
     rewardWin: 90,
     rewardLoss: 35,
     rankWin: 18,
@@ -503,6 +505,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
   }),
   veteran: Object.freeze({
     id: "veteran",
+    startingMana: 3,
     rewardWin: 145,
     rewardLoss: 50,
     rankWin: 24,
@@ -518,6 +521,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
   }),
   nightmare: Object.freeze({
     id: "nightmare",
+    startingMana: 1,
     rewardWin: 230,
     rewardLoss: 70,
     rankWin: 34,
@@ -533,6 +537,7 @@ const ARENA_DIFFICULTIES = Object.freeze({
   }),
   hardcore: Object.freeze({
     id: "hardcore",
+    startingMana: 1,
     rewardWin: 340,
     rewardLoss: 0,
     rankWin: 60,
@@ -7420,12 +7425,14 @@ function overrideArcaneVaultSystems() {
       && nextTrainerCount <= rules.maxTrainers;
   };
 
-  renderHeroPanel = function renderHeroPanel(container, label, sideState, active) {
+  renderHeroPanel = function renderHeroPanel(container, label, sideState, active, side = "enemy") {
     const deckCount = Array.isArray(sideState.deck) ? sideState.deck.length : APP_CONFIG.deckSize;
     const healthPct = clamp(0, 100, Math.round((sideState.hero / APP_CONFIG.heroHealth) * 100));
     const manaCap = Math.max(1, sideState.maxMana || APP_CONFIG.maxMana);
     const manaPct = clamp(0, 100, Math.round((sideState.mana / manaCap) * 100));
     const barrierChip = sideState.heroBarrier > 0 ? `<span class="meta-chip">${getUiText("arena.shield", { value: sideState.heroBarrier })}</span>` : "";
+    container.dataset.side = side;
+    container.dataset.targetType = "hero";
     container.innerHTML = `
       <p class="eyebrow">${label}</p>
       <div class="hero-line">
@@ -7561,13 +7568,14 @@ function overrideArcaneVaultSystems() {
     cleanupBoards();
   };
 
-  createSideState = function createSideState(deckCards) {
+  createSideState = function createSideState(deckCards, options = {}) {
     const shuffledDeck = shuffle([...deckCards]);
     return {
       hero: APP_CONFIG.heroHealth,
       heroBarrier: 0,
-      maxMana: 0,
-      mana: 0,
+      maxMana: sanitizeFiniteInteger(options.startingMaxMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
+      mana: sanitizeFiniteInteger(options.startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
+      turnsStarted: sanitizeFiniteInteger(options.turnsStarted, 0, 0, 99),
       deck: shuffledDeck,
       hand: [],
       board: [],
@@ -7617,13 +7625,15 @@ function overrideArcaneVaultSystems() {
     dealDamageToUnit(target, value, `${sourceName} trifft ${getCard(target.cardId).name}`, enemySide);
   };
 
-  resolveCombat = function resolveCombat(attacker, owner) {
+  resolveCombat = async function resolveCombat(attacker, owner) {
     const match = uiState.match;
     const enemySide = owner === "player" ? "enemy" : "player";
     const enemy = match[enemySide];
     const actor = match[owner];
     const target = selectWeakestUnit(getAttackableEnemyUnits(owner));
     attacker.canAttack = false;
+
+    await playCombatAnimation(attacker, owner, target);
 
     if (!target) {
       dealDamageToHero(enemySide, attacker.attack, `${getCard(attacker.cardId).name} trifft den Helden`);
@@ -7646,10 +7656,19 @@ function overrideArcaneVaultSystems() {
     }
   };
 
-  runEnemyTurn = function runEnemyTurn() {
+  runEnemyTurn = async function runEnemyTurn() {
     const match = uiState.match;
+    if (!match || match.status !== "active" || match.enemyBusy) {
+      return;
+    }
+
+    match.enemyBusy = true;
     const enemy = match.enemy;
+    const motion = getArenaMotionPreset();
     let plays = 0;
+
+    renderArena();
+    await waitForArenaMotion(motion.enemyThinkMs);
 
     while (plays < 2) {
       const playableIndex = chooseEnemyCardIndex();
@@ -7662,27 +7681,39 @@ function overrideArcaneVaultSystems() {
       enemy.mana -= card.cost;
       resolveCardPlay(card, "enemy");
       plays += 1;
+      afterActionCheck();
+      renderArena();
+      await waitForArenaMotion(motion.enemyStepMs);
 
       if (match.status !== "active") {
+        match.enemyBusy = false;
         renderArena();
         return;
       }
     }
 
-    enemy.board
-      .filter((unit) => unit.canAttack)
-      .forEach((unit) => {
-        if (match.status === "active") {
-          resolveCombat(unit, "enemy");
-          afterActionCheck();
-        }
-      });
+    const attackers = enemy.board.filter((unit) => unit.canAttack);
+    for (const unit of attackers) {
+      if (match.status !== "active") {
+        break;
+      }
+      if (!enemy.board.some((entry) => entry.uid === unit.uid) || !unit.canAttack) {
+        continue;
+      }
+      await resolveCombat(unit, "enemy");
+      afterActionCheck();
+      renderArena();
+      await waitForArenaMotion(motion.enemyStepMs);
+    }
 
     if (match.status === "active") {
       processTurnEnd("enemy");
     }
     if (match.status === "active") {
+      match.enemyBusy = false;
       startTurn("player");
+    } else {
+      match.enemyBusy = false;
     }
 
     renderArena();
@@ -13145,16 +13176,19 @@ function renderBoardState(container, units, side, matchFinished, phase) {
     }
 
     if (side === "enemy") {
-      container.append(renderCard(getCard(unit.cardId), {
+      const cardElement = renderCard(getCard(unit.cardId), {
         context: "board",
         stateOverride: unit,
         footer: buildUnitStateFooter(unit, unit.canAttack ? getUiText("arena.attackReady") : getUiText("arena.readyNextTurn")),
-      }));
+      });
+      cardElement.dataset.unitUid = String(unit.uid);
+      cardElement.dataset.side = side;
+      container.append(cardElement);
       continue;
     }
 
     const canAttack = phase === "player" && unit.canAttack && !matchFinished;
-    container.append(renderCard(getCard(unit.cardId), {
+    const cardElement = renderCard(getCard(unit.cardId), {
       context: "board",
       stateOverride: unit,
       buttons: [
@@ -13165,8 +13199,123 @@ function renderBoardState(container, units, side, matchFinished, phase) {
         },
       ],
       footer: buildUnitStateFooter(unit, unit.canAttack ? getUiText("arena.attackHint") : getUiText("arena.notReadyHint")),
-    }));
+    });
+    cardElement.dataset.unitUid = String(unit.uid);
+    cardElement.dataset.side = side;
+    container.append(cardElement);
   }
+}
+
+function getBattleStageElement() {
+  return document.querySelector(".battle-stage");
+}
+
+function getArenaMotionPreset() {
+  if (getUserSettings().reducedMotion) {
+    return {
+      lungeMs: 90,
+      trailMs: 120,
+      impactMs: 120,
+      enemyStepMs: 140,
+      enemyThinkMs: 80,
+    };
+  }
+
+  return {
+    lungeMs: 240,
+    trailMs: 320,
+    impactMs: 220,
+    enemyStepMs: 460,
+    enemyThinkMs: 180,
+  };
+}
+
+function waitForArenaMotion(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getBoardUnitElement(side, unitUid) {
+  const container = side === "player" ? elements.playerBoard : elements.enemyBoard;
+  return container?.querySelector(`[data-unit-uid="${unitUid}"]`) || null;
+}
+
+function getHeroTargetElement(side) {
+  return side === "player" ? elements.playerHeroPanel : elements.enemyHeroPanel;
+}
+
+function getElementCenter(element) {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function spawnBattleTrail(sourceElement, targetElement, tone = "player") {
+  const stage = getBattleStageElement();
+  if (!stage || !sourceElement || !targetElement) {
+    return null;
+  }
+
+  const stageRect = stage.getBoundingClientRect();
+  const sourceCenter = getElementCenter(sourceElement);
+  const targetCenter = getElementCenter(targetElement);
+  const deltaX = targetCenter.x - sourceCenter.x;
+  const deltaY = targetCenter.y - sourceCenter.y;
+  const distance = Math.max(12, Math.hypot(deltaX, deltaY));
+  const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+  const trail = document.createElement("div");
+  trail.className = `battle-trail tone-${tone}`;
+  trail.style.left = `${sourceCenter.x - stageRect.left}px`;
+  trail.style.top = `${sourceCenter.y - stageRect.top}px`;
+  trail.style.width = `${distance}px`;
+  trail.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+  stage.append(trail);
+  return trail;
+}
+
+function spawnBattleImpact(targetElement, tone = "player") {
+  const stage = getBattleStageElement();
+  if (!stage || !targetElement) {
+    return null;
+  }
+
+  const stageRect = stage.getBoundingClientRect();
+  const targetCenter = getElementCenter(targetElement);
+  const impact = document.createElement("div");
+  impact.className = `battle-impact tone-${tone}`;
+  impact.style.left = `${targetCenter.x - stageRect.left}px`;
+  impact.style.top = `${targetCenter.y - stageRect.top}px`;
+  stage.append(impact);
+  return impact;
+}
+
+async function playCombatAnimation(attacker, owner, target) {
+  const attackerElement = getBoardUnitElement(owner, attacker.uid);
+  const targetSide = owner === "player" ? "enemy" : "player";
+  const targetElement = target?.uid ? getBoardUnitElement(targetSide, target.uid) : getHeroTargetElement(targetSide);
+
+  if (!attackerElement || !targetElement) {
+    return;
+  }
+
+  const motion = getArenaMotionPreset();
+  const tone = owner === "player" ? "player" : "enemy";
+  const lungeClass = owner === "player" ? "is-attack-lunge-player" : "is-attack-lunge-enemy";
+  const trail = spawnBattleTrail(attackerElement, targetElement, tone);
+  attackerElement.classList.add(lungeClass);
+  targetElement.classList.add("is-battle-targeted");
+
+  await waitForArenaMotion(motion.lungeMs);
+
+  const impact = spawnBattleImpact(targetElement, tone);
+  targetElement.classList.add("is-battle-hit");
+  await waitForArenaMotion(motion.impactMs);
+
+  attackerElement.classList.remove(lungeClass);
+  targetElement.classList.remove("is-battle-hit", "is-battle-targeted");
+  trail?.remove();
+  impact?.remove();
 }
 
 function renderArena() {
@@ -13223,14 +13372,17 @@ function renderArena() {
     `${difficulty.rankWin} RP per win`,
     `${difficulty.rankWin} RP par victoire`,
   );
+  const previewStartingMana = difficultyId === "novice" || difficultyId === "standard" || difficultyId === "veteran" || difficultyId === "nightmare" || difficultyId === "hardcore"
+    ? sanitizeFiniteInteger(getArenaDifficulty(difficultyId).startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana)
+    : APP_CONFIG.startingMana;
   const statusNote = hasMatch
     ? (matchFinished ? latestLog : getUiText("arena.focusNote"))
     : (validation.valid ? `${difficultyNote} ${getUiText("arena.readyStart")}` : `${difficultyNote} ${validation.messages.join(" ")}`);
   const previewSideState = {
     hero: APP_CONFIG.heroHealth,
     heroBarrier: 0,
-    mana: 0,
-    maxMana: APP_CONFIG.maxMana,
+    mana: previewStartingMana,
+    maxMana: previewStartingMana,
     hand: [],
     board: [],
     deck: new Array(APP_CONFIG.deckSize).fill(null),
@@ -13239,7 +13391,7 @@ function renderArena() {
   persistCurrentMatchIfNeeded(hasMatch);
   fillSelect(elements.arenaDifficultySelect, Object.values(ARENA_DIFFICULTIES).map((entry) => ({
     value: entry.id,
-    label: getArenaDifficultyLabel(entry.id),
+    label: `${getArenaDifficultyLabel(entry.id)} · ${entry.rankWin} RP`,
   })));
   elements.arenaDifficultySelect.value = difficultyId;
   elements.arenaDifficultySelect.disabled = hasMatch;
@@ -13305,8 +13457,8 @@ function renderArena() {
   `;
 
   if (!hasMatch) {
-    renderHeroPanel(elements.enemyHeroPanel, getUiText("arena.opponent"), previewSideState, false);
-    renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), previewSideState, false);
+    renderHeroPanel(elements.enemyHeroPanel, getUiText("arena.opponent"), previewSideState, false, "enemy");
+    renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), previewSideState, false, "player");
     renderBoardState(elements.enemyBoard, [], "enemy", false, "enemy");
     renderBoardState(elements.playerBoard, [], "player", false, "player");
     elements.battleLog.innerHTML = `<div class="log-entry latest">${getUiText("arena.startMatchHint")}</div>`;
@@ -13314,8 +13466,8 @@ function renderArena() {
     return;
   }
 
-  renderHeroPanel(elements.enemyHeroPanel, getUiText("arena.opponent"), match.enemy, match.phase === "enemy");
-  renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), match.player, match.phase === "player");
+  renderHeroPanel(elements.enemyHeroPanel, getUiText("arena.opponent"), match.enemy, match.phase === "enemy", "enemy");
+  renderHeroPanel(elements.playerHeroPanel, getUiText("arena.you"), match.player, match.phase === "player", "player");
   renderBoardState(elements.enemyBoard, match.enemy.board, "enemy", matchFinished, match.phase);
   renderBoardState(elements.playerBoard, match.player.board, "player", matchFinished, match.phase);
 
@@ -13353,7 +13505,9 @@ function renderArena() {
   elements.endTurnButton.disabled = match.phase !== "player" || matchFinished;
 }
 
-function renderHeroPanel(container, label, sideState, active) {
+function renderHeroPanel(container, label, sideState, active, side = "enemy") {
+  container.dataset.side = side;
+  container.dataset.targetType = "hero";
   container.innerHTML = `
     <p class="eyebrow">${label}</p>
     <div class="hero-line">
@@ -15274,6 +15428,7 @@ function createSideState(deckCards, options = {}) {
     heroBarrier: sanitizeFiniteInteger(options.heroBarrier, 0, 0, 20),
     maxMana: sanitizeFiniteInteger(options.startingMaxMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
     mana: sanitizeFiniteInteger(options.startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana),
+    turnsStarted: sanitizeFiniteInteger(options.turnsStarted, 0, 0, 99),
     deck: shuffledDeck,
     hand: [],
     board: [],
@@ -15286,14 +15441,18 @@ function createSideState(deckCards, options = {}) {
 function startTurn(side) {
   const match = uiState.match;
   const actor = match[side];
+  const isFirstTurnForSide = sanitizeFiniteInteger(actor.turnsStarted, 0, 0, 99) === 0;
 
   if (side === "player") {
     match.turn += 1;
   }
 
   match.phase = side;
-  actor.maxMana = Math.min(APP_CONFIG.maxMana, actor.maxMana + 1);
+  if (!isFirstTurnForSide) {
+    actor.maxMana = Math.min(APP_CONFIG.maxMana, actor.maxMana + 1);
+  }
   actor.mana = actor.maxMana;
+  actor.turnsStarted = sanitizeFiniteInteger(actor.turnsStarted, 0, 0, 99) + 1;
   updateCooldowns(actor);
   actor.board.forEach((unit) => {
     unit.canAttack = true;
@@ -15468,7 +15627,7 @@ function strikeWeakestEnemy(owner, value, sourceName) {
   dealDamageToUnit(target, value, `${sourceName} trifft ${getCard(target.cardId).name}`, owner === "player" ? "enemy" : "player");
 }
 
-function attackWithUnit(unitId) {
+async function attackWithUnit(unitId) {
   const match = uiState.match;
 
   if (!match || match.phase !== "player" || match.status !== "active") {
@@ -15481,7 +15640,7 @@ function attackWithUnit(unitId) {
     return;
   }
 
-  resolveCombat(attacker, "player");
+  await resolveCombat(attacker, "player");
   afterActionCheck();
   renderArena();
 }
@@ -17484,6 +17643,17 @@ function legacyCreateMatch(playerDeckCards, difficultyId = getArenaDifficultyId(
   const enemyDeckCards = friendMode && Array.isArray(options.enemyDeckCards)
     ? options.enemyDeckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, deckRules.size)
     : generateEnemyDeck(difficulty.id, deckRules.size);
+  const playerStartingMana = friendMode
+    ? 1
+    : sanitizeFiniteInteger(difficulty.startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana);
+  const enemyStartingMana = friendMode
+    ? 1
+    : clamp(
+      0,
+      APP_CONFIG.maxMana,
+      sanitizeFiniteInteger(difficulty.startingMana, APP_CONFIG.startingMana, 0, APP_CONFIG.maxMana)
+        + sanitizeFiniteInteger(difficulty.enemyStartingManaBonus, 0, -2, 3),
+    );
   const match = {
     difficultyId: difficulty.id,
     recommendedDifficultyId: difficulty.recommendedDifficultyId,
@@ -17507,15 +17677,19 @@ function legacyCreateMatch(playerDeckCards, difficultyId = getArenaDifficultyId(
     statusMessage: friendMode ? localText("Freundesduell gestartet.", "Friend duel started.", "Duel amical lancé.") : getUiText("messages.matchStartStatus"),
     log: [],
     uidCounter: 0,
-    player: createSideState(playerDeckCards),
-    enemy: createSideState(enemyDeckCards),
+    player: createSideState(playerDeckCards, {
+      startingMaxMana: playerStartingMana,
+      startingMana: playerStartingMana,
+    }),
+    enemy: createSideState(enemyDeckCards, {
+      startingMaxMana: enemyStartingMana,
+      startingMana: enemyStartingMana,
+    }),
   };
 
   if (!friendMode) {
     match.enemy.hero = Math.max(1, match.enemy.hero + difficulty.enemyHeroBonus);
     match.enemy.heroBarrier = Math.max(0, difficulty.enemyBarrier);
-    match.enemy.maxMana = clamp(0, APP_CONFIG.maxMana, difficulty.enemyStartingManaBonus);
-    match.enemy.mana = match.enemy.maxMana;
   }
 
   if (factionBonus) {
