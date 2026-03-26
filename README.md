@@ -77,6 +77,12 @@ Für Hetzner/Coolify liegt die Anleitung in:
 
 [DEPLOY_HETZNER.md](C:/Users/ginow/Desktop/EasyCrashX/1/DEPLOY_HETZNER.md)
 
+## Sicherheit
+
+Die Security-Richtlinie für Meldungen, Scope und Umgang mit Schwachstellen liegt in:
+
+[SECURITY.md](C:/Users/ginow/Desktop/EasyCrashX/1/SECURITY.md)
+
 Wichtige Env-Variablen:
 
 - `HOST=0.0.0.0`
