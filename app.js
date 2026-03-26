@@ -215,6 +215,12 @@ const SECTION_SCENE_META = {
     text: "Behalte Freundescode, Kontaktlisten und den Handelszugang in einem eigenen sozialen Bereich im Blick.",
     theme: "friends",
   },
+  multiplayer: {
+    eyebrow: "Mehrspieler",
+    title: "Echte Spielerduelle mit Queue und offenen Herausforderungen",
+    text: "Tritt gegen andere Spieler an, stelle dich in die Queue oder nimm offene Challenges direkt an.",
+    theme: "friends",
+  },
   settings: {
     eyebrow: "Steuerzentrale",
     title: "Effekte, Komfort und Sprache feinjustieren",
@@ -771,6 +777,7 @@ const UI_TEXT = Object.freeze({
       wiki: "Wiki",
       profile: "Profil",
       friends: "Freunde",
+      multiplayer: "Multiplayer",
       settings: "Einstellungen",
       admin: "Admin",
       arena: "Arena",
@@ -830,12 +837,14 @@ const UI_TEXT = Object.freeze({
       profileTitle: "Kontodaten, Sicherheit und Reset",
       profileNote: "Verwalte deinen Namen, dein Passwort und deinen Kontostand zentral über dein Spielkonto.",
       friendsTitle: "Freundesnetz und Handelshub",
+      multiplayerTitle: "Spielerduelle und Matchmaking",
+      multiplayerNote: "Tritt gegen echte Spieler an, gehe in die Queue oder nimm offene Herausforderungen direkt an.",
       friendsNote: "Behalte deinen Freundescode, Kontakte und den späteren Handelsbereich an einer Stelle im Blick.",
       settingsTitle: "Spielgefühl, Effekte und Bestätigungen anpassen",
       settingsNote: "Die Einstellungen werden pro Konto gespeichert und sind als sauberes eigenes Modul angelegt.",
       adminTitle: "Konten verwalten und Spielstände direkt anpassen",
       adminNote: "Nur für das Administratorkonto sichtbar. Änderungen greifen direkt in die serverseitigen Spielstände.",
-      arenaTitle: "Rundenbasiertes Testduell",
+      arenaTitle: "Rundenbasiertes KIduell",
     },
     shop: {
       futureItems: [
@@ -3150,6 +3159,7 @@ Object.assign(UI_TEXT.en, {
     wiki: { eyebrow: "Knowledge Archive", title: "Rules, systems and symbols in one place", text: "The wiki explains cards, market flow, arena rules, account systems and server operation in one searchable hub." },
     profile: { eyebrow: "Account Profile", title: "Your account remains its own module", text: "Player name, password and security data stay deliberately separate from collection and match logic." },
     friends: { eyebrow: "Social Preparation", title: "Friends and trading get their own space", text: "Friend lists, invites and future card trading are already prepared as a dedicated module." },
+    multiplayer: { eyebrow: "Multiplayer", title: "Real player duels with queue and open challenges", text: "Join the queue, challenge other players and accept open matches directly from the game." },
     settings: { eyebrow: "Control Center", title: "Fine-tune effects, comfort and language", text: "Adjust interface behavior, click feedback, booster presentation and confirmations directly for your account." },
     admin: { eyebrow: "Control Room", title: "Management clearly separated from play", text: "Admin tools stay intentionally sober while still belonging to the same visual world." },
     arena: { eyebrow: "Duel Arena", title: "Every match gets its own stage", text: "Board, heroes and hand sit inside a staged battle arena with more depth and clearer focus." },
@@ -3546,6 +3556,7 @@ Object.assign(UI_TEXT.fr, {
     wiki: "Wiki",
     profile: "Profil",
     friends: "Amis",
+    multiplayer: "Multijoueur",
     settings: "Paramètres",
     admin: "Admin",
     arena: "Arène",
@@ -6787,6 +6798,7 @@ const elements = {
     wiki: document.getElementById("wikiSection"),
     profile: document.getElementById("profileSection"),
     friends: document.getElementById("friendsSection"),
+    multiplayer: document.getElementById("multiplayerSection"),
     settings: document.getElementById("settingsSection"),
     admin: document.getElementById("adminSection"),
     arena: document.getElementById("arenaSection"),
@@ -6878,6 +6890,9 @@ const elements = {
   friendsPendingPanel: document.getElementById("friendsPendingPanel"),
   friendsTradePanel: document.getElementById("friendsTradePanel"),
   friendsDuelPanel: document.getElementById("friendsDuelPanel"),
+  multiplayerSummary: document.getElementById("multiplayerSummary"),
+  multiplayerQueuePanel: document.getElementById("multiplayerQueuePanel"),
+  multiplayerChallengesPanel: document.getElementById("multiplayerChallengesPanel"),
   settingsSummary: document.getElementById("settingsSummary"),
   settingsLanguageSelect: document.getElementById("settingsLanguageSelect"),
   settingsClickEffects: document.getElementById("settingsClickEffects"),
@@ -6949,6 +6964,14 @@ uiState = {
   friendTradeBusy: false,
   friendChallengeTarget: "",
   friendChallengeBusy: false,
+  multiplayerHydrated: false,
+  multiplayerLoading: false,
+  multiplayerQueue: [],
+  multiplayerOwnQueueEntry: null,
+  multiplayerIncomingChallenges: [],
+  multiplayerOutgoingChallenges: [],
+  multiplayerQueueBusy: false,
+  multiplayerChallengeBusy: false,
   wikiSearch: "",
   wikiTopic: "all",
   deckMode: DECK_MODES.standard,
@@ -7836,7 +7859,7 @@ function spawnSurfaceRipple(surface, clientX, clientY) {
 
 function applySceneTheme(sceneKey, animate = false) {
   const scene = SECTION_SCENE_META[sceneKey] || SECTION_SCENE_META.shop;
-  const localizedScene = getUiText(`scene.${sceneKey}`) || getUiText("scene.shop");
+  const localizedScene = getUiText(`scene.${sceneKey}`) || scene;
   const settings = getUserSettings();
   if (!elements.sceneBanner || !elements.sceneBannerEyebrow || !elements.sceneBannerTitle || !elements.sceneBannerText) {
     return;
@@ -10604,6 +10627,15 @@ function renderMainMenu() {
   const rank = getRankState(progression.rankPoints);
   const dailyQuests = getCurrentDailyQuests();
   const claimableDaily = dailyQuests.filter((quest) => isQuestClaimable(progression, quest)).length;
+  if (isServerSessionActive() && !uiState.multiplayerHydrated && !uiState.multiplayerLoading) {
+    queueMicrotask(async () => {
+      await hydrateMultiplayerSection({ render: false });
+      renderMainMenu();
+      if (uiState.section === "multiplayer") {
+        renderMultiplayer();
+      }
+    });
+  }
   const menuTexts = {
     eyebrow: localText("Hauptmenü", "Main Menu", "Menu principal"),
     title: localText("Alles Wichtige startet in der Arena", "Everything important starts in the arena", "L'essentiel commence dans l'arène"),
@@ -10672,6 +10704,28 @@ function renderMainMenu() {
         </article>
       `
     )
+    .join("");
+  const multiplayerDeck = getActiveDeck();
+  const multiplayerValidation = validateDeck(multiplayerDeck, DECK_MODES.standard);
+  const multiplayerQueueCount = uiState.multiplayerQueue.length;
+  const multiplayerIncomingCount = uiState.multiplayerIncomingChallenges.length;
+  document.getElementById("menuMultiplayerKicker").textContent = localText("Mehrspieler", "Multiplayer", "Multijoueur");
+  document.getElementById("menuMultiplayerTitle").textContent = localText("Multiplayer", "Multiplayer", "Multijoueur");
+  document.getElementById("menuMultiplayerText").textContent = localText(
+    "Tritt gegen echte Spieler an, stelle dich in die Queue oder nimm offene Herausforderungen direkt an.",
+    "Face real players, join the queue or accept open challenges right away.",
+    "Affronte de vrais joueurs, entre dans la file ou accepte des défis ouverts immédiatement."
+  );
+  document.getElementById("menuMultiplayerMeta").innerHTML = [
+    localText(`${multiplayerQueueCount} in Queue`, `${multiplayerQueueCount} in queue`, `${multiplayerQueueCount} en file`),
+    multiplayerIncomingCount > 0
+      ? localText(`${multiplayerIncomingCount} offen`, `${multiplayerIncomingCount} open`, `${multiplayerIncomingCount} en attente`)
+      : localText("Keine offene Challenge", "No open challenge", "Aucun défi ouvert"),
+    multiplayerValidation.valid
+      ? localText("Standard-Deck bereit", "Standard deck ready", "Deck standard prêt")
+      : localText("Standard-Deck fehlt", "Standard deck missing", "Deck standard manquant"),
+  ]
+    .map((entry) => `<span class="meta-chip">${entry}</span>`)
     .join("");
   const menuCards = [
     {
@@ -10832,6 +10886,7 @@ function renderAll() {
   renderWiki();
   renderProfile();
   renderFriends();
+  renderMultiplayer();
   renderSettings();
   renderAdminPanel();
   renderArena();
@@ -10867,6 +10922,8 @@ function requestSectionChange(section) {
   renderAll();
   if (section === "friends") {
     hydrateFriendsSection({ render: true });
+  } else if (section === "multiplayer") {
+    hydrateMultiplayerSection({ render: true });
   }
 }
 
@@ -11326,6 +11383,251 @@ function renderFriends() {
       </div>
     </div>
   `;
+}
+
+function bindMultiplayerPanelEvents() {
+  const bindAll = (root) => {
+    if (!root) {
+      return;
+    }
+    root.querySelector("[data-multiplayer-join]")?.addEventListener("click", handleMultiplayerQueueJoin);
+    root.querySelector("[data-multiplayer-leave]")?.addEventListener("click", handleMultiplayerQueueLeave);
+    [...root.querySelectorAll("[data-multiplayer-challenge]")].forEach((button) => {
+      button.addEventListener("click", () => handleMultiplayerChallengeCreate(button.dataset.multiplayerChallenge));
+    });
+    [...root.querySelectorAll("[data-multiplayer-action]")].forEach((button) => {
+      button.addEventListener("click", () => handleMultiplayerChallengeAction(button.dataset.challengeId, button.dataset.multiplayerAction));
+    });
+  };
+
+  bindAll(elements.multiplayerQueuePanel);
+  bindAll(elements.multiplayerChallengesPanel);
+}
+
+function renderMultiplayer() {
+  if (!elements.multiplayerSummary || !elements.multiplayerQueuePanel || !elements.multiplayerChallengesPanel) {
+    return;
+  }
+
+  if (!currentAccount) {
+    elements.multiplayerSummary.innerHTML = "";
+    elements.multiplayerQueuePanel.innerHTML = "";
+    elements.multiplayerChallengesPanel.innerHTML = "";
+    return;
+  }
+
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck, DECK_MODES.standard);
+  const queueCount = uiState.multiplayerQueue.length;
+  const incoming = uiState.multiplayerIncomingChallenges;
+  const outgoing = uiState.multiplayerOutgoingChallenges;
+  const ownEntry = uiState.multiplayerOwnQueueEntry;
+  const loading = uiState.multiplayerLoading;
+  const networkReady = isServerSessionActive();
+  const busy = uiState.multiplayerQueueBusy || uiState.multiplayerChallengeBusy;
+  const playerRank = getRankState(getProgression().rankPoints);
+
+  if (!networkReady) {
+    elements.multiplayerSummary.innerHTML = `
+      <div class="friends-summary-head">
+        <div>
+          <p class="eyebrow">${localText("Multiplayer", "Multiplayer", "Multijoueur")}</p>
+          <h3>${localText("Server-Sitzung erforderlich", "Server session required", "Session serveur requise")}</h3>
+          <p class="mini-note">${localText(
+            "Queue, offene Herausforderungen und Spielerduelle laufen nur im Servermodus.",
+            "Queue, open challenges and player duels are only available in server mode.",
+            "La file, les défis ouverts et les duels entre joueurs ne sont disponibles qu'en mode serveur."
+          )}</p>
+        </div>
+      </div>
+    `;
+    elements.multiplayerQueuePanel.innerHTML = `
+      <article class="empty-state-card">
+        <h4 class="subheading">${localText("Multiplayer ist offline", "Multiplayer is offline", "Le multijoueur est hors ligne")}</h4>
+        <p class="mini-note">${localText(
+          "Melde dich über den Server an, damit andere Spieler deine Queue und deine Herausforderungen sehen können.",
+          "Sign in through the server so other players can see your queue entry and challenges.",
+          "Connecte-toi via le serveur pour que les autres joueurs puissent voir ta file et tes défis."
+        )}</p>
+      </article>
+    `;
+    elements.multiplayerChallengesPanel.innerHTML = "";
+    return;
+  }
+
+  const queueMarkup = loading
+    ? `<article class="empty-state-card"><h4 class="subheading">${localText("Queue wird geladen", "Loading queue", "Chargement de la file")}</h4><p class="mini-note">${localText("Spieler und offene Herausforderungen werden gerade synchronisiert.", "Players and open challenges are being synchronized.", "Les joueurs et les défis ouverts sont en cours de synchronisation.")}</p></article>`
+    : queueCount
+      ? `<div class="social-card-grid">${uiState.multiplayerQueue.map((entry) => {
+        const entryRank = getRankState(entry.rankPoints || 0);
+        return `
+          <article class="social-profile-card">
+            <div class="social-profile-head">
+              <div>
+                <p class="eyebrow">${localText("Spieler", "Player", "Joueur")}</p>
+                <h4>${escapeHtml(entry.username)}</h4>
+              </div>
+              <span class="status-pill turn">${escapeHtml(entryRank.label)}</span>
+            </div>
+            <p class="mini-note">${escapeHtml(localText(
+              `Deck: ${entry.deckName || "Standard-Deck"} · ${entry.deckCards.length}/20 Karten`,
+              `Deck: ${entry.deckName || "Standard deck"} · ${entry.deckCards.length}/20 cards`,
+              `Deck : ${entry.deckName || "Deck standard"} · ${entry.deckCards.length}/20 cartes`
+            ))}</p>
+            <div class="social-action-row">
+              <button class="primary-button social-action-button" type="button" data-multiplayer-challenge="${escapeHtml(entry.username)}"${busy || !validation.valid ? " disabled" : ""}>${localText("Herausfordern", "Challenge", "Défier")}</button>
+            </div>
+          </article>
+        `;
+      }).join("")}</div>`
+      : `<article class="empty-state-card"><h4 class="subheading">${localText("Noch keine Gegner in Queue", "No opponents in queue yet", "Aucun adversaire dans la file")}</h4><p class="mini-note">${localText("Sobald andere Spieler in der Queue stehen, kannst du sie direkt herausfordern.", "As soon as other players join the queue, you can challenge them directly.", "Dès que d'autres joueurs rejoignent la file, tu peux les défier directement.")}</p></article>`;
+
+  const incomingMarkup = incoming.length
+    ? incoming.map((challenge) => `
+      <article class="social-offer-card">
+        <div class="friends-summary-head">
+          <div>
+            <p class="eyebrow">${localText("Eingehend", "Incoming", "Entrant")}</p>
+            <h4>${escapeHtml(challenge.from)}</h4>
+          </div>
+          <span class="status-pill turn">${escapeHtml(challenge.deckName || localText("Deck", "Deck", "Deck"))}</span>
+        </div>
+        <p class="mini-note">${escapeHtml(localText(
+          `Deck: ${challenge.deckCards?.length || 0}/20 Karten`,
+          `Deck: ${challenge.deckCards?.length || 0}/20 cards`,
+          `Deck : ${challenge.deckCards?.length || 0}/20 cartes`
+        ))}</p>
+        <div class="social-action-row">
+          <button class="primary-button social-action-button" type="button" data-multiplayer-action="accept" data-challenge-id="${escapeHtml(challenge.id)}"${busy || !validation.valid || isMatchSessionLocked() ? " disabled" : ""}>${localText("Annehmen", "Accept", "Accepter")}</button>
+          <button class="secondary-button social-action-button" type="button" data-multiplayer-action="decline" data-challenge-id="${escapeHtml(challenge.id)}"${busy ? " disabled" : ""}>${localText("Ablehnen", "Decline", "Refuser")}</button>
+        </div>
+      </article>
+    `).join("")
+    : `<article class="empty-state-card"><h4 class="subheading">${localText("Keine eingehenden Duelle", "No incoming duels", "Aucun duel entrant")}</h4><p class="mini-note">${localText("Echte Spielerherausforderungen erscheinen hier, sobald dich jemand direkt fordert.", "Direct player challenges appear here once someone targets you.", "Les défis directs des joueurs apparaissent ici dès que quelqu'un te cible.")}</p></article>`;
+
+  const outgoingMarkup = outgoing.length
+    ? outgoing.map((challenge) => `
+      <article class="social-offer-card">
+        <div class="friends-summary-head">
+          <div>
+            <p class="eyebrow">${localText("Ausgehend", "Outgoing", "Sortant")}</p>
+            <h4>${escapeHtml(challenge.to)}</h4>
+          </div>
+          <span class="status-pill turn">${escapeHtml(challenge.deckName || localText("Deck", "Deck", "Deck"))}</span>
+        </div>
+        <p class="mini-note">${escapeHtml(localText(
+          `Wartet auf Antwort · ${challenge.deckCards?.length || 0}/20 Karten`,
+          `Waiting for response · ${challenge.deckCards?.length || 0}/20 cards`,
+          `En attente de réponse · ${challenge.deckCards?.length || 0}/20 cartes`
+        ))}</p>
+        <div class="social-action-row">
+          <button class="secondary-button social-action-button" type="button" data-multiplayer-action="cancel" data-challenge-id="${escapeHtml(challenge.id)}"${busy ? " disabled" : ""}>${localText("Zurückziehen", "Cancel", "Annuler")}</button>
+        </div>
+      </article>
+    `).join("")
+    : "";
+
+  elements.multiplayerSummary.innerHTML = `
+    <div class="friends-summary-head">
+      <div>
+        <p class="eyebrow">${localText("Multiplayer", "Multiplayer", "Multijoueur")}</p>
+        <h3>${localText("Queue, offene Herausforderungen und direkte Spielerduelle", "Queue, open challenges and direct player duels", "File, défis ouverts et duels directs")}</h3>
+        <p class="mini-note">${validation.valid
+          ? localText("Dein Standard-Deck ist bereit für echte Spielerduelle.", "Your standard deck is ready for real player duels.", "Ton deck standard est prêt pour de vrais duels.")
+          : localText("Für Multiplayer brauchst du ein gültiges Standard-Deck mit 20 Karten.", "You need a valid 20-card standard deck for multiplayer.", "Tu as besoin d'un deck standard valide de 20 cartes pour le multijoueur.")}</p>
+      </div>
+      <span class="status-pill ${validation.valid ? "ok" : "warn"}">${validation.valid ? localText("Bereit", "Ready", "Prêt") : localText("Deck fehlt", "Deck missing", "Deck manquant")}</span>
+    </div>
+    <div class="friends-stat-grid">
+      <article class="profile-stat-card"><span>${localText("Dein Rang", "Your rank", "Ton rang")}</span><strong>${escapeHtml(playerRank.label)}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Queue", "Queue", "File")}</span><strong>${queueCount}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Eingehend", "Incoming", "Entrant")}</span><strong>${incoming.length}</strong></article>
+      <article class="profile-stat-card"><span>${localText("Ausgehend", "Outgoing", "Sortant")}</span><strong>${outgoing.length}</strong></article>
+    </div>
+  `;
+
+  elements.multiplayerQueuePanel.innerHTML = `
+    <div class="friends-panel-head">
+      <div>
+        <p class="eyebrow">${localText("Matchmaking", "Matchmaking", "Matchmaking")}</p>
+        <h3 class="subheading">${localText("Offene Queue", "Open queue", "File ouverte")}</h3>
+      </div>
+      ${ownEntry
+        ? `<span class="status-pill ok">${localText("Du bist gelistet", "You are queued", "Tu es en file")}</span>`
+        : `<span class="status-pill turn">${localText("Nicht in Queue", "Not queued", "Hors file")}</span>`}
+    </div>
+    ${ownEntry
+      ? `
+        <article class="social-offer-card">
+          <div class="friends-summary-head">
+            <div>
+              <p class="eyebrow">${localText("Dein Eintrag", "Your entry", "Ton entrée")}</p>
+              <h4>${escapeHtml(ownEntry.deckName || localText("Standard-Deck", "Standard deck", "Deck standard"))}</h4>
+            </div>
+            <span class="status-pill turn">${ownEntry.deckCards.length}/20</span>
+          </div>
+          <p class="mini-note">${escapeHtml(localText(
+            "Andere Spieler können dich direkt herausfordern, solange dein Eintrag aktiv ist.",
+            "Other players can challenge you directly while this entry is active.",
+            "Les autres joueurs peuvent te défier directement tant que cette entrée est active."
+          ))}</p>
+          <div class="social-action-row">
+            <button class="secondary-button social-action-button" type="button" data-multiplayer-leave${busy ? " disabled" : ""}>${localText("Queue verlassen", "Leave queue", "Quitter la file")}</button>
+          </div>
+        </article>
+      `
+      : `
+        <article class="social-offer-card">
+          <div class="friends-summary-head">
+            <div>
+              <p class="eyebrow">${localText("Noch nicht eingereiht", "Not queued yet", "Pas encore en file")}</p>
+              <h4>${escapeHtml(localText("Stelle dein aktives Standard-Deck in die Queue", "Put your active standard deck into the queue", "Place ton deck standard actif dans la file"))}</h4>
+            </div>
+          </div>
+          <p class="mini-note">${escapeHtml(localText(
+            "Sobald du in der Queue bist, sehen andere Spieler dein Deck und können dich direkt herausfordern.",
+            "Once you are in queue, other players see your deck and can challenge you directly.",
+            "Une fois dans la file, les autres joueurs voient ton deck et peuvent te défier directement."
+          ))}</p>
+          <div class="social-action-row">
+            <button class="primary-button social-action-button" type="button" data-multiplayer-join${busy || !validation.valid || isMatchSessionLocked() ? " disabled" : ""}>${localText("In Queue gehen", "Join queue", "Entrer dans la file")}</button>
+          </div>
+        </article>
+      `}
+    ${queueMarkup}
+  `;
+
+  elements.multiplayerChallengesPanel.innerHTML = `
+    <div class="friends-panel-head">
+      <div>
+        <p class="eyebrow">${localText("Herausforderungen", "Challenges", "Défis")}</p>
+        <h3 class="subheading">${localText("Direkte Spielerduelle", "Direct player duels", "Duels directs entre joueurs")}</h3>
+      </div>
+      <span class="status-pill turn">${incoming.length + outgoing.length}</span>
+    </div>
+    <div class="social-stack">
+      <section class="social-stack">
+        <div class="friends-summary-head">
+          <div>
+            <p class="eyebrow">${localText("Eingehend", "Incoming", "Entrant")}</p>
+            <h4>${localText("Auf dich gerichtet", "Sent to you", "Envoyés vers toi")}</h4>
+          </div>
+        </div>
+        <div class="offer-list">${incomingMarkup}</div>
+      </section>
+      <section class="social-stack">
+        <div class="friends-summary-head">
+          <div>
+            <p class="eyebrow">${localText("Ausgehend", "Outgoing", "Sortant")}</p>
+            <h4>${localText("Von dir gesendet", "Sent by you", "Envoyés par toi")}</h4>
+          </div>
+        </div>
+        <div class="offer-list">${outgoingMarkup || `<article class="empty-state-card"><h4 class="subheading">${localText("Keine ausgehenden Duelle", "No outgoing duels", "Aucun duel sortant")}</h4><p class="mini-note">${localText("Offene Herausforderungen, die du gesendet hast, werden hier gelistet.", "Challenges you send stay listed here until they are answered.", "Les défis que tu envoies restent listés ici jusqu'à leur réponse.")}</p></article>`}</div>
+      </section>
+    </div>
+  `;
+
+  bindMultiplayerPanelEvents();
 }
 
 function renderSettings() {
@@ -13237,6 +13539,229 @@ function renderBoardState(container, units, side, matchFinished, phase) {
     cardElement.dataset.unitUid = String(unit.uid);
     cardElement.dataset.side = side;
     container.append(cardElement);
+  }
+}
+
+function applyServerMultiplayerOverview(payload, { render = true } = {}) {
+  if (!payload) {
+    return false;
+  }
+
+  uiState.multiplayerQueue = Array.isArray(payload.queue) ? cloneJsonValue(payload.queue, []) : [];
+  uiState.multiplayerOwnQueueEntry = payload.ownQueueEntry && typeof payload.ownQueueEntry === "object"
+    ? cloneJsonValue(payload.ownQueueEntry, null)
+    : null;
+  uiState.multiplayerIncomingChallenges = Array.isArray(payload.incomingChallenges)
+    ? cloneJsonValue(payload.incomingChallenges, [])
+    : [];
+  uiState.multiplayerOutgoingChallenges = Array.isArray(payload.outgoingChallenges)
+    ? cloneJsonValue(payload.outgoingChallenges, [])
+    : [];
+  uiState.multiplayerHydrated = true;
+  if (render) {
+    renderMultiplayer();
+  }
+  return true;
+}
+
+async function refreshServerMultiplayerOverview({ render = true } = {}) {
+  if (!isServerSessionActive()) {
+    return false;
+  }
+
+  const response = await apiRequest("/api/multiplayer/overview", {
+    token: getSessionSnapshot()?.token,
+  });
+  return applyServerMultiplayerOverview(response, { render });
+}
+
+async function hydrateMultiplayerSection({ force = false, render = true } = {}) {
+  if (!isServerSessionActive()) {
+    uiState.multiplayerHydrated = true;
+    uiState.multiplayerQueue = [];
+    uiState.multiplayerOwnQueueEntry = null;
+    uiState.multiplayerIncomingChallenges = [];
+    uiState.multiplayerOutgoingChallenges = [];
+    if (render) {
+      renderMultiplayer();
+    }
+    return false;
+  }
+
+  if (uiState.multiplayerHydrated && !force) {
+    if (render) {
+      renderMultiplayer();
+    }
+    return true;
+  }
+
+  uiState.multiplayerLoading = true;
+  if (render) {
+    renderMultiplayer();
+  }
+
+  try {
+    await refreshServerMultiplayerOverview({ render: false });
+    return true;
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Multiplayer-Daten konnten nicht geladen werden.", "Could not load multiplayer data.", "Impossible de charger les données multijoueur."));
+    return false;
+  } finally {
+    uiState.multiplayerLoading = false;
+    if (render) {
+      renderMultiplayer();
+    }
+  }
+}
+
+async function runServerMultiplayerAction(path, body = {}, { render = true } = {}) {
+  if (!isServerSessionActive()) {
+    return null;
+  }
+
+  const response = await apiRequest(path, {
+    method: "POST",
+    token: getSessionSnapshot()?.token,
+    body,
+  });
+  applyServerMultiplayerOverview(response, { render: false });
+  if (render) {
+    renderMultiplayer();
+  }
+  return response;
+}
+
+function startMultiplayerMatchFromChallenge(challenge) {
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck, DECK_MODES.standard);
+  if (!validation.valid) {
+    showToast(validation.messages[0] || getUiText("messages.matchNotPlayable"));
+    return false;
+  }
+
+  const enemyDeckCards = Array.isArray(challenge?.deckCards)
+    ? challenge.deckCards.filter((cardId) => CARD_MAP.has(cardId)).slice(0, APP_CONFIG.deckSize)
+    : [];
+  if (enemyDeckCards.length !== APP_CONFIG.deckSize) {
+    showToast(localText("Das Multiplayer-Deck ist nicht mehr vollständig.", "The multiplayer deck is no longer complete.", "Le deck multijoueur n'est plus complet."));
+    return false;
+  }
+
+  uiState.match = createMatch(activeDeck.cards, getArenaDifficultyId(getSave().arenaDifficulty), {
+    mode: "friend",
+    opponentLabel: sanitizeUsername(challenge.from) || localText("Spieler", "Player", "Joueur"),
+    opponentDeckName: String(challenge.deckName || "").trim().slice(0, 48),
+    enemyDeckCards,
+    rewardWin: 0,
+    rewardLoss: 0,
+    forfeitPenalty: 0,
+  });
+  uiState.section = "arena";
+  startTurn("player");
+  renderAll();
+  showToast(localText("Multiplayer-Duell gestartet.", "Multiplayer duel started.", "Duel multijoueur lancé."));
+  return true;
+}
+
+async function handleMultiplayerQueueJoin() {
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck, DECK_MODES.standard);
+  if (!validation.valid) {
+    showToast(validation.messages[0] || getUiText("messages.matchNotPlayable"));
+    return;
+  }
+
+  uiState.multiplayerQueueBusy = true;
+  renderMultiplayer();
+  try {
+    await runServerMultiplayerAction("/api/multiplayer/queue/join", {
+      deckName: activeDeck.name,
+      deckCards: activeDeck.cards,
+    }, { render: false });
+    renderMultiplayer();
+    showToast(localText("Du bist jetzt in der Multiplayer-Queue.", "You joined the multiplayer queue.", "Tu es maintenant dans la file multijoueur."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Queue-Beitritt fehlgeschlagen.", "Could not join queue.", "Impossible de rejoindre la file."));
+  } finally {
+    uiState.multiplayerQueueBusy = false;
+    renderMultiplayer();
+  }
+}
+
+async function handleMultiplayerQueueLeave() {
+  uiState.multiplayerQueueBusy = true;
+  renderMultiplayer();
+  try {
+    await runServerMultiplayerAction("/api/multiplayer/queue/leave", {}, { render: false });
+    renderMultiplayer();
+    showToast(localText("Du hast die Queue verlassen.", "You left the queue.", "Tu as quitté la file."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Queue konnte nicht verlassen werden.", "Could not leave queue.", "Impossible de quitter la file."));
+  } finally {
+    uiState.multiplayerQueueBusy = false;
+    renderMultiplayer();
+  }
+}
+
+async function handleMultiplayerChallengeCreate(username) {
+  const targetUsername = sanitizeUsername(username);
+  if (!targetUsername) {
+    return;
+  }
+
+  const activeDeck = getActiveDeck();
+  const validation = validateDeck(activeDeck, DECK_MODES.standard);
+  if (!validation.valid) {
+    showToast(validation.messages[0] || getUiText("messages.matchNotPlayable"));
+    return;
+  }
+
+  uiState.multiplayerChallengeBusy = true;
+  renderMultiplayer();
+  try {
+    await runServerMultiplayerAction("/api/multiplayer/challenge/create", {
+      username: targetUsername,
+      deckName: activeDeck.name,
+      deckCards: activeDeck.cards,
+    }, { render: false });
+    renderMultiplayer();
+    showToast(localText("Multiplayer-Herausforderung gesendet.", "Multiplayer challenge sent.", "Défi multijoueur envoyé."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Herausforderung fehlgeschlagen.", "Challenge failed.", "Le défi a échoué."));
+  } finally {
+    uiState.multiplayerChallengeBusy = false;
+    renderMultiplayer();
+  }
+}
+
+async function handleMultiplayerChallengeAction(challengeId, action) {
+  if (!challengeId) {
+    return;
+  }
+
+  uiState.multiplayerChallengeBusy = true;
+  renderMultiplayer();
+  try {
+    const response = await runServerMultiplayerAction("/api/multiplayer/challenge/respond", {
+      challengeId,
+      action,
+    }, { render: false });
+    if (action === "accept" && response?.challenge) {
+      startMultiplayerMatchFromChallenge(response.challenge);
+      return;
+    }
+    renderMultiplayer();
+    showToast(localText("Multiplayer-Herausforderung aktualisiert.", "Multiplayer challenge updated.", "Défi multijoueur mis à jour."));
+  } catch (error) {
+    console.error(error);
+    showToast(error?.payload?.message || localText("Herausforderung konnte nicht verarbeitet werden.", "Could not process challenge.", "Impossible de traiter le défi."));
+  } finally {
+    uiState.multiplayerChallengeBusy = false;
+    renderMultiplayer();
   }
 }
 

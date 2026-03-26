@@ -27,6 +27,10 @@ function createEmptyDatabase() {
     accounts: {},
     sessions: {},
     market: createInitialMarketState(),
+    multiplayer: {
+      queue: [],
+      challenges: [],
+    },
     audit: [],
   };
 }
@@ -91,6 +95,67 @@ function normalizeAccount(account) {
   };
 }
 
+function normalizeDeckSnapshot(cards) {
+  if (!Array.isArray(cards)) {
+    return [];
+  }
+
+  return cards
+    .map((entry) => String(entry || "").trim().slice(0, 120))
+    .filter(Boolean)
+    .slice(0, 20);
+}
+
+function normalizeMultiplayerState(state) {
+  const normalizeQueueEntry = (entry) => {
+    if (!entry || typeof entry !== "object") {
+      return null;
+    }
+
+    const id = String(entry.id || "").trim().slice(0, 64);
+    const username = sanitizeUsername(entry.username);
+    if (!id || !username) {
+      return null;
+    }
+
+    return {
+      id,
+      username,
+      deckName: String(entry.deckName || "").trim().slice(0, 48),
+      deckCards: normalizeDeckSnapshot(entry.deckCards),
+      rankPoints: Number.isFinite(Number(entry.rankPoints)) ? Math.max(0, Math.trunc(Number(entry.rankPoints))) : 0,
+      createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+    };
+  };
+
+  const normalizeChallengeEntry = (entry) => {
+    if (!entry || typeof entry !== "object") {
+      return null;
+    }
+
+    const id = String(entry.id || "").trim().slice(0, 64);
+    const from = sanitizeUsername(entry.from);
+    const to = sanitizeUsername(entry.to);
+    if (!id || !from || !to) {
+      return null;
+    }
+
+    return {
+      id,
+      from,
+      to,
+      deckName: String(entry.deckName || "").trim().slice(0, 48),
+      deckCards: normalizeDeckSnapshot(entry.deckCards),
+      createdAt: typeof entry.createdAt === "string" ? entry.createdAt : new Date().toISOString(),
+    };
+  };
+
+  return {
+    queue: Array.isArray(state?.queue) ? state.queue.map(normalizeQueueEntry).filter(Boolean).slice(-200) : [],
+    challenges: Array.isArray(state?.challenges) ? state.challenges.map(normalizeChallengeEntry).filter(Boolean).slice(-400) : [],
+  };
+}
+
 function ensureBootstrapAdmin(database) {
   if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
     return database;
@@ -122,6 +187,7 @@ function normalizeDatabase(database) {
     accounts: {},
     sessions: {},
     market: sanitizeMarketState(database?.market),
+    multiplayer: normalizeMultiplayerState(database?.multiplayer),
     audit: Array.isArray(database?.audit) ? database.audit.slice(-400) : [],
   };
 

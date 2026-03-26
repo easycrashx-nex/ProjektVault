@@ -136,19 +136,32 @@
             <div class="menu-summary-grid" id="menuSummaryGrid"></div>
 
             <div class="menu-hub-layout">
-              <button class="menu-arena-card nav-button" data-section="arena" type="button">
-                <div class="menu-arena-shell">
-                  <div class="menu-arena-copy">
-                    <span class="menu-card-kicker" id="menuArenaKicker">Hauptmodus</span>
-                    <div class="menu-arena-heading">
-                      <strong id="menuArenaTitle">Arena</strong>
-                      <p id="menuArenaText">Spiele Matches, gewinne Gold und halte deinen Kartenfortschritt am Laufen.</p>
+              <div class="menu-hero-stack">
+                <button class="menu-arena-card nav-button" data-section="arena" type="button">
+                  <div class="menu-arena-shell">
+                    <div class="menu-arena-copy">
+                      <span class="menu-card-kicker" id="menuArenaKicker">Hauptmodus</span>
+                      <div class="menu-arena-heading">
+                        <strong id="menuArenaTitle">Arena</strong>
+                        <p id="menuArenaText">Spiele Matches, gewinne Gold und halte deinen Kartenfortschritt am Laufen.</p>
+                      </div>
+                      <div class="menu-card-meta" id="menuArenaMeta"></div>
+                      <div class="menu-arena-stats" id="menuArenaStats"></div>
                     </div>
-                    <div class="menu-card-meta" id="menuArenaMeta"></div>
-                    <div class="menu-arena-stats" id="menuArenaStats"></div>
                   </div>
-                </div>
-              </button>
+                </button>
+
+                <button class="menu-multiplayer-card nav-button" data-section="multiplayer" type="button">
+                  <div class="menu-multiplayer-copy">
+                    <span class="menu-card-kicker" id="menuMultiplayerKicker">Mehrspieler</span>
+                    <div class="menu-arena-heading">
+                      <strong id="menuMultiplayerTitle">Multiplayer</strong>
+                      <p id="menuMultiplayerText">Tritt gegen echte Spieler an, stelle dich in die Queue oder nimm offene Herausforderungen direkt an.</p>
+                    </div>
+                    <div class="menu-card-meta" id="menuMultiplayerMeta"></div>
+                  </div>
+                </button>
+              </div>
 
               <div class="menu-link-grid">
                 <button class="menu-link-card nav-button" data-section="booster" type="button">
@@ -614,6 +627,25 @@
             </div>
           </section>
 
+          <section class="section-panel" id="multiplayerSection">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Multiplayer</p>
+                <h2>Spielerduelle und Matchmaking</h2>
+              </div>
+              <p class="section-note">Stelle dich in die Queue, fordere echte Spieler heraus und nimm offene Herausforderungen sofort an.</p>
+            </div>
+
+            <div class="friends-layout multiplayer-layout">
+              <div class="info-panel friends-summary-panel" id="multiplayerSummary"></div>
+
+              <div class="friends-grid">
+                <div class="info-panel" id="multiplayerQueuePanel"></div>
+                <div class="info-panel" id="multiplayerChallengesPanel"></div>
+              </div>
+            </div>
+          </section>
+
           <section class="section-panel" id="settingsSection">
             <div class="section-head">
               <div>
@@ -788,7 +820,7 @@
             <div class="section-head">
               <div>
                 <p class="eyebrow">Arena</p>
-                <h2>Rundenbasiertes Testduell</h2>
+                <h2>Rundenbasiertes KIduell</h2>
               </div>
               <div class="arena-head-actions">
                 <label class="arena-difficulty-field">

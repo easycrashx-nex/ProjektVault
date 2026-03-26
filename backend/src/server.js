@@ -12,6 +12,7 @@ const { registerGameRoutes } = require("./routes/game");
 const { registerShopRoutes } = require("./routes/shop");
 const { registerMarketRoutes } = require("./routes/market");
 const { registerFriendsRoutes } = require("./routes/friends");
+const { registerMultiplayerRoutes } = require("./routes/multiplayer");
 const { registerAdminRoutes } = require("./routes/admin");
 const { registerMatchRoutes } = require("./routes/matches");
 
@@ -55,6 +56,7 @@ async function createAppServer() {
   registerShopRoutes(router);
   registerMarketRoutes(router);
   registerFriendsRoutes(router);
+  registerMultiplayerRoutes(router);
   registerAdminRoutes(router);
   registerMatchRoutes(router);
 
