@@ -5321,6 +5321,22 @@ const TRANSCENDENT_CARDS = [
   createLegacyCard("grabstern-archon", "Grabstern-Archon", "knochenbund", "unit", "transcendent", 10, 12, 13, [{ kind: "strikeWeakest", value: 8 }, { kind: "drainHero", damage: 5, heal: 5 }], ["lifesteal", "guard"]),
 ];
 
+const SINGULAR_CARDS = [
+  createLegacyCard("glutthron-absolut", "Glutthron-Absolut", "glutorden", "unit", "singular", 10, 13, 12, [{ kind: "damageAllEnemies", value: 4 }, { kind: "damageHero", value: 5 }], ["charge"]),
+  createLegacyCard("ozeanauge-singular", "Ozeanauge-Singular", "nebelchor", "spell", "singular", 10, null, null, [{ kind: "draw", value: 4 }, { kind: "healBoard", value: 6 }, { kind: "freezeWeakest", turns: 2 }]),
+  createLegacyCard("urhain-ewigkern", "Urhain-Ewigkern", "wurzelpakt", "unit", "singular", 10, 11, 16, [{ kind: "fortifyBoard", value: 4 }, { kind: "healBoard", value: 5 }], ["guard", "regen"]),
+  createLegacyCard("nullgesetz-omega", "Nullgesetz-Omega", "schattenzirkel", "trainer", "singular", 10, null, null, [{ kind: "strikeWeakest", value: 8 }, { kind: "weakenEnemies", value: 2 }, { kind: "draw", value: 1 }]),
+  createLegacyCard("sturmkrone-apex", "Sturmkrone-Apex", "sturmwacht", "unit", "singular", 10, 14, 11, [{ kind: "readyStrongest", attackBonus: 3 }, { kind: "buffBoard", attack: 3, health: 2 }], ["charge", "guard"]),
+  createLegacyCard("runenherz-singularität", "Runenherz-Singularität", "runenschmiede", "spell", "singular", 10, null, null, [{ kind: "gainMaxMana", value: 2 }, { kind: "draw", value: 3 }, { kind: "damageAllEnemies", value: 2 }]),
+  createLegacyCard("sternensiegel-prisma", "Sternensiegel-Prisma", "sternenhof", "trainer", "singular", 10, null, null, [{ kind: "healBoard", value: 7 }, { kind: "draw", value: 2 }, { kind: "barrierStrongest" }]),
+  createLegacyCard("knochenhimmel-archiv", "Knochenhimmel-Archiv", "knochenbund", "unit", "singular", 10, 12, 14, [{ kind: "strikeWeakest", value: 8 }, { kind: "drainHero", damage: 5, heal: 5 }], ["lifesteal", "guard"]),
+  createLegacyCard("solariax-chorherrscher", "Solariax-Chorherrscher", "sonnenchor", "unit", "singular", 10, 12, 14, [{ kind: "healHero", value: 6 }, { kind: "fortifyBoard", value: 3 }], ["guard", "regen"]),
+  createLegacyCard("leerenriss-edikt", "Leerenriss-Edikt", "leerenpakt", "spell", "singular", 10, null, null, [{ kind: "damageHero", value: 6 }, { kind: "freezeWeakest", turns: 2 }, { kind: "weakenEnemies", value: 2 }]),
+  createLegacyCard("prismakanzler-ultimativ", "Prismakanzler-Ultimativ", "kristallrat", "trainer", "singular", 10, null, null, [{ kind: "draw", value: 3 }, { kind: "barrierStrongest" }, { kind: "gainMaxMana", value: 1 }]),
+  createLegacyCard("dämmerpakt-origin", "Dämmerpakt-Origin", "dämmerbund", "unit", "singular", 10, 11, 13, [{ kind: "strikeWeakest", value: 6 }, { kind: "drainHero", damage: 4, heal: 4 }], ["lifesteal", "charge"]),
+  createLegacyCard("wildjagd-endzeichen", "Wildjagd-Endzeichen", "wildjagd", "unit", "singular", 10, 13, 10, [{ kind: "readyStrongest", attackBonus: 2 }, { kind: "damageHero", value: 4 }], ["charge"]),
+];
+
 function createTokenCard(id, name, faction, attack, health, keywords = []) {
   return {
     id,
@@ -6088,7 +6104,7 @@ function createTokenCard(id, name, faction, attack, health, keywords = []) {
     { id: "grabstern-archon", deathEffect: { kind: "summonTokens", tokenId: TOKEN_IDS_BY_FACTION.knochenbund, amount: 2 } },
     { id: "weltenwurzel-inkarnation", deathEffect: { kind: "summonTokens", tokenId: TOKEN_IDS_BY_FACTION.wurzelpakt, amount: 2 } },
   ].forEach((update) => {
-    const card = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS].find((entry) => entry.id === update.id);
+    const card = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS].find((entry) => entry.id === update.id);
     if (!card) {
       return;
     }
@@ -6100,14 +6116,14 @@ function createTokenCard(id, name, faction, attack, health, keywords = []) {
     }
   });
 
-  [...LEGACY_CARDS, ...TRANSCENDENT_CARDS].forEach((card) => {
+  [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS].forEach((card) => {
     card.description = buildDescriptionLocal(card.type, card.effect, card.keywords || [], card.synergy || null, card.timing || null, card.deathEffect || null, card.isToken);
   });
 
   GENERATED_CARDS.length = 0;
   buildGeneratedCards().forEach((card) => GENERATED_CARDS.push(card));
   CARD_POOL.length = 0;
-  CARD_POOL.push(...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...GENERATED_CARDS);
+  CARD_POOL.push(...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS, ...GENERATED_CARDS);
   CARD_MAP.clear();
   CARD_POOL.forEach((card) => CARD_MAP.set(card.id, card));
   Object.keys(CARD_POOLS_BY_RARITY).forEach((key) => delete CARD_POOLS_BY_RARITY[key]);
@@ -6594,7 +6610,7 @@ function applyLateArcaneOverrides() {
     { id: "grabstern-archon", deathEffect: { kind: "summonTokens", tokenId: TOKEN_IDS_BY_FACTION.knochenbund, amount: 2 } },
     { id: "weltenwurzel-inkarnation", deathEffect: { kind: "summonTokens", tokenId: TOKEN_IDS_BY_FACTION.wurzelpakt, amount: 2 } },
   ].forEach((update) => {
-    const card = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS].find((entry) => entry.id === update.id);
+    const card = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS].find((entry) => entry.id === update.id);
     if (!card) {
       return;
     }
@@ -6606,14 +6622,14 @@ function applyLateArcaneOverrides() {
     }
   });
 
-  [...LEGACY_CARDS, ...TRANSCENDENT_CARDS].forEach((card) => {
+  [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS].forEach((card) => {
     card.description = buildDescriptionLocal(card.type, card.effect, card.keywords || [], card.synergy || null, card.timing || null, card.deathEffect || null, card.isToken);
   });
 
   GENERATED_CARDS.length = 0;
   buildGeneratedCards().forEach((card) => GENERATED_CARDS.push(card));
   CARD_POOL.length = 0;
-  CARD_POOL.push(...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...GENERATED_CARDS);
+  CARD_POOL.push(...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS, ...GENERATED_CARDS);
   CARD_MAP.clear();
   CARD_POOL.forEach((card) => CARD_MAP.set(card.id, card));
   Object.keys(CARD_POOLS_BY_RARITY).forEach((key) => delete CARD_POOLS_BY_RARITY[key]);
@@ -6642,7 +6658,7 @@ const TOKEN_IDS_BY_FACTION = TOKEN_CARDS.reduce((map, card) => {
 }, {});
 
 const GENERATED_CARDS = buildGeneratedCards();
-const CARD_POOL = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...GENERATED_CARDS];
+const CARD_POOL = [...LEGACY_CARDS, ...TRANSCENDENT_CARDS, ...SINGULAR_CARDS, ...GENERATED_CARDS];
 const CARD_MAP = new Map(CARD_POOL.map((card) => [card.id, card]));
 const CARD_POOLS_BY_RARITY = groupCardsByRarity(CARD_POOL);
 

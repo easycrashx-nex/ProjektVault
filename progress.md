@@ -62,3 +62,4 @@ TODO
 - Neue Ewig-/Endgame-Kartenfamilie pro Fraktion ergänzt; aktueller Pool liegt jetzt bei 2'845 Karten insgesamt bzw. 2'821 generierten Karten.
 - Frontend-Mirror nach rontend/public synchronisiert; Syntaxchecks (
 ode --check app.js, cmd /c npm run check) erfolgreich. Ein echter Browser-Smoke-Test des erweiterten Pools steht noch aus.
+- 2026-03-26: 13 feste Singulär-Karten ergänzt, je eine Spitzenkarte pro Fraktion. Sie hängen jetzt direkt im aktiven Kartenpool, Markt und Booster-Zugriff statt nur implizit über den Generator.
