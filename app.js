@@ -127,6 +127,19 @@ const SERVER_RUNTIME = {
 const SERVER_SYNC = {
   save: Promise.resolve(),
   market: Promise.resolve(),
+  savePending: 0,
+  marketPending: 0,
+};
+
+const LIVE_SYNC_CONFIG = Object.freeze({
+  intervalMs: 7000,
+  focusDebounceMs: 320,
+});
+
+const SERVER_LIVE_SYNC = {
+  intervalId: null,
+  refreshTimer: null,
+  inFlight: false,
 };
 
 let currentUsername = null;
@@ -2255,16 +2268,21 @@ function queueServerSaveSync() {
 
   const sessionToken = getSessionSnapshot()?.token;
   const snapshot = cloneJsonValue(currentAccount?.save, createEmptySave());
+  SERVER_SYNC.savePending += 1;
   SERVER_SYNC.save = SERVER_SYNC.save
     .catch(() => undefined)
     .then(async () => {
-      const response = await apiRequest("/api/game/state", {
-        method: "PATCH",
-        token: sessionToken,
-        body: { save: snapshot },
-      });
-      mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
-      return true;
+      try {
+        const response = await apiRequest("/api/game/state", {
+          method: "PATCH",
+          token: sessionToken,
+          body: { save: snapshot },
+        });
+        mergeServerAccountIntoLocalState(response?.account, sessionToken, { render: false });
+        return true;
+      } finally {
+        SERVER_SYNC.savePending = Math.max(0, SERVER_SYNC.savePending - 1);
+      }
     })
     .catch((error) => {
       console.error(error);
@@ -2282,16 +2300,21 @@ function queueServerMarketSync() {
 
   const sessionToken = getSessionSnapshot()?.token;
   const marketSnapshot = cloneJsonValue(database.market, createInitialMarketState());
+  SERVER_SYNC.marketPending += 1;
   SERVER_SYNC.market = SERVER_SYNC.market
     .catch(() => undefined)
     .then(async () => {
-      const response = await apiRequest("/api/market/state", {
-        method: "PATCH",
-        token: sessionToken,
-        body: { market: marketSnapshot },
-      });
-      applyServerMarketSnapshot(response?.market);
-      return true;
+      try {
+        const response = await apiRequest("/api/market/state", {
+          method: "PATCH",
+          token: sessionToken,
+          body: { market: marketSnapshot },
+        });
+        applyServerMarketSnapshot(response?.market);
+        return true;
+      } finally {
+        SERVER_SYNC.marketPending = Math.max(0, SERVER_SYNC.marketPending - 1);
+      }
     })
     .catch((error) => {
       console.error(error);
@@ -2586,6 +2609,192 @@ function mergeServerAccountIntoLocalState(serverAccount, token, { render = true 
   }
 
   return true;
+}
+
+function buildLiveSyncSignature(value) {
+  try {
+    return JSON.stringify(value ?? null);
+  } catch {
+    return "";
+  }
+}
+
+function getLocalGameSyncSignature() {
+  return buildLiveSyncSignature({
+    username: sanitizeUsername(currentAccount?.username),
+    isAdmin: Boolean(currentAccount?.isAdmin),
+    save: currentAccount?.save || createEmptySave(),
+    market: database.market || createInitialMarketState(),
+  });
+}
+
+function getPayloadGameSyncSignature(payload) {
+  return buildLiveSyncSignature({
+    username: sanitizeUsername(payload?.account?.username),
+    isAdmin: Boolean(payload?.account?.isAdmin),
+    save: payload?.account?.save || createEmptySave(),
+    market: payload?.market || createInitialMarketState(),
+  });
+}
+
+function getLocalFriendsSyncSignature() {
+  return buildLiveSyncSignature({
+    friends: currentAccount?.save?.friends || createDefaultFriendState(),
+    profiles: uiState.socialProfiles || {},
+  });
+}
+
+function getPayloadFriendsSyncSignature(payload) {
+  return buildLiveSyncSignature({
+    friends: payload?.friends || createDefaultFriendState(),
+    profiles: payload?.profiles || {},
+  });
+}
+
+function getLocalMultiplayerSyncSignature() {
+  return buildLiveSyncSignature({
+    queue: uiState.multiplayerQueue || [],
+    ownQueueEntry: uiState.multiplayerOwnQueueEntry || null,
+    incomingChallenges: uiState.multiplayerIncomingChallenges || [],
+    outgoingChallenges: uiState.multiplayerOutgoingChallenges || [],
+  });
+}
+
+function getPayloadMultiplayerSyncSignature(payload) {
+  return buildLiveSyncSignature({
+    queue: payload?.queue || [],
+    ownQueueEntry: payload?.ownQueueEntry || null,
+    incomingChallenges: payload?.incomingChallenges || [],
+    outgoingChallenges: payload?.outgoingChallenges || [],
+  });
+}
+
+function getAdminSyncComparableAccount(account) {
+  return {
+    username: sanitizeUsername(account?.username),
+    isAdmin: Boolean(account?.isAdmin),
+    createdAt: account?.createdAt || null,
+    save: account?.save || createEmptySave(),
+  };
+}
+
+function getLocalAdminSyncSignature() {
+  const accounts = Object.values(database.accounts || {})
+    .map((account) => normalizeAccount(account))
+    .sort((left, right) => left.username.localeCompare(right.username, getCurrentLocale()))
+    .map(getAdminSyncComparableAccount);
+  return buildLiveSyncSignature(accounts);
+}
+
+function getPayloadAdminSyncSignature(accounts) {
+  return buildLiveSyncSignature(
+    (Array.isArray(accounts) ? accounts : [])
+      .map(getAdminSyncComparableAccount)
+      .sort((left, right) => left.username.localeCompare(right.username, getCurrentLocale())),
+  );
+}
+
+function hasPendingServerSync() {
+  return SERVER_SYNC.savePending > 0 || SERVER_SYNC.marketPending > 0;
+}
+
+function scheduleServerLiveRefresh({ force = false, delay = LIVE_SYNC_CONFIG.focusDebounceMs } = {}) {
+  if (!isServerSessionActive()) {
+    return;
+  }
+
+  if (SERVER_LIVE_SYNC.refreshTimer) {
+    window.clearTimeout(SERVER_LIVE_SYNC.refreshTimer);
+  }
+
+  SERVER_LIVE_SYNC.refreshTimer = window.setTimeout(() => {
+    SERVER_LIVE_SYNC.refreshTimer = null;
+    void refreshServerLiveState({ force });
+  }, Math.max(0, delay));
+}
+
+function handleServerLiveTick() {
+  void refreshServerLiveState();
+}
+
+async function refreshServerLiveState({ force = false } = {}) {
+  if (!isServerSessionActive() || SERVER_RUNTIME.restoring || SERVER_LIVE_SYNC.inFlight) {
+    return false;
+  }
+
+  if (!force && document.hidden) {
+    return false;
+  }
+
+  if (hasPendingServerSync() || isMatchActive()) {
+    return false;
+  }
+
+  const sessionToken = getSessionSnapshot()?.token;
+  if (!isValidSessionToken(sessionToken)) {
+    return false;
+  }
+
+  SERVER_LIVE_SYNC.inFlight = true;
+
+  try {
+    let changed = false;
+    const gameResponse = await apiRequest("/api/game/state", { token: sessionToken });
+
+    if (getPayloadGameSyncSignature(gameResponse) !== getLocalGameSyncSignature()) {
+      if (mergeServerAccountIntoLocalState(gameResponse?.account, sessionToken, { render: false })) {
+        applyServerMarketSnapshot(gameResponse?.market);
+        uiState.adminCacheDirty = true;
+        changed = true;
+      }
+    }
+
+    if (uiState.section === "friends" && !uiState.friendsLoading) {
+      const friendsResponse = await apiRequest("/api/friends/overview", { token: sessionToken });
+      if (getPayloadFriendsSyncSignature(friendsResponse) !== getLocalFriendsSyncSignature()) {
+        applyServerFriendsOverview(friendsResponse, { render: false });
+        changed = true;
+      }
+    }
+
+    if (uiState.section === "multiplayer" && !uiState.multiplayerLoading) {
+      const multiplayerResponse = await apiRequest("/api/multiplayer/overview", { token: sessionToken });
+      if (getPayloadMultiplayerSyncSignature(multiplayerResponse) !== getLocalMultiplayerSyncSignature()) {
+        applyServerMultiplayerOverview(multiplayerResponse, { render: false });
+        changed = true;
+      }
+    }
+
+    if (uiState.section === "admin" && isCurrentUserAdmin()) {
+      const adminResponse = await apiRequest("/api/admin/accounts", { token: sessionToken });
+      if (getPayloadAdminSyncSignature(adminResponse?.accounts) !== getLocalAdminSyncSignature()) {
+        applyServerAccountsSnapshot(adminResponse?.accounts);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      renderAll();
+    }
+
+    return changed;
+  } catch (error) {
+    if (error?.status === 401) {
+      currentUsername = null;
+      currentAccount = null;
+      uiState.match = null;
+      uiState.modalCardId = null;
+      uiState.adminSelectedUser = null;
+      clearSessionSnapshot();
+      renderAll();
+      return false;
+    }
+
+    console.error(error);
+    return false;
+  } finally {
+    SERVER_LIVE_SYNC.inFlight = false;
+  }
 }
 
 async function initializeServerSession() {
@@ -7396,6 +7605,14 @@ function overrideArcaneVaultSystems() {
 
     window.addEventListener("scroll", updateFloatingResourceBarVisibility, { passive: true });
     window.addEventListener("resize", updateFloatingResourceBarVisibility);
+    window.addEventListener("focus", () => {
+      scheduleServerLiveRefresh({ force: true });
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        scheduleServerLiveRefresh({ force: true, delay: 120 });
+      }
+    });
   };
 
   validateDeck = function validateDeck(deck, mode = DECK_MODES.standard) {
@@ -7815,6 +8032,9 @@ function bootstrap() {
   initializeVisualEffects();
   syncMarketState();
   window.setInterval(handleMarketTick, 60000);
+  if (!SERVER_LIVE_SYNC.intervalId) {
+    SERVER_LIVE_SYNC.intervalId = window.setInterval(handleServerLiveTick, LIVE_SYNC_CONFIG.intervalMs);
+  }
   renderAll();
   void initializeServerSession();
 }
@@ -8720,6 +8940,11 @@ async function logout() {
   currentAccount = null;
   uiState.previewLanguage = activeLanguage;
   clearSessionSnapshot();
+  if (SERVER_LIVE_SYNC.refreshTimer) {
+    window.clearTimeout(SERVER_LIVE_SYNC.refreshTimer);
+    SERVER_LIVE_SYNC.refreshTimer = null;
+  }
+  SERVER_LIVE_SYNC.inFlight = false;
   uiState.match = null;
   uiState.modalCardId = null;
   uiState.adminSelectedUser = null;
