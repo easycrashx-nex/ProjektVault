@@ -7052,8 +7052,15 @@ const elements = {
   costFilter: document.getElementById("costFilter"),
   ownedOnlyToggle: document.getElementById("ownedOnlyToggle"),
   duplicatesOnlyToggle: document.getElementById("duplicatesOnlyToggle"),
+  collectionScrollTopButton: document.getElementById("collectionScrollTopButton"),
   deckNameInput: document.getElementById("deckNameInput"),
   deckModeSelect: document.getElementById("deckModeSelect"),
+  deckSearchInput: document.getElementById("deckSearchInput"),
+  deckRarityFilter: document.getElementById("deckRarityFilter"),
+  deckTypeFilter: document.getElementById("deckTypeFilter"),
+  deckFactionFilter: document.getElementById("deckFactionFilter"),
+  deckCostFilter: document.getElementById("deckCostFilter"),
+  deckResetFiltersButton: document.getElementById("deckResetFiltersButton"),
   deckCodeInput: document.getElementById("deckCodeInput"),
   renameDeckButton: document.getElementById("renameDeckButton"),
   newDeckButton: document.getElementById("newDeckButton"),
@@ -7183,6 +7190,13 @@ uiState = {
   multiplayerChallengeBusy: false,
   wikiSearch: "",
   wikiTopic: "all",
+  deckFilters: {
+    search: "",
+    rarity: "all",
+    type: "all",
+    faction: "all",
+    cost: "all",
+  },
   deckMode: DECK_MODES.standard,
   deckCodeDraft: "",
   previewLanguage: "de",
@@ -7568,6 +7582,12 @@ function overrideArcaneVaultSystems() {
     elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
     elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
     elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
+    elements.deckSearchInput.addEventListener("input", (event) => updateDeckFilter("search", event.target.value));
+    elements.deckRarityFilter.addEventListener("change", (event) => updateDeckFilter("rarity", event.target.value));
+    elements.deckTypeFilter.addEventListener("change", (event) => updateDeckFilter("type", event.target.value));
+    elements.deckFactionFilter.addEventListener("change", (event) => updateDeckFilter("faction", event.target.value));
+    elements.deckCostFilter.addEventListener("change", (event) => updateDeckFilter("cost", event.target.value));
+    elements.deckResetFiltersButton.addEventListener("click", resetDeckFilters);
     elements.deckCodeInput.addEventListener("input", (event) => {
       uiState.deckCodeDraft = event.target.value;
       syncDeckCodeControls();
@@ -7603,15 +7623,24 @@ function overrideArcaneVaultSystems() {
       }
     });
 
-    window.addEventListener("scroll", updateFloatingResourceBarVisibility, { passive: true });
-    window.addEventListener("resize", updateFloatingResourceBarVisibility);
-    window.addEventListener("focus", () => {
-      scheduleServerLiveRefresh({ force: true });
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        scheduleServerLiveRefresh({ force: true, delay: 120 });
+    elements.floatingResourceBar?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-floating-home='true']");
+      if (button) {
+        requestSectionChange("menu");
       }
+    });
+
+    elements.collectionScrollTopButton?.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    window.addEventListener("scroll", () => {
+      updateFloatingResourceBarVisibility();
+      updateCollectionScrollTopVisibility();
+    }, { passive: true });
+    window.addEventListener("resize", () => {
+      updateFloatingResourceBarVisibility();
+      updateCollectionScrollTopVisibility();
     });
   };
 
@@ -8032,9 +8061,6 @@ function bootstrap() {
   initializeVisualEffects();
   syncMarketState();
   window.setInterval(handleMarketTick, 60000);
-  if (!SERVER_LIVE_SYNC.intervalId) {
-    SERVER_LIVE_SYNC.intervalId = window.setInterval(handleServerLiveTick, LIVE_SYNC_CONFIG.intervalMs);
-  }
   renderAll();
   void initializeServerSession();
 }
@@ -8250,6 +8276,12 @@ function bindStaticEvents() {
   elements.duplicateDeckButton.addEventListener("click", duplicateActiveDeck);
   elements.deleteDeckButton.addEventListener("click", deleteActiveDeck);
   elements.deckModeSelect.addEventListener("change", handleDeckModeChange);
+  elements.deckSearchInput.addEventListener("input", (event) => updateDeckFilter("search", event.target.value));
+  elements.deckRarityFilter.addEventListener("change", (event) => updateDeckFilter("rarity", event.target.value));
+  elements.deckTypeFilter.addEventListener("change", (event) => updateDeckFilter("type", event.target.value));
+  elements.deckFactionFilter.addEventListener("change", (event) => updateDeckFilter("faction", event.target.value));
+  elements.deckCostFilter.addEventListener("change", (event) => updateDeckFilter("cost", event.target.value));
+  elements.deckResetFiltersButton.addEventListener("click", resetDeckFilters);
   elements.deckCodeInput.addEventListener("input", (event) => {
     uiState.deckCodeDraft = event.target.value;
     syncDeckCodeControls();
@@ -8284,6 +8316,26 @@ function bindStaticEvents() {
       closeCardModal();
     }
   });
+
+  elements.floatingResourceBar?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-floating-home='true']");
+    if (button) {
+      requestSectionChange("menu");
+    }
+  });
+
+  elements.collectionScrollTopButton?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  window.addEventListener("scroll", () => {
+    updateFloatingResourceBarVisibility();
+    updateCollectionScrollTopVisibility();
+  }, { passive: true });
+  window.addEventListener("resize", () => {
+    updateFloatingResourceBarVisibility();
+    updateCollectionScrollTopVisibility();
+  });
 }
 
 function populateFilterControls() {
@@ -8301,6 +8353,15 @@ function populateFilterControls() {
   fillSelect(elements.typeFilter, [{ value: "all", label: getUiText("filters.allTypes") }, ...Object.keys(TYPE_LABELS).map((value) => ({ value, label: getTypeLabel(value) }))]);
   fillSelect(elements.factionFilter, [{ value: "all", label: getUiText("filters.allFactions") }, ...FACTIONS.map((faction) => ({ value: faction.id, label: faction.name }))]);
   fillSelect(elements.costFilter, [
+    { value: "all", label: getUiText("filters.allCosts") },
+    { value: "0-2", label: getUiText("filters.costLow") },
+    { value: "3-5", label: getUiText("filters.costMid") },
+    { value: "6-9", label: getUiText("filters.costHigh") },
+  ]);
+  fillSelect(elements.deckRarityFilter, [{ value: "all", label: getUiText("filters.allRarities") }, ...RARITY_ORDER.map((rarity) => ({ value: rarity, label: getRarityLabel(rarity) }))]);
+  fillSelect(elements.deckTypeFilter, [{ value: "all", label: getUiText("filters.allTypes") }, ...Object.keys(TYPE_LABELS).map((value) => ({ value, label: getTypeLabel(value) }))]);
+  fillSelect(elements.deckFactionFilter, [{ value: "all", label: getUiText("filters.allFactions") }, ...FACTIONS.map((faction) => ({ value: faction.id, label: faction.name }))]);
+  fillSelect(elements.deckCostFilter, [
     { value: "all", label: getUiText("filters.allCosts") },
     { value: "0-2", label: getUiText("filters.costLow") },
     { value: "3-5", label: getUiText("filters.costMid") },
@@ -8972,6 +9033,22 @@ function updateFilter(key, value) {
   getSave().filters[key] = value;
   persistCurrentAccount();
   renderCollection();
+}
+
+function updateDeckFilter(key, value) {
+  uiState.deckFilters[key] = value;
+  renderDeckManager();
+}
+
+function resetDeckFilters() {
+  uiState.deckFilters = {
+    search: "",
+    rarity: "all",
+    type: "all",
+    faction: "all",
+    cost: "all",
+  };
+  renderDeckManager();
 }
 
 function handleSettingsToggle(event) {
@@ -11094,6 +11171,11 @@ function renderAll() {
   elements.typeFilter.value = getSave().filters.type;
   elements.factionFilter.value = getSave().filters.faction;
   elements.costFilter.value = getSave().filters.cost;
+  elements.deckSearchInput.value = uiState.deckFilters.search;
+  elements.deckRarityFilter.value = uiState.deckFilters.rarity;
+  elements.deckTypeFilter.value = uiState.deckFilters.type;
+  elements.deckFactionFilter.value = uiState.deckFilters.faction;
+  elements.deckCostFilter.value = uiState.deckFilters.cost;
   elements.settingsLanguageSelect.value = getUserSettings().language;
   elements.ownedOnlyToggle.checked = Boolean(getSave().filters.ownedOnly);
   elements.duplicatesOnlyToggle.checked = Boolean(getSave().filters.duplicatesOnly);
@@ -11117,6 +11199,7 @@ function renderAll() {
   renderArena();
   renderCardModal();
   updateFloatingResourceBarVisibility();
+  updateCollectionScrollTopVisibility();
 }
 
 function isMatchActive(match = uiState.match) {
@@ -11204,10 +11287,28 @@ function renderResources() {
     chip.className = `resource-chip tone-${chipData.tone}${chipData.className ? ` ${chipData.className}` : ""}`;
     chip.innerHTML = `<span>${chipData.label}</span><strong>${chipData.value}</strong>${chipData.meta ? `<small>${chipData.meta}</small>` : ""}`;
     elements.resourceBar.append(chip);
-    if (elements.floatingResourceBar) {
-      elements.floatingResourceBar.append(chip.cloneNode(true));
-    }
   });
+
+  if (elements.floatingResourceBar) {
+    const homeButton = document.createElement("button");
+    homeButton.type = "button";
+    homeButton.className = "player-panel floating-home-button";
+    homeButton.dataset.floatingHome = "true";
+    homeButton.setAttribute("aria-label", getUiText("nav.menu"));
+    homeButton.setAttribute("title", getUiText("nav.menu"));
+    homeButton.innerHTML = `<p class="eyebrow">${localText("Spielerkonto", "Player Account", "Compte joueur")}</p><h2 data-size="${elements.playerName.dataset.size || ""}">${currentAccount?.username || "-"}</h2>`;
+
+    const chipRail = document.createElement("div");
+    chipRail.className = "floating-resource-rail";
+    chips.forEach((chipData) => {
+      const chip = document.createElement("div");
+      chip.className = `resource-chip tone-${chipData.tone}${chipData.className ? ` ${chipData.className}` : ""}`;
+      chip.innerHTML = `<span>${chipData.label}</span><strong>${chipData.value}</strong>${chipData.meta ? `<small>${chipData.meta}</small>` : ""}`;
+      chipRail.append(chip);
+    });
+
+    elements.floatingResourceBar.append(homeButton, chipRail);
+  }
 
   updateFloatingResourceBarVisibility();
 }
@@ -11233,6 +11334,18 @@ function updateFloatingResourceBarVisibility() {
   const shouldShow = shouldShowFloatingResourceBar();
   elements.floatingResourceBar.classList.toggle("is-visible", shouldShow);
   elements.floatingResourceBar.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+}
+
+function updateCollectionScrollTopVisibility() {
+  if (!elements.collectionScrollTopButton || !elements.sections.collection) {
+    return;
+  }
+
+  const collectionVisible = uiState.section === "collection" && !elements.sections.collection.classList.contains("hidden");
+  const sectionTop = elements.sections.collection.getBoundingClientRect().top;
+  const shouldShow = collectionVisible && window.scrollY > 640 && sectionTop < 120;
+  elements.collectionScrollTopButton.classList.toggle("is-visible", shouldShow);
+  elements.collectionScrollTopButton.setAttribute("aria-hidden", shouldShow ? "false" : "true");
 }
 
 function renderAdminPanel() {
@@ -12528,6 +12641,11 @@ function legacyRenderDeckManager() {
   elements.deckModeSelect.value = deckMode;
 
   elements.deckNameInput.value = activeDeck?.name || "";
+  elements.deckSearchInput.value = uiState.deckFilters.search;
+  elements.deckRarityFilter.value = uiState.deckFilters.rarity;
+  elements.deckTypeFilter.value = uiState.deckFilters.type;
+  elements.deckFactionFilter.value = uiState.deckFilters.faction;
+  elements.deckCostFilter.value = uiState.deckFilters.cost;
   elements.newDeckButton.disabled = isHardcoreMode;
   elements.duplicateDeckButton.disabled = isHardcoreMode;
   elements.deleteDeckButton.disabled = isHardcoreMode;
@@ -12644,9 +12762,44 @@ function legacyRenderDeckManager() {
     `;
   }
 
-  CARD_POOL
+  const deckSearch = uiState.deckFilters.search.trim().toLowerCase();
+  const filteredDeckCards = CARD_POOL
     .filter((card) => getOwnedCopies(card.id) > 0)
-    .sort(sortCardsForDisplay)
+    .filter((card) => uiState.deckFilters.rarity === "all" || card.rarity === uiState.deckFilters.rarity)
+    .filter((card) => uiState.deckFilters.type === "all" || card.type === uiState.deckFilters.type)
+    .filter((card) => uiState.deckFilters.faction === "all" || card.faction === uiState.deckFilters.faction)
+    .filter((card) => matchesCostFilter(card, uiState.deckFilters.cost))
+    .filter((card) => {
+      if (!deckSearch) {
+        return true;
+      }
+      const haystack = [
+        card.name,
+        getFaction(card.faction).name,
+        getTypeLabel(card.type),
+        card.text,
+      ].join(" ").toLowerCase();
+      return haystack.includes(deckSearch);
+    })
+    .sort(sortCardsForDisplay);
+
+  elements.deckResetFiltersButton.disabled = !deckSearch
+    && uiState.deckFilters.rarity === "all"
+    && uiState.deckFilters.type === "all"
+    && uiState.deckFilters.faction === "all"
+    && uiState.deckFilters.cost === "all";
+
+  if (!filteredDeckCards.length) {
+    elements.deckCollectionGrid.innerHTML = `
+      <div class="info-panel empty-state-card deck-empty-state">
+        <h3 class="subheading">${localText("Keine Karten gefunden", "No cards found", "Aucune carte trouvée")}</h3>
+        <p class="mini-note">${localText("Passe die Deck-Filter an, um wieder Karten zum Hinzufügen zu sehen.", "Adjust the deck filters to see cards again.", "Ajuste les filtres du deck pour revoir des cartes à ajouter.")}</p>
+      </div>
+    `;
+    return;
+  }
+
+  filteredDeckCards
     .forEach((card) => {
       const usedCopies = countCopiesInArray(activeDeck.cards, card.id);
       const ownedCopies = getOwnedCopies(card.id);

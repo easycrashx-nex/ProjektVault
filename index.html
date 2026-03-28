@@ -389,6 +389,7 @@
             </div>
 
             <div class="card-grid" id="collectionGrid"></div>
+            <button class="scroll-top-button" id="collectionScrollTopButton" type="button">Nach oben</button>
           </section>
 
           <section class="section-panel" id="decksSection">
@@ -462,6 +463,29 @@
                 <div class="info-panel">
                   <h3 class="subheading" id="deckAddCardsHeading">Karten zum Hinzufügen</h3>
                   <p class="mini-note" id="deckAddCardsNote">Ein Deck braucht genau 20 Karten, um in der Arena spielbar zu sein.</p>
+                  <div class="deck-builder-filters">
+                    <label class="wide-field">
+                      <span>Suche</span>
+                      <input type="search" id="deckSearchInput" placeholder="Karte im Deckbau suchen">
+                    </label>
+                    <label>
+                      <span>Seltenheit</span>
+                      <select id="deckRarityFilter"></select>
+                    </label>
+                    <label>
+                      <span>Typ</span>
+                      <select id="deckTypeFilter"></select>
+                    </label>
+                    <label>
+                      <span>Fraktion</span>
+                      <select id="deckFactionFilter"></select>
+                    </label>
+                    <label>
+                      <span>Mana</span>
+                      <select id="deckCostFilter"></select>
+                    </label>
+                    <button class="secondary-button deck-filter-reset" id="deckResetFiltersButton" type="button">Filter zurücksetzen</button>
+                  </div>
                   <div class="card-grid compact-grid" id="deckCollectionGrid"></div>
                 </div>
               </div>
